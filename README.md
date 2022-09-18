@@ -1,4 +1,4 @@
-# bfm
+# BFM
 
 BFM (Bidirectional Failover Manager) is a Failover manager for PostgreSQL with a lot of advanced capabilities. 
 
