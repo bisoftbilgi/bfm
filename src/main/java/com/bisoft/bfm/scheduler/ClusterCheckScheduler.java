@@ -196,6 +196,9 @@ public class ClusterCheckScheduler {
                     .sorted(Comparator.comparingInt(PostgresqlServer::getPriority).reversed())
                     .findFirst().get();
         }
-        return this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0).filter(server -> server.getStatus() == DatabaseStatus.SLAVE).findFirst().get();
+        return this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0)
+                .filter(server -> server.getStatus() == DatabaseStatus.SLAVE)
+                .sorted(Comparator.comparingInt(PostgresqlServer::getPriority).reversed())
+                .findFirst().get();
     }
 }
