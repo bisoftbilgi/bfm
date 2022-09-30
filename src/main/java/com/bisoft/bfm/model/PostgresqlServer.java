@@ -4,6 +4,7 @@ import com.bisoft.bfm.dto.DatabaseStatus;
 import com.bisoft.bfm.dto.PgVersion;
 import lombok.Builder;
 import lombok.Data;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.*;
@@ -14,6 +15,7 @@ import java.util.List;
 @Data
 @Builder
 @Slf4j
+@ToString(doNotUseGetters = true)
 public class PostgresqlServer {
     private Boolean isMaster;
     private String serverAddress;
