@@ -47,7 +47,7 @@ public class ClusterCheckScheduler {
             if(pairStatus.equals("no-pair")){
                 log.warn("no bfm cluster pair");
             }else{
-                log.info("status of bfm pair is :"+pairStatus);
+                log.info(String.format("Status of bfm pair is : %s", pairStatus));
             }
         }catch(Exception e){
             pairStatus = "Unreachable";
@@ -70,7 +70,7 @@ public class ClusterCheckScheduler {
                                     try {
                                         minipgAccessUtil.rewind(server, master);
                                     } catch (Exception e) {
-                                        log.error("Unable to rewind " + server.getServerAddress());
+                                        log.error(String.format("Unable to rewind %s", server.getServerAddress()));
                                     }
                                 }
                         );
@@ -87,7 +87,7 @@ public class ClusterCheckScheduler {
             log.info("this is the active bfm pair");
             this.bfmContext.setMasterBfm(true);
         }else{
-            log.info("Bfm pair is active in "+bfmPair);
+            log.info(String.format("Bfm pair is active in %s",bfmPair));
             this.bfmContext.setMasterBfm(false);
             return;
         }
@@ -97,21 +97,21 @@ public class ClusterCheckScheduler {
             try {
                 checkServer(server);
             }catch(Exception e){
-                log.error("Unable to connect to server : "+server.getServerAddress());
+                log.error(String.format("Unable to connect to server : %s",server.getServerAddress()));
             }
         });
 
         isClusterHealthy();
 
 
-        log.info("-----Cluster Status is "+this.bfmContext.getClusterStatus()+"-----");
+        log.info(String.format("-----Cluster Status is %s -----",this.bfmContext.getClusterStatus()));
 
         log.info("-----Cluster Healthcheck Finished-----");
     }
 
     public void checkServer(PostgresqlServer postgresqlServer) throws Exception {
         DatabaseStatus status = postgresqlServer.getDatabaseStatus();
-        log.info("Status of "+postgresqlServer.getServerAddress()+" is "+status);
+        log.info(String.format("Status of %s is %s",postgresqlServer.getServerAddress(),status));
         log.info(minipgAccessUtil.status(postgresqlServer));
     }
 
@@ -140,7 +140,7 @@ public class ClusterCheckScheduler {
         remainingFailCount--;
         if(remainingFailCount>0){
             log.warn("master server is not healthy");
-            log.warn("remaining ignorance count is: "+String.valueOf(remainingFailCount));
+            log.warn(String.format("remaining ignorance count is: %s",String.valueOf(remainingFailCount)));
         }else{
             failover();
         }
@@ -152,7 +152,7 @@ public class ClusterCheckScheduler {
         this.bfmContext.setClusterStatus(ClusterStatus.FAILOVER);
         try {
             PostgresqlServer newMaster = selectNewMaster();
-            log.info("New master server is "+newMaster.getServerAddress());
+            log.info(String.format("New master server is %s",newMaster.getServerAddress()));
             bfmContext.getPgList().stream().
                     filter(server -> !server.getServerAddress().equals(newMaster.getServerAddress()))
                     .forEach(
@@ -160,7 +160,7 @@ public class ClusterCheckScheduler {
                         try {
                             minipgAccessUtil.vipDown(server);
                         } catch (Exception e) {
-                           log.error("Unable to down vip in server "+server.getServerAddress());
+                           log.error(String.format("Unable to down vip in server %s",server.getServerAddress()));
                         }
                     }
             );
@@ -173,7 +173,7 @@ public class ClusterCheckScheduler {
                                 try {
                                     minipgAccessUtil.rewind(server,newMaster);
                                 } catch (Exception e) {
-                                    log.error("Unable to rewind server : "+server.getServerAddress());
+                                    log.error(String.format("Unable to rewind server : %s",server.getServerAddress()));
                                 }
                             }
                     );
