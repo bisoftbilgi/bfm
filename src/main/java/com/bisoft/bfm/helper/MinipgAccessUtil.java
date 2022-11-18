@@ -14,6 +14,7 @@ import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -33,6 +34,7 @@ import org.apache.hc.core5.http.message.BasicNameValuePair;
 import org.apache.hc.core5.http.ssl.TLS;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.ssl.TrustStrategy;
+import org.apache.hc.core5.util.Timeout;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -44,6 +46,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j
@@ -193,6 +196,14 @@ public class MinipgAccessUtil {
                 .build()) {
 
             HttpGet httpGet = new HttpGet(minipgUrl+"/minipg/vip-down");
+
+            //timeout if server is shutdown
+            RequestConfig requestConfig = RequestConfig.custom()
+                    .setConnectTimeout(Timeout.of(5, TimeUnit.SECONDS))
+                    .setConnectionRequestTimeout(Timeout.of(5, TimeUnit.SECONDS))
+                    .build();
+
+            httpGet.setConfig(requestConfig);
 
             try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
                 log.info(response1.getCode() + " " + response1.getReasonPhrase());
