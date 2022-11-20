@@ -60,8 +60,22 @@ public class ClusterCheckScheduler {
     public void checkUnavilable(){
         if(this.bfmContext.isMasterBfm()) {
             try {
-                PostgresqlServer master = this.bfmContext.getPgList().stream()
-                        .filter(server -> server.getStatus() == DatabaseStatus.MASTER).findFirst().get();
+
+                long numberOfAliveServers = this.bfmContext.getPgList().stream()
+                        .filter(server -> server.getStatus() != DatabaseStatus.INACCESSIBLE)
+                        .count();
+
+                PostgresqlServer master ;
+                //If the number of alive servers is 1
+                // this server should have the status MASTER_WITH_NO_SLAVE
+                if(numberOfAliveServers==1){
+                     master = this.bfmContext.getPgList().stream()
+                            .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE).findFirst().get();
+                }else{
+                    // Else there should be a master server
+                    master = this.bfmContext.getPgList().stream()
+                            .filter(server -> server.getStatus() == DatabaseStatus.MASTER).findFirst().get();
+                }
 
                 this.bfmContext.getPgList().stream()
                         .filter(server -> server.getStatus() == DatabaseStatus.INACCESSIBLE)
