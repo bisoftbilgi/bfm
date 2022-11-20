@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
@@ -22,11 +23,13 @@ import org.apache.hc.client5.http.ssl.TrustSelfSignedStrategy;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.ssl.SSLContexts;
+import org.apache.hc.core5.util.Timeout;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j
@@ -99,6 +102,14 @@ public class BfmAccessUtil {
 
             HttpGet httpGet = new HttpGet(bfmUrl+"/bfm/is-alive");
            // httpGet.setScheme("https");
+
+            //timeout if server is shutdown
+            RequestConfig requestConfig = RequestConfig.custom()
+                    .setConnectTimeout(Timeout.of(10, TimeUnit.SECONDS))
+                    .setConnectionRequestTimeout(Timeout.of(10, TimeUnit.SECONDS))
+                    .build();
+
+            httpGet.setConfig(requestConfig);
 
             try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
                 HttpEntity entity1 = (HttpEntity) response1.getEntity();
