@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.bisoft</groupId>
 	<artifactId>bfm</artifactId>
-	<version>2.1.0</version>
+	<version>2.1.1</version>
 	<name>bfm</name>
 	<description>bfm is a postgresql failover manager</description>
 	<properties>
