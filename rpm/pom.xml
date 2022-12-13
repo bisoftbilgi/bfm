@@ -32,17 +32,28 @@
 				<configuration>
 					<group>${project.groupId}</group>
 					<mappings>
+                                                <mapping>
+                                                        <directory>/etc/bfm</directory>
+                                                        <filemode>755</filemode>
+                                                        <username>postgres</username>
+							<groupname>postgres</groupname>
+                                                </mapping>
 						<mapping>
-							<directory>/var/bfm</directory>
+							<directory>/etc/bfm/bfmwatcher</directory>
 							<filemode>755</filemode>
-							<username>bfm</username>
-							<groupname>bfm</groupname>
+							<username>postgres</username>
+							<groupname>postgres</groupname>
 							<dependency>
 								<stripVersion>true</stripVersion>
 								<includes>
-									<include>${project.groupId}:bfm-app</include>
+									<include>${project.groupId}:bfm-app:${project.version}</include>
 								</includes>
 							</dependency>
+							<sources>
+                                                                <source>
+                                                                        <location>src/main/resources/settings</location>
+                                                                </source>
+                                                        </sources>
 						</mapping>
 						<mapping>
 							<directory>/etc/systemd/system</directory>
@@ -56,11 +67,6 @@
 							</sources>
 						</mapping>						
 					</mappings>
-					<preinstallScriptlet>
-						<scriptFile>src/main/resources/preinstall.sh</scriptFile>
-						<fileEncoding>utf-8</fileEncoding>
-						<filter>true</filter>
-					</preinstallScriptlet>
 					<postinstallScriptlet>
 						<scriptFile>src/main/resources/postinstall.sh</scriptFile>
 						<fileEncoding>utf-8</fileEncoding>

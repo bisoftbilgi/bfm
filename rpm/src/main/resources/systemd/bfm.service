@@ -1,11 +1,23 @@
 [Unit]
-Description=bfm-postgresql
-After=syslog.target
-
+ Description = BFM Service
+ After=network.target
 [Service]
-User=bfm
-ExecStart=/var/bfm/bfm-app.jar
-SuccessExitStatus=143
+ Type=forking
+ User=root
+ Group=root
+ WorkingDirectory=/root
+ WorkingDirectory=/etc/bfm/bfmwatcher
+
+ ExecStartPre=/usr/bin/sh  /root/.bash_profile
+ ExecStart = /etc/bfm/bfmwatcher/bfm.sh start
+ ExecStop = /etc/bfm/bfmwatcher/bfm.sh stop
+ ExecReload = /etc/bfm/bfmwatcher/bfm.sh reload
+
+ # whenever watcher service is down it will be restarted again ...if you don't this behavior you can # this line..
+ Restart=always
+
 
 [Install]
-WantedBy=multi-user.target
+ WantedBy=multi-user.target
+
+
