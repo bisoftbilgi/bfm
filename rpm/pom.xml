@@ -65,7 +65,15 @@
 									<location>src/main/resources/systemd</location>
 								</source>
 							</sources>
-						</mapping>						
+						</mapping>
+						<mapping>
+							<directory>/etc/logrotate.d</directory>
+							<sources>
+                                                                <source>
+                                                                        <location>src/main/resources/bfmlog</location>
+                                                                </source>
+                                                        </sources>
+						</mapping>
 					</mappings>
 					<postinstallScriptlet>
 						<scriptFile>src/main/resources/postinstall.sh</scriptFile>
