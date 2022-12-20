@@ -8,7 +8,7 @@
  WorkingDirectory=/root
  WorkingDirectory=/etc/bfm/bfmwatcher
 
- ExecStartPre=/usr/bin/sh  /root/.bash_profile
+ #ExecStartPre=/usr/bin/sh  /root/.bash_profile
  ExecStart = /etc/bfm/bfmwatcher/bfm.sh start
  ExecStop = /etc/bfm/bfmwatcher/bfm.sh stop
  ExecReload = /etc/bfm/bfmwatcher/bfm.sh reload
