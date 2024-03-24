@@ -118,11 +118,15 @@ public class MinipgAccessUtil {
                 return result;
             }catch (Exception e){
                 log.error("Unable get status of server "+postgresqlServer.getServerAddress());
+                log.error("Minipg could be down at  "+postgresqlServer.getServerAddress());
+                log.error("Check Minipg status at  "+postgresqlServer.getServerAddress());
             }
 
 
         } catch (IOException e) {
             log.error("Unable get status of server "+postgresqlServer.getServerAddress());
+            log.error("Minipg could be down at  "+postgresqlServer.getServerAddress());
+            log.error("Check Minipg status at  "+postgresqlServer.getServerAddress());
         }
 
         return "OK";
