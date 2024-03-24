@@ -26,6 +26,7 @@ public class PostgresqlServer {
     private Boolean hasSlave;
     private DatabaseStatus databaseStatus;
     private int priority;
+    private String walLogPosition;
 
     public DatabaseStatus getStatus(){
         return databaseStatus;
@@ -71,6 +72,19 @@ public class PostgresqlServer {
         }
         this.hasSlave = hasSlave;
         return hasSlave;
+    }
+
+    public void getWalPosition() throws ClassNotFoundException, SQLException{
+        Connection con  = this.getServerConnection();
+        PreparedStatement ps = con.prepareStatement("select pg_current_wal_lsn() as wal_pos");
+        ps.executeQuery();
+        ResultSet rs = ps.getResultSet();
+
+        rs.next();
+
+        String wal_pos = rs.getString("wal_pos");
+
+        this.setWalLogPosition(wal_pos);
     }
 
     public DatabaseStatus getDatabaseStatus(){

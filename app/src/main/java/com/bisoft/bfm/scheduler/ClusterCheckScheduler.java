@@ -147,12 +147,40 @@ public class ClusterCheckScheduler {
         }else if(clusterCount == 2 && masterCount == 0 && masterWithNoslaveCount==1){
             log.error("Cluster has a master with no slave (cluster size is 2), not healthy but ingoring failover");
             healthy();
+        }else if(clusterCount == 2 && masterCount == 0 && masterWithNoslaveCount>1){
+            log.error("Cluster has more than one master with no slave (cluster size is 2), not healthy but ingoring failover");
+            healthy();
+            PostgresqlServer leaderPg = this.findLeader();
+            for(PostgresqlServer pg : this.bfmContext.getPgList()){
+                if (pg.getServerAddress().equals(leaderPg.getServerAddress()) && pg.getStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)){
+                    pg.setDatabaseStatus(DatabaseStatus.MASTER);
+                    this.nothealthy();
+                }
+            }
         }
         else{
             log.error("Cluster has no master");
             this.bfmContext.setClusterStatus(ClusterStatus.NOT_HEALTHY);
             this.nothealthy();
         }
+    }
+
+    public PostgresqlServer findLeader(){
+        this.bfmContext.getPgList().stream().forEach( s -> {
+            try{
+                s.getWalPosition();
+            }
+            catch(Exception e){
+                s.setWalLogPosition(null);
+            }
+        } );
+
+        PostgresqlServer leader = this.bfmContext.getPgList().stream()
+            .sorted(Comparator.<PostgresqlServer, String>comparing(server-> server.getWalLogPosition(), Comparator.reverseOrder()))
+            .findFirst().get();
+
+        log.info("leader is "+ leader.getServerAddress());
+        return leader;
     }
 
     public void healthy(){
@@ -223,13 +251,12 @@ public class ClusterCheckScheduler {
         }
 
         if(this.bfmContext.getPgList().size() == 2 &&
-                this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0).filter(server -> server.getStatus() == DatabaseStatus.SLAVE).count() == 1 &&
-                this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0).filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE).count() == 1 ){
-            return this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0)
-                    .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE)
-                    .sorted(Comparator.comparingInt(PostgresqlServer::getPriority).reversed())
-                    .findFirst().get();
+        this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0).filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE).count() > 1){
+            
+            return this.findLeader();
+
         }
+
 
         return this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0)
                 .filter(server -> server.getStatus() == DatabaseStatus.SLAVE)
