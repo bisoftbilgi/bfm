@@ -40,11 +40,23 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
 import java.io.IOException;
 import java.io.StringBufferInputStream;
+import java.net.ProxySelector;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -65,6 +77,9 @@ public class MinipgAccessUtil {
     @Value("${minipg.port:9995}")
     private int port;
 
+    @Value("${minipg.timeout:5}")
+    private int minipgTimeout;
+
     @Value("${minipg.use-tls:false}")
     private boolean useTls;
 
@@ -73,62 +88,67 @@ public class MinipgAccessUtil {
     @Value("${bfm.user-crypted:false}")
     public boolean isEncrypted;
 
+    private SSLContext sslContext;
+
 
     @PostConstruct
-    public void init(){
+    public void init() throws Exception {
         final String scheme = useTls == false?"http":"https";
         serverUrl = scheme+"://{HOST}:"+String.valueOf(port);
         if(isEncrypted) {
             //  log.info(symmetricEncryptionUtil.decrypt(tlsSecret).replace("=",""));
             password = (symmetricEncryptionUtil.decrypt(password).replace("=", ""));
         }
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        var trustManager = new X509TrustManager() {
+            @Override
+            public X509Certificate[] getAcceptedIssuers() {
+                return new X509Certificate[]{};
+            }
+
+            @Override
+            public void checkClientTrusted(X509Certificate[] certs, String authType) {
+            }
+
+            @Override
+            public void checkServerTrusted(X509Certificate[] certs, String authType) {
+            }
+        };
+        sslContext.init(null, new TrustManager[]{trustManager}, new SecureRandom());
+        this.sslContext = sslContext;
+    }
+
+    private static final String getBasicAuthenticationHeader(String username, String password) {
+        String valueToEncode = username + ":" + password;
+        return "Basic " + Base64.getEncoder().encodeToString(valueToEncode.getBytes());
     }
 
     public String status(PostgresqlServer postgresqlServer) throws Exception{
 
-        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
-                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
-                NoopHostnameVerifier.INSTANCE);
+        try{
+            final String serverAddress = postgresqlServer.getServerAddress().split(":")[0];
+            String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
 
-        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
-                .setSSLSocketFactory(scsf)
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI(minipgUrl+"/minipg/pgstatus"))
+                .timeout(Duration.ofSeconds(this.minipgTimeout))
+                .header("Authorization", getBasicAuthenticationHeader(username, password))
+                .GET()
                 .build();
 
-        final String serverAddress = postgresqlServer.getServerAddress().split(":")[0];
-        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
-        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
-        credsProvider.setCredentials(
-                new AuthScope(serverAddress, port),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
-
-        try (CloseableHttpClient httpclient = HttpClients.custom()
-                .setConnectionManager(cm)
-                .setDefaultCredentialsProvider(credsProvider)
-                .build()) {
-
-            HttpGet httpGet = new HttpGet(minipgUrl+"/minipg/pgstatus");
-           // httpGet.setScheme("https");
-
-            try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
-               // log.info(response1.getCode() + " " + response1.getReasonPhrase());
-                HttpEntity entity1 = (HttpEntity) response1.getEntity();
-                // do something useful with the response body
-                // and ensure it is fully consumed
-                String result = (EntityUtils.toString(response1.getEntity()));
-                return result;
-            }catch (Exception e){
-                log.error("Unable get status of server "+postgresqlServer.getServerAddress());
-                log.error("Minipg could be down at  "+postgresqlServer.getServerAddress());
-                log.error("Check Minipg status at  "+postgresqlServer.getServerAddress());
-            }
-
-
-        } catch (IOException e) {
+            HttpResponse<String> response = HttpClient
+                .newBuilder()
+                .sslContext(this.sslContext)
+                .proxy(ProxySelector.getDefault())
+                .build()
+                .send(request, BodyHandlers.ofString());
+            return response.body();
+            
+        }catch(Exception e){
             log.error("Unable get status of server "+postgresqlServer.getServerAddress());
             log.error("Minipg could be down at  "+postgresqlServer.getServerAddress());
             log.error("Check Minipg status at  "+postgresqlServer.getServerAddress());
         }
-
         return "OK";
 
     }

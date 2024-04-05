@@ -13,6 +13,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.net.ProxySelector;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Comparator;
 
 @Component
@@ -57,7 +64,8 @@ public class ClusterCheckScheduler {
     }
 
     @Scheduled(fixedDelay = 7000)
-    public void checkUnavilable(){
+    public void checkUnavilable() {
+
         if(this.bfmContext.isMasterBfm()) {
             try {
 
@@ -89,6 +97,7 @@ public class ClusterCheckScheduler {
                                 }
                         );
             } catch (Exception ex) {
+                ex.printStackTrace();
                 log.error("Unable to find master server for cluster");
             }
         }
@@ -125,6 +134,14 @@ public class ClusterCheckScheduler {
 
     public void checkServer(PostgresqlServer postgresqlServer) throws Exception {
         DatabaseStatus status = postgresqlServer.getDatabaseStatus();
+
+        if (status.equals(DatabaseStatus.MASTER)){
+            this.bfmContext.setMasterServer(postgresqlServer);
+        }
+        
+        if (status.equals(DatabaseStatus.MASTER_WITH_NO_SLAVE) && this.bfmContext.getMasterServer().getServerAddress().equals(postgresqlServer.getServerAddress())){
+            status = DatabaseStatus.MASTER;
+        }
         log.info(String.format("Status of %s is %s",postgresqlServer.getServerAddress(),status));
         log.info(minipgAccessUtil.status(postgresqlServer));
     }

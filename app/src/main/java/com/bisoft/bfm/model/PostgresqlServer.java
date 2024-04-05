@@ -27,6 +27,7 @@ public class PostgresqlServer {
     private DatabaseStatus databaseStatus;
     private int priority;
     private String walLogPosition;
+    private int sizeBehindMaster;
 
     public DatabaseStatus getStatus(){
         return databaseStatus;
