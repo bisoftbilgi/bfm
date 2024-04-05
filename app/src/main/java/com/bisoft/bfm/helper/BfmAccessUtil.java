@@ -21,6 +21,7 @@ import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
 import org.apache.hc.client5.http.ssl.TrustSelfSignedStrategy;
 import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.Timeout;
@@ -108,6 +109,12 @@ public class BfmAccessUtil {
                     .setConnectTimeout(Timeout.of(10, TimeUnit.SECONDS))
                     .setConnectionRequestTimeout(Timeout.of(10, TimeUnit.SECONDS))
                     .build();
+
+            SocketConfig socketConfig = SocketConfig.custom()
+                    .setSoKeepAlive(false)
+                    .setSoReuseAddress(true)
+                    .setSoTimeout(Timeout.of(10,TimeUnit.SECONDS))
+                    .setTcpNoDelay(true).build();
 
             httpGet.setConfig(requestConfig);
 
