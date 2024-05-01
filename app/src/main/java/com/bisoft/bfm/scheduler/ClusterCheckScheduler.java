@@ -73,24 +73,32 @@ public class ClusterCheckScheduler {
                         .filter(server -> server.getStatus() != DatabaseStatus.INACCESSIBLE)
                         .count();
 
-                PostgresqlServer master ;
+                PostgresqlServer master =null ;
                 //If the number of alive servers is 1
                 // this server should have the status MASTER_WITH_NO_SLAVE
                 if(numberOfAliveServers==1){
                      master = this.bfmContext.getPgList().stream()
-                            .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE).findFirst().get();
+                            .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE || server.getStatus() == DatabaseStatus.MASTER ).findFirst().get();
                 }else{
                     // Else there should be a master server
-                    master = this.bfmContext.getPgList().stream()
+                    Long count = this.bfmContext.getPgList().stream()
+                    .filter(server -> server.getStatus() == DatabaseStatus.MASTER).count();
+                    if (count == 1L ){
+                        master = this.bfmContext.getPgList().stream()
                             .filter(server -> server.getStatus() == DatabaseStatus.MASTER).findFirst().get();
+                    }
                 }
+
+                final PostgresqlServer selectedMaster = master;
 
                 this.bfmContext.getPgList().stream()
                         .filter(server -> server.getStatus() == DatabaseStatus.INACCESSIBLE)
                         .forEach(server ->
                                 {
                                     try {
-                                        minipgAccessUtil.rewind(server, master);
+                                        if (selectedMaster != null){
+                                            minipgAccessUtil.rewind(server, selectedMaster);
+                                        }
                                     } catch (Exception e) {
                                         log.error(String.format("Unable to rewind %s", server.getServerAddress()));
                                     }
@@ -115,6 +123,7 @@ public class ClusterCheckScheduler {
             return;
         }
         log.info("-----Cluster Healthcheck Started-----");
+        
 
         bfmContext.getPgList().stream().forEach(server -> {
             try {
@@ -123,6 +132,11 @@ public class ClusterCheckScheduler {
                 log.error(String.format("Unable to connect to server : %s",server.getServerAddress()));
             }
         });
+
+        if (bfmContext.getMasterServer() == null){
+            PostgresqlServer master = this.selectNewMaster();
+            bfmContext.setMasterServer(master);;
+        }
 
         isClusterHealthy();
 
@@ -139,17 +153,65 @@ public class ClusterCheckScheduler {
             this.bfmContext.setMasterServer(postgresqlServer);
         }
         
-        if (status.equals(DatabaseStatus.MASTER_WITH_NO_SLAVE) && this.bfmContext.getMasterServer().getServerAddress().equals(postgresqlServer.getServerAddress())){
+        if (status.equals(DatabaseStatus.MASTER_WITH_NO_SLAVE) && this.bfmContext.getMasterServer() != null  && this.bfmContext.getMasterServer().getServerAddress().equals(postgresqlServer.getServerAddress())){
             status = DatabaseStatus.MASTER;
+            postgresqlServer.setDatabaseStatus(status);
         }
         log.info(String.format("Status of %s is %s",postgresqlServer.getServerAddress(),status));
         log.info(minipgAccessUtil.status(postgresqlServer));
     }
 
     public void isClusterHealthy(){
+        // If cluster is failing over do not check health 
         if(this.bfmContext.getClusterStatus() == ClusterStatus.FAILOVER){
             return;
         }
+
+        // 1. If a cluster has only one master without any slave connected and all the other nodes are unreachable, cluster is in warning status
+
+        // 1.1 Start the slaves
+
+        // 1.2 Connect slaves to the master node
+
+
+        // 2. If a cluster has more than one master cluster is unhealthy
+
+        // 2.1 Check lsn positions
+
+        // 2.2 Choose master node with higher lsn position 
+
+        // 2.3 Shutdown other nodes  
+
+        // 2.4 Inform the DBA
+
+
+
+        // 3. If a cluster has a only one slave node and other nodes are unreachable, cluster is unhealthy
+
+        // 3.1 Check last known master lsn and the current slave lsn (a)
+
+        // 3.2 Wait 5 seconds
+
+        // 3.3 Check last known master lsn and the current slave lsn (b)
+
+        // 3.4 if a->master_lsn ==  b->master_lsn and a->slave_lsn == b->slave_lsn 
+        // and pg_wal_lsn_diff(b->master_lsn,b->slave_lsn) between 1 and 'X' bytes then promote slave
+
+        // 3.5 if a->master_lsn <  b->master_lsn recheck cluster 
+
+        // 3.6 if a->master_lsn ==  b->master_lsn and a->slave_lsn < b->slave_lsn  do recheck, inform dba
+
+        // psql -c "select t.*,pg_current_wal_lsn() from pg_ls_waldir() t order by modification desc limit 1"
+
+
+
+
+
+        // 4. If a cluster has only slave nodes and there is no master node, clsuter is unhealthy
+
+        // 5. If a cluster has more than one or more master without slaves connected and has other nodes with slave status not connected to master nodes, cluster is unhealthy
+
+        // 6. If a cluster has only one master and other servers are slave to that master, cluster is healthy
 
         long clusterCount = this.bfmContext.getPgList().size();
 
@@ -162,7 +224,7 @@ public class ClusterCheckScheduler {
             this.bfmContext.setClusterStatus(ClusterStatus.HEALTHY);
             healthy();
         }else if(clusterCount == 2 && masterCount == 0 && masterWithNoslaveCount==1){
-            log.error("Cluster has a master with no slave (cluster size is 2), not healthy but ingoring failover");
+            log.warn("Cluster has a master with no slave (cluster size is 2), not healthy but ingoring failover");
             healthy();
         }else if(clusterCount == 2 && masterCount == 0 && masterWithNoslaveCount>1){
             log.error("Cluster has more than one master with no slave (cluster size is 2), not healthy but ingoring failover");
