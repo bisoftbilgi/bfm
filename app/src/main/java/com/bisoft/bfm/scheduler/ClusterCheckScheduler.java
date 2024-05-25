@@ -45,6 +45,9 @@ public class ClusterCheckScheduler {
     @Value("${server.pgpassword:postgres}")
     String pgPassword;
 
+    @Value("${bfm.basebackup_slave_join:false}")
+    public boolean basebackup_slave_join;
+
     int remainingFailCount;
 
     @Scheduled(fixedDelay = 11000)
@@ -99,10 +102,15 @@ public class ClusterCheckScheduler {
                                         if (selectedMaster != null){
                                             String rewind_result = minipgAccessUtil.rewind(server, selectedMaster);
                                             if (rewind_result != "OK"){
-                                                log.info("MiniPG rewind was FAILED. Joining to Cluster with pg_basebackup to MASTER:",selectedMaster);
-                                                //try to rejoin with pg_basebackup method 
-                                                String rebase_result = minipgAccessUtil.rebaseUp(server, selectedMaster);
-                                                log.info(rebase_result);
+                                                log.info("MiniPG rewind was FAILED. Slave Target:",server);
+                                                if (basebackup_slave_join){
+                                                    log.info("Joining to Cluster with pg_basebackup to MASTER:",selectedMaster);
+                                                    //try to rejoin with pg_basebackup method 
+                                                    String rebase_result = minipgAccessUtil.rebaseUp(server, selectedMaster);
+                                                    log.info(rebase_result);
+                                                } else {
+                                                    log.info("pg_basebackup join is set to FALSE. passing for slave server:",server);
+                                                }
                                             }
                                         }
                                     } catch (Exception e) {
