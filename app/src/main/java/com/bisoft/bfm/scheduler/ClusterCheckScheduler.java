@@ -97,7 +97,13 @@ public class ClusterCheckScheduler {
                                 {
                                     try {
                                         if (selectedMaster != null){
-                                            minipgAccessUtil.rewind(server, selectedMaster);
+                                            String rewind_result = minipgAccessUtil.rewind(server, selectedMaster);
+                                            if (rewind_result != "OK"){
+                                                log.info("MiniPG rewind was FAILED. Joining to Cluster with pg_basebackup to MASTER:",selectedMaster);
+                                                //try to rejoin with pg_basebackup method 
+                                                String rebase_result = minipgAccessUtil.rebaseUp(server, selectedMaster);
+                                                log.info(rebase_result);
+                                            }
                                         }
                                     } catch (Exception e) {
                                         log.error(String.format("Unable to rewind %s", server.getServerAddress()));
@@ -167,6 +173,20 @@ public class ClusterCheckScheduler {
             return;
         }
 
+        // Warning Healty UnHealty states
+        // 1. One Master with no slave or one of slaves is unreachable Warning
+        // 1.1 One Master Without no slave Warning
+        
+        // 1 -> Try to  start slave and connect to master  inform state to dba
+        //  pg_rewind rejoin to cluster
+        // if fail try to pg_basebackup (if properties file basebackup slave join set to ON)
+
+        // bfm with parameters
+        // bfm_ctl list clusters (Show status(Healty/War/UnHealty) Nodes LSN Timestamp Roles)
+        // bfm_ctl reinit slave SlaveNODE option=pg_rewind/pg_basebackup
+
+
+
         // 1. If a cluster has only one master without any slave connected and all the other nodes are unreachable, cluster is in warning status
 
         // 1.1 Start the slaves
@@ -201,7 +221,19 @@ public class ClusterCheckScheduler {
 
         // 3.6 if a->master_lsn ==  b->master_lsn and a->slave_lsn < b->slave_lsn  do recheck, inform dba
 
+        // 3.7 if a
         // psql -c "select t.*,pg_current_wal_lsn() from pg_ls_waldir() t order by modification desc limit 1"
+        
+        // master_lsn, master_timestamp if no  data inform dba
+
+        // Data sharing with other bfm pairs
+
+
+
+
+
+
+
 
 
 
@@ -212,6 +244,7 @@ public class ClusterCheckScheduler {
         // 5. If a cluster has more than one or more master without slaves connected and has other nodes with slave status not connected to master nodes, cluster is unhealthy
 
         // 6. If a cluster has only one master and other servers are slave to that master, cluster is healthy
+        // pg_ctl status
 
         long clusterCount = this.bfmContext.getPgList().size();
 
