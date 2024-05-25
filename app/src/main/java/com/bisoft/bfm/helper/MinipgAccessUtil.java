@@ -3,6 +3,7 @@ package com.bisoft.bfm.helper;
 import com.bisoft.bfm.dto.CheckPointDTO;
 import com.bisoft.bfm.dto.PromoteDTO;
 import com.bisoft.bfm.dto.RewindDTO;
+import com.bisoft.bfm.dto.ReBaseUpDTO;
 import com.bisoft.bfm.model.PostgresqlServer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -401,5 +402,58 @@ public class MinipgAccessUtil {
 
         return "OK";
 
+    }
+
+    public String rebaseUp(PostgresqlServer slaveCandidateServer,PostgresqlServer masterServer) throws Exception {
+        log.info("Trying to Rejoin Slave server "+slaveCandidateServer.getServerAddress()+" to cluster with master "+masterServer.getServerAddress()+" with pg_basebackup.");
+        final String serverAddress = slaveCandidateServer.getServerAddress().split(":")[0];
+        final String serverPort = slaveCandidateServer.getServerAddress().split(":")[1];
+        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                NoopHostnameVerifier.INSTANCE);
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(scsf)
+                .build();
+
+        ReBaseUpDTO rebaseDTO = ReBaseUpDTO.builder().masterIp(masterServer.getServerAddress().split(":")[0]).masterPort(masterServer.getServerAddress().split(":")[1]).repUser(masterServer.getUsername()).repPassword(masterServer.getPassword()).build();
+        ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
+        String json = ow.writeValueAsString(rebaseDTO);
+
+        credsProvider.setCredentials(
+                new AuthScope(serverAddress, port),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+
+        try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credsProvider)
+                .build()) {
+
+            HttpPost request = new HttpPost(minipgUrl+"/minipg/rebaseUp");
+            request.setHeader("Accept", "application/json");
+            request.setHeader("Content-type", "application/json");
+
+            final StringEntity entity = new StringEntity(json);
+            request.setEntity(entity);
+
+            try (CloseableHttpResponse response1 = httpclient.execute(request)) {
+                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                HttpEntity entity1 = (HttpEntity) response1.getEntity();
+                // do something useful with the response body
+                // and ensure it is fully consumed
+                String result = (EntityUtils.toString(response1.getEntity()));
+                return result;
+            }catch (Exception e){
+                log.error("Rejoin with pg_basebackup failed for "+ slaveCandidateServer.getServerAddress());
+            }
+
+
+        } catch (IOException e) {
+            log.error("Rejoin with pg_basebackup failed for "+slaveCandidateServer.getServerAddress()+" is unreacable");
+        }
+        
+        return "OK";
     }
 }
