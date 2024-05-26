@@ -1,26 +1,22 @@
 package com.bisoft.bfm.scheduler;
 
-import com.bisoft.bfm.dto.DatabaseStatus;
-import com.bisoft.bfm.exceptions.NoSuitableMasterFoundException;
-import com.bisoft.bfm.helper.BfmAccessUtil;
-import com.bisoft.bfm.helper.MinipgAccessUtil;
-import com.bisoft.bfm.model.BfmContext;
-import com.bisoft.bfm.dto.ClusterStatus;
-import com.bisoft.bfm.model.PostgresqlServer;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.Comparator;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.net.ProxySelector;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
-import java.util.Comparator;
+import com.bisoft.bfm.dto.ClusterStatus;
+import com.bisoft.bfm.dto.DatabaseStatus;
+import com.bisoft.bfm.helper.BfmAccessUtil;
+import com.bisoft.bfm.helper.EmailService;
+import com.bisoft.bfm.helper.MinipgAccessUtil;
+import com.bisoft.bfm.model.BfmContext;
+import com.bisoft.bfm.model.PostgresqlServer;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
@@ -30,6 +26,9 @@ public class ClusterCheckScheduler {
     private final BfmContext bfmContext;
     private  final MinipgAccessUtil minipgAccessUtil;
     private final BfmAccessUtil bfmAccessUtil;
+
+    @Autowired
+    private EmailService mailService;
 
     private String pairStatus ="Active";
 
@@ -156,6 +155,8 @@ public class ClusterCheckScheduler {
 
 
         log.info(String.format("-----Cluster Status is %s -----",this.bfmContext.getClusterStatus()));
+
+        mailService.sendMail("sedat.basmaci@bisoft.com.tr", "BFM Cluster Status", "BFM Cluster is:"+this.bfmContext.getClusterStatus());
 
         log.info("-----Cluster Healthcheck Finished-----");
     }
