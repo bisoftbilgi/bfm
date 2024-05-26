@@ -6,5 +6,6 @@ public enum ClusterStatus {
     FAILOVER,
     SWITCHOVER,
     NOT_HEALTHY,
-    MASTER_ONLY
+    MASTER_ONLY,
+    WARNING
 }

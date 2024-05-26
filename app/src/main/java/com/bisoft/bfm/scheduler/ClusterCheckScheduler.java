@@ -1,5 +1,7 @@
 package com.bisoft.bfm.scheduler;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +48,9 @@ public class ClusterCheckScheduler {
 
     @Value("${bfm.basebackup_slave_join:false}")
     public boolean basebackup_slave_join;
+
+    @Value("${bfm.mail-notification-enabled:false}")
+    public boolean mail_notification_enabled;
 
     int remainingFailCount;
 
@@ -148,15 +153,13 @@ public class ClusterCheckScheduler {
 
         if (bfmContext.getMasterServer() == null){
             PostgresqlServer master = this.selectNewMaster();
-            bfmContext.setMasterServer(master);;
+            bfmContext.setMasterServer(master);
         }
 
         isClusterHealthy();
 
 
         log.info(String.format("-----Cluster Status is %s -----",this.bfmContext.getClusterStatus()));
-
-        mailService.sendMail("sedat.basmaci@bisoft.com.tr", "BFM Cluster Status", "BFM Cluster is:"+this.bfmContext.getClusterStatus());
 
         log.info("-----Cluster Healthcheck Finished-----");
     }
@@ -267,10 +270,16 @@ public class ClusterCheckScheduler {
             healthy();
         }else if(clusterCount == 2 && masterCount == 0 && masterWithNoslaveCount==1){
             log.warn("Cluster has a master with no slave (cluster size is 2), not healthy but ingoring failover");
-            healthy();
+            warning();
+            if (mail_notification_enabled){
+                mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                    "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
+                    + "\nMaster (With No Slave) Server:"+ this.bfmContext.getMasterServer().getServerAddress());
+            }        
+    
         }else if(clusterCount == 2 && masterCount == 0 && masterWithNoslaveCount>1){
             log.error("Cluster has more than one master with no slave (cluster size is 2), not healthy but ingoring failover");
-            healthy();
+            warning();
             PostgresqlServer leaderPg = this.findLeader();
             for(PostgresqlServer pg : this.bfmContext.getPgList()){
                 if (pg.getServerAddress().equals(leaderPg.getServerAddress()) && pg.getStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)){
@@ -283,6 +292,25 @@ public class ClusterCheckScheduler {
             log.error("Cluster has no master");
             this.bfmContext.setClusterStatus(ClusterStatus.NOT_HEALTHY);
             this.nothealthy();
+            if (mail_notification_enabled){
+
+                String slaveServerAddresses = "";
+
+                for(PostgresqlServer pg : this.bfmContext.getPgList()){
+                    if (pg.getStatus().equals(DatabaseStatus.SLAVE)){
+                        if (slaveServerAddresses.length() > 3){
+                            slaveServerAddresses = slaveServerAddresses + " - ";    
+                        }
+
+                        slaveServerAddresses = slaveServerAddresses + pg.getServerAddress();
+                    }
+                }
+
+                mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                    "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
+                    + "\nCluster has NO Master Server. Slave Server Adddresses : "+ slaveServerAddresses);
+            }        
+
         }
     }
 
@@ -307,6 +335,11 @@ public class ClusterCheckScheduler {
     public void healthy(){
         remainingFailCount = timeoutIgnoranceCount;
         bfmContext.setClusterStatus(ClusterStatus.HEALTHY);
+    }
+
+    public void warning(){
+        remainingFailCount = timeoutIgnoranceCount;
+        bfmContext.setClusterStatus(ClusterStatus.WARNING);
     }
 
     public void nothealthy(){

@@ -7,6 +7,7 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -19,16 +20,23 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class EmailService {
 
+    @Value("${bfm.notification-mail-receivers:redmine@bisoft.com.tr}")
+    public String notification_mail_receivers;
+
     @Autowired
     private final JavaMailSender javaMailSender;
 
     @Async
-    public void sendMail(String toEmail, String subject, String message){
+    public void sendMail(String subject, String message){
         SimpleMailMessage mailMessage = new SimpleMailMessage();
-        mailMessage.setTo(toEmail);
+        if (notification_mail_receivers.contains(",")){
+            mailMessage.setTo(notification_mail_receivers.split(","));
+        } else {
+            mailMessage.setTo(notification_mail_receivers);
+        }        
         mailMessage.setSubject(subject);
         mailMessage.setText(message);
-        mailMessage.setFrom("bfm.reporter@bisoft.com.tr");
+        //mailMessage.setFrom("bfm.reporter@bisoft.com.tr");
         javaMailSender.send(mailMessage);
     }
 
