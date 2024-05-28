@@ -1,7 +1,5 @@
 package com.bisoft.bfm.scheduler;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +37,9 @@ public class ClusterCheckScheduler {
 
     @Value("${app.timeout-ignorance-count:1}")
     int timeoutIgnoranceCount;
+
+    @Value("${bfm.watch-strategy:availability}")
+    public String watch_strategy;
 
     @Value("${server.pguser:postgres}")
     String pgUsername;
@@ -103,19 +104,26 @@ public class ClusterCheckScheduler {
                         .forEach(server ->
                                 {
                                     try {
-                                        if (selectedMaster != null){
-                                            String rewind_result = minipgAccessUtil.rewind(server, selectedMaster);
-                                            if (rewind_result != "OK"){
-                                                log.info("MiniPG rewind was FAILED. Slave Target:",server);
-                                                if (basebackup_slave_join){
-                                                    log.info("Joining to Cluster with pg_basebackup to MASTER:",selectedMaster);
-                                                    //try to rejoin with pg_basebackup method 
-                                                    String rebase_result = minipgAccessUtil.rebaseUp(server, selectedMaster);
-                                                    log.info(rebase_result);
-                                                } else {
-                                                    log.info("pg_basebackup join is set to FALSE. passing for slave server:",server);
+                                        log.info("BFM Watch Strategy is :",watch_strategy);
+                                        if (watch_strategy == "availability"){                            
+                                            if (selectedMaster != null){
+                                                String rewind_result = minipgAccessUtil.rewind(server, selectedMaster);
+                                                if (rewind_result != "OK"){
+                                                    log.info("MiniPG rewind was FAILED. Slave Target:",server);
+                                                    if (basebackup_slave_join == true){
+                                                        String result = rejoinCluster(selectedMaster, server);
+                                                        log.info("pg_basebackup join cluster result is:"+result);
+                                                    } else {
+                                                        log.info("pg_basebackup join is set to FALSE. passing for slave server:",server);
+                                                    }
                                                 }
                                             }
+                                        } else {
+                                            mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                                                "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
+                                                + "\nWatch Strategy is MANUAL. SLAVE JOIN (Rewind or Rebase) ignoring. Please manual respond to failure...Selected Master Server : " + selectedMaster.getServerAddress());
+                                            
+    
                                         }
                                     } catch (Exception e) {
                                         log.error(String.format("Unable to rewind %s", server.getServerAddress()));
@@ -132,6 +140,8 @@ public class ClusterCheckScheduler {
 
     @Scheduled(fixedDelay = 5000)
     public void checkCluster(){
+        log.info("BFM Watch Strategy is :" + watch_strategy);
+        log.info("Mail Notification is :" + mail_notification_enabled);
         if(pairStatus.equals("no-pair") || pairStatus.equals("Passive") || pairStatus.equals("Unreachable")){
             log.info("this is the active bfm pair");
             this.bfmContext.setMasterBfm(true);
@@ -271,7 +281,8 @@ public class ClusterCheckScheduler {
         }else if(clusterCount == 2 && masterCount == 0 && masterWithNoslaveCount==1){
             log.warn("Cluster has a master with no slave (cluster size is 2), not healthy but ingoring failover");
             warning();
-            if (mail_notification_enabled){
+            checkSlaves();
+            if (mail_notification_enabled == true){
                 mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
                     "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
                     + "\nMaster (With No Slave) Server:"+ this.bfmContext.getMasterServer().getServerAddress());
@@ -292,7 +303,7 @@ public class ClusterCheckScheduler {
             log.error("Cluster has no master");
             this.bfmContext.setClusterStatus(ClusterStatus.NOT_HEALTHY);
             this.nothealthy();
-            if (mail_notification_enabled){
+            if (mail_notification_enabled == true){
 
                 String slaveServerAddresses = "";
 
@@ -348,7 +359,15 @@ public class ClusterCheckScheduler {
             log.warn("master server is not healthy");
             log.warn(String.format("remaining ignorance count is: %s",String.valueOf(remainingFailCount)));
         }else{
-            failover();
+            if (watch_strategy != "manual"){
+                failover();
+            } else {
+                this.bfmContext.setClusterStatus(ClusterStatus.NOT_HEALTHY);
+                mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
+                + "\nAutomatic Failover is OFF. Please manual respond to failure...Master Server : " + this.bfmContext.getMasterServer().getServerAddress());
+            }
+            
         }
     }
 
@@ -417,4 +436,31 @@ public class ClusterCheckScheduler {
                 .sorted(Comparator.comparingInt(PostgresqlServer::getPriority).reversed())
                 .findFirst().get();
     }
+
+    public String rejoinCluster(PostgresqlServer masterServer, PostgresqlServer targetSlave){
+        log.info("Joining to Cluster with pg_basebackup to MASTER:",masterServer);
+        //try to rejoin with pg_basebackup method 
+        String rebase_result;
+        try {
+            rebase_result = minipgAccessUtil.rebaseUp(targetSlave, masterServer);
+            log.info(rebase_result);
+            return rebase_result;    
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public void checkSlaves(){
+            this.bfmContext.getPgList().stream()
+            .filter(server -> server.getStatus() == DatabaseStatus.SLAVE)
+            .forEach(server ->
+                    {
+                        // log.info("server: "+ server.getServerAddress()+" status :"+ server.getDatabaseStatus()+ " hasMaster:"+ server.getHasMasterServer());
+                        if (server.getHasMasterServer() == false){
+                            log.info("Slave Server "+ server.getServerAddress()+" has NO MASTER. Replication could be down...");
+                        }
+                        
+                    });         
+        }
 }

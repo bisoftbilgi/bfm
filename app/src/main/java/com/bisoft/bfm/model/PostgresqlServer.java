@@ -56,6 +56,7 @@ public class PostgresqlServer {
         this.isMaster = is_in_recovery;
         return is_in_recovery;
     }
+
     public Boolean hasSlaveServer(){
         Boolean hasSlave = null;
         try {
@@ -105,8 +106,6 @@ public class PostgresqlServer {
         return this.databaseStatus;
     }
 
-
-
     public List<String> executeStatement(String sql)  {
         try {
             List<String> result = new ArrayList<>();
@@ -124,5 +123,21 @@ public class PostgresqlServer {
         return null;
     }
 
+    public Boolean getHasMasterServer(){
+        Boolean hasMaster = null;
+        try {
+            Statement statement = this.getServerConnection().createStatement();
+            ResultSet rs = statement.executeQuery("select * from pg_stat_wal_receiver");
+            hasMaster = false;
+            while(rs.next()){
+                hasMaster = true;
+            }
+            return hasMaster;
+        }catch (Exception e){
+            log.error(e.getMessage());
+            log.error("Unable to get replication status of "+this.getServerAddress());
+        }
+        return hasMaster;
+    }
 
 }
