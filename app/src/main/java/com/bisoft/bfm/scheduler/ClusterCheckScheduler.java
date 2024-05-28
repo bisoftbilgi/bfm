@@ -104,7 +104,7 @@ public class ClusterCheckScheduler {
                         .forEach(server ->
                                 {
                                     try {
-                                        if (watch_strategy == "availability"){                            
+                                        if (watch_strategy.equals("availability")){                            
                                             if (selectedMaster != null){
                                                 String rewind_result = minipgAccessUtil.rewind(server, selectedMaster);
                                                 if (rewind_result != "OK"){
@@ -118,11 +118,12 @@ public class ClusterCheckScheduler {
                                                 }
                                             }
                                         } else {
-                                            mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                                            log.info("Rewind or ReBaseUp ignoring..BFM watch strategy is:"+watch_strategy);
+                                            if (mail_notification_enabled == true){
+                                                mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
                                                 "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
                                                 + "\nWatch Strategy is MANUAL. SLAVE JOIN (Rewind or Rebase) ignoring. Please manual respond to failure...Selected Master Server : " + selectedMaster.getServerAddress());
-                                            
-    
+                                            }    
                                         }
                                     } catch (Exception e) {
                                         log.error(String.format("Unable to rewind %s", server.getServerAddress()));
@@ -310,7 +311,7 @@ public class ClusterCheckScheduler {
         else{
             log.error("Cluster has no master");
             this.bfmContext.setClusterStatus(ClusterStatus.NOT_HEALTHY);
-            this.warning();
+            this.nothealthy();
             if (mail_notification_enabled == true){
 
                 String slaveServerAddresses = "";
@@ -364,7 +365,7 @@ public class ClusterCheckScheduler {
     public void nothealthy(){
         remainingFailCount--;
         if(remainingFailCount>0){
-            log.warn("master server is not healthy");
+            log.warn("cluster is not healthy");
             log.warn(String.format("remaining ignorance count is: %s",String.valueOf(remainingFailCount)));
         }else{
             if (watch_strategy != "manual"){
