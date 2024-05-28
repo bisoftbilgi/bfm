@@ -170,7 +170,7 @@ public class ClusterCheckScheduler {
 
         log.info(String.format("-----Cluster Status is %s -----",this.bfmContext.getClusterStatus()));
 
-        log.info("-----Cluster Healthcheck Finished-----");
+        log.info("-----Cluster Healthcheck Finished-----\n\n\n");
     }
 
     public void checkServer(PostgresqlServer postgresqlServer) throws Exception {
@@ -292,16 +292,25 @@ public class ClusterCheckScheduler {
             warning();
             PostgresqlServer leaderPg = this.findLeader();
             for(PostgresqlServer pg : this.bfmContext.getPgList()){
-                if (pg.getServerAddress().equals(leaderPg.getServerAddress()) && pg.getStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)){
-                    pg.setDatabaseStatus(DatabaseStatus.MASTER);
-                    this.nothealthy();
+                if (pg.getServerAddress() != leaderPg.getServerAddress() && pg.getStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)){
+                    try {
+                        minipgAccessUtil.stopPg(pg);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    if (mail_notification_enabled == true){
+                        mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                            "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus()
+                            +"\nCluster has more than one MASTER server. Leader Master is :"+leaderPg.getServerAddress()  
+                            + "\nServer:"+ pg.getServerAddress()+ " was STOPPED. Please check cluster.");
+                    } 
                 }
             }
         }
         else{
             log.error("Cluster has no master");
             this.bfmContext.setClusterStatus(ClusterStatus.NOT_HEALTHY);
-            this.nothealthy();
+            this.warning();
             if (mail_notification_enabled == true){
 
                 String slaveServerAddresses = "";

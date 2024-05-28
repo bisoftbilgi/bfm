@@ -447,4 +447,51 @@ public class MinipgAccessUtil {
         
         return "OK";
     }
+
+    public String stopPg(PostgresqlServer pgServer) throws Exception {
+        final String serverAddress = pgServer.getServerAddress().split(":")[0];
+        final String serverPort = pgServer.getServerAddress().split(":")[1];
+        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                NoopHostnameVerifier.INSTANCE);
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(scsf)
+                .build();
+
+        credsProvider.setCredentials(
+                new AuthScope(serverAddress, port),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+
+        try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credsProvider)
+                .build()) {
+
+            HttpGet request = new HttpGet(minipgUrl+"/minipg/stop");
+            // request.setHeader("Accept", "application/json");
+            // request.setHeader("Content-type", "application/json");
+
+            try (CloseableHttpResponse response1 = httpclient.execute(request)) {
+                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                HttpEntity entity1 = (HttpEntity) response1.getEntity();
+                // do something useful with the response body
+                // and ensure it is fully consumed
+                String result = (EntityUtils.toString(response1.getEntity()));
+                return result;
+            }catch (Exception e){
+                log.error("Eror on Stop DB:"+pgServer.getServerAddress() + "\nerror:"+ e.getStackTrace());
+            }
+
+
+        } catch (IOException e) {
+            log.error("Error on stop db. Server: "+pgServer.getServerAddress()+" is unreacable");
+        }
+        
+        return "OK";
+    }
+
+
 }
