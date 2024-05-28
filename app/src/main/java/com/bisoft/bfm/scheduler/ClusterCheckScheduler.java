@@ -104,7 +104,6 @@ public class ClusterCheckScheduler {
                         .forEach(server ->
                                 {
                                     try {
-                                        log.info("BFM Watch Strategy is :",watch_strategy);
                                         if (watch_strategy == "availability"){                            
                                             if (selectedMaster != null){
                                                 String rewind_result = minipgAccessUtil.rewind(server, selectedMaster);
@@ -459,6 +458,32 @@ public class ClusterCheckScheduler {
                         // log.info("server: "+ server.getServerAddress()+" status :"+ server.getDatabaseStatus()+ " hasMaster:"+ server.getHasMasterServer());
                         if (server.getHasMasterServer() == false){
                             log.info("Slave Server "+ server.getServerAddress()+" has NO MASTER. Replication could be down...");
+                            if (watch_strategy == "manual"){
+                                log.info("BFM is in"+ watch_strategy+". Please manual respond to incident..");
+                                if (mail_notification_enabled == true){
+                                    mailService.sendMail("Slave Server "+server.getServerAddress()+" Out Of CLuster",
+                                    "Slave server :"+ server.getServerAddress()+" has NO MASTER. Replication could be down..."
+                                    + "BFM is in"+ watch_strategy+". Please manual respond to incident..");
+                                }
+                            } else {
+                                if (basebackup_slave_join == true){
+                                    log.info("Rejoin to cluster Wtih pg_basebackup started..");
+                                    PostgresqlServer master = this.bfmContext.getPgList().stream()
+                                    .filter(s -> s.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE || s.getStatus() == DatabaseStatus.MASTER ).findFirst().get();
+        
+                                    String rejoin_result = rejoinCluster(master, server);
+                                    log.info("Slave server :"+server.getServerAddress()+" reJoin result is:"+rejoin_result);
+                                    if (mail_notification_enabled == true){
+
+                                        mailService.sendMail("Slave Server "+server.getServerAddress()+" Out Of CLuster",
+                                        "Slave server :"+ server.getServerAddress()+" has NO MASTER."
+                                        + "\nCluster basebackup slave join is "+ basebackup_slave_join+". Slave server rejoin process completed."
+                                        + "\nCluster Master Server is:"+ master.getServerAddress());
+                                    }
+    
+                                }
+    
+                            } 
                         }
                         
                     });         
