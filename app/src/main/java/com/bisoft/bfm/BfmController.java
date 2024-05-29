@@ -1,5 +1,6 @@
 package com.bisoft.bfm;
 
+import com.bisoft.bfm.dto.DatabaseStatus;
 import com.bisoft.bfm.model.BfmContext;
 import com.bisoft.bfm.model.PostgresqlServer;
 import lombok.RequiredArgsConstructor;
@@ -30,4 +31,29 @@ public class BfmController {
         }
         return "Passive";
     }
+
+    @RequestMapping(path = "/cluster-status",method = RequestMethod.GET)
+    public @ResponseBody String clusterStatus(){
+        String slaveServerAddresses = "";
+
+        for(PostgresqlServer pg : this.bfmContext.getPgList()){
+            if (pg.getStatus().equals(DatabaseStatus.SLAVE)){
+                if (slaveServerAddresses.length() > 3){
+                    slaveServerAddresses = slaveServerAddresses + " - ";    
+                }
+
+                slaveServerAddresses = slaveServerAddresses + pg.getServerAddress();
+            }
+        }
+
+        String retval = "";
+        retval = retval + "Cluster Status\t:\t\tMaster Server Address\t:\t\tSlave Server Addresses\t:";
+        retval = retval + "\n---------------------------------------------------------------------------------------------------------------------------";
+        retval = retval + "\n"+this.bfmContext.getClusterStatus()+"\t\t\t"+this.bfmContext.getMasterServer().getServerAddress()+"\t\t\t"+slaveServerAddresses;
+
+        retval = retval + "\n";
+
+        return retval;
+    }
+
 }

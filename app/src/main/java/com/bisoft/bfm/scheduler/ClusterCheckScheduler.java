@@ -35,7 +35,7 @@ public class ClusterCheckScheduler {
     @Value("${watcher.cluster-pair:no-pair}")
     private String bfmPair;
 
-    @Value("${app.timeout-ignorance-count:1}")
+    @Value("${app.timeout-ignorance-count:3}")
     int timeoutIgnoranceCount;
 
     @Value("${bfm.watch-strategy:availability}")
@@ -53,7 +53,7 @@ public class ClusterCheckScheduler {
     @Value("${bfm.mail-notification-enabled:false}")
     public boolean mail_notification_enabled;
 
-    int remainingFailCount;
+    int remainingFailCount = timeoutIgnoranceCount;
 
     @Scheduled(fixedDelay = 11000)
     public void amIMasterBfm(){
@@ -214,6 +214,7 @@ public class ClusterCheckScheduler {
         // 1.1 Start the slaves
 
         // 1.2 Connect slaves to the master node
+        // DONE (checkUnreachable)
 
 
         // 2. If a cluster has more than one master cluster is unhealthy
@@ -225,6 +226,7 @@ public class ClusterCheckScheduler {
         // 2.3 Shutdown other nodes  
 
         // 2.4 Inform the DBA
+        // DONE (isClusterHealty-Line 299 stopPg())
 
 
 
@@ -278,6 +280,7 @@ public class ClusterCheckScheduler {
             log.info("Cluster has a master node");
             this.bfmContext.setClusterStatus(ClusterStatus.HEALTHY);
             healthy();
+            checkLastWalPositions();
         }else if(clusterCount == 2 && masterCount == 0 && masterWithNoslaveCount==1){
             log.warn("Cluster has a master with no slave (cluster size is 2), not healthy but ingoring failover");
             warning();
@@ -287,6 +290,7 @@ public class ClusterCheckScheduler {
                     "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
                     + "\nMaster (With No Slave) Server:"+ this.bfmContext.getMasterServer().getServerAddress());
             }        
+            checkLastWalPositions();
     
         }else if(clusterCount == 2 && masterCount == 0 && masterWithNoslaveCount>1){
             log.error("Cluster has more than one master with no slave (cluster size is 2), not healthy but ingoring failover");
@@ -307,6 +311,8 @@ public class ClusterCheckScheduler {
                     } 
                 }
             }
+            this.bfmContext.setMasterServer(leaderPg);
+            checkLastWalPositions();
         }
         else{
             log.error("Cluster has no master");
@@ -334,6 +340,13 @@ public class ClusterCheckScheduler {
         }
     }
 
+    public void checkLastWalPositions(){
+        this.bfmContext.setMasterServerLastWalPos(this.bfmContext.getMasterServer().getWalLogPosition());
+        this.bfmContext.setLeaderSlaveServerLastWalPos(findLeaderSlave().getWalLogPosition());
+        log.info("Master Last Wal Pos(a) :"+ this.bfmContext.getMasterServerLastWalPos() + "\nLeader Slave ("+findLeaderSlave().getServerAddress()+") Last Wal Pos(a):"+ this.bfmContext.getLeaderSlaveServerLastWalPos());
+
+    }
+
     public PostgresqlServer findLeader(){
         this.bfmContext.getPgList().stream().forEach( s -> {
             try{
@@ -352,24 +365,61 @@ public class ClusterCheckScheduler {
         return leader;
     }
 
+    public PostgresqlServer findLeaderSlave(){
+        this.bfmContext.getPgList().stream()
+        .filter(server -> server.getStatus().equals(DatabaseStatus.SLAVE))
+        .forEach( s -> {
+            try{
+                s.getWalPosition();
+            }
+            catch(Exception e){
+                s.setWalLogPosition(null);
+            }
+        } );
+
+        PostgresqlServer leaderSlave = this.bfmContext.getPgList().stream()
+            .filter(server -> server.getStatus().equals(DatabaseStatus.SLAVE))
+            .sorted(Comparator.<PostgresqlServer, String>comparing(server-> server.getWalLogPosition(), Comparator.reverseOrder()))
+            .findFirst().get();
+
+        log.info("leader Slave is "+ leaderSlave.getServerAddress());
+        return leaderSlave;
+    }
+
     public void healthy(){
         remainingFailCount = timeoutIgnoranceCount;
         bfmContext.setClusterStatus(ClusterStatus.HEALTHY);
     }
 
     public void warning(){
-        remainingFailCount = timeoutIgnoranceCount;
         bfmContext.setClusterStatus(ClusterStatus.WARNING);
     }
 
     public void nothealthy(){
         remainingFailCount--;
+        log.info("remainingFailCount:"+remainingFailCount);
         if(remainingFailCount>0){
             log.warn("cluster is not healthy");
             log.warn(String.format("remaining ignorance count is: %s",String.valueOf(remainingFailCount)));
+            // Save Master and slave (most close to master) lsn values thatS (a) values
         }else{
             if (watch_strategy != "manual"){
-                failover();
+                // Get Master and slave (most close to master) lsn values thatS (b) values
+                // Than compare a and b values 
+                // than make a decision to what you want
+                String leaderSlaveCurrentWalPos = findLeaderSlave().getWalLogPosition();
+
+                // str1.compareTo (str2); 
+                // If str1 is lexicographically less than str2, a negative number will be returned, 
+                // 0 if equal or a positive number if str1 is greater.
+                if (leaderSlaveCurrentWalPos.compareTo(this.bfmContext.getLeaderSlaveServerLastWalPos()) > 0){
+                    log.info("Leader Slave Last Wal Pos:"+ leaderSlaveCurrentWalPos+ "\n Leader Slave Current Wal Pos:"+this.bfmContext.getLeaderSlaveServerLastWalPos());
+                    log.info("Slave Wal Pos is move forwarding..Possibly BFM cant reach Master Server. Ignoring Failover..");
+                } else {
+                    log.info("Slave Wal Pos is still stooding..Failover starting..");
+                    failover();
+                }    
+
             } else {
                 this.bfmContext.setClusterStatus(ClusterStatus.NOT_HEALTHY);
                 mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
@@ -378,6 +428,7 @@ public class ClusterCheckScheduler {
             }
             
         }
+
     }
 
 

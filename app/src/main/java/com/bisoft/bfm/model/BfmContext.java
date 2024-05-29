@@ -39,6 +39,10 @@ public class BfmContext {
 
     PostgresqlServer masterServer;
 
+    String masterServerLastWalPos;
+
+    String leaderSlaveServerLastWalPos;
+
     @PostConstruct
     public void init(){
         pgList = new ArrayList<>();
