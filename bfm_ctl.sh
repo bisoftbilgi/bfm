@@ -1,0 +1,1 @@
+curl -X GET http://localhost:9994/bfm/cluster-status -u bfmuser:bfmuser
