@@ -107,8 +107,8 @@ public class ClusterCheckScheduler {
                                         if (watch_strategy.equals("availability")){                            
                                             if (selectedMaster != null){
                                                 String start_result = minipgAccessUtil.startPg(server);
+                                                log.info("Start server "+ server.getServerAddress()+" result is :"+start_result);
                                                 if (start_result != "OK"){
-                                                    log.info("Start server "+ server.getServerAddress()+" Failed. Try to rewind...");
                                                     String rewind_result = minipgAccessUtil.rewind(server, selectedMaster);
                                                     if (rewind_result != "OK"){
                                                         log.info("MiniPG rewind was FAILED. Slave Target:",server);
@@ -399,7 +399,6 @@ public class ClusterCheckScheduler {
             .sorted(Comparator.<PostgresqlServer, String>comparing(server-> server.getWalLogPosition(), Comparator.reverseOrder()))
             .findFirst().get();
 
-        log.info("leader Slave is "+ leaderSlave.getServerAddress());
         return leaderSlave;
     }
 
