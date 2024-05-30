@@ -77,16 +77,34 @@ public class PostgresqlServer {
     }
 
     public void getWalPosition() throws ClassNotFoundException, SQLException{
-        Connection con  = this.getServerConnection();
-        PreparedStatement ps = con.prepareStatement("select pg_current_wal_lsn() as wal_pos");
-        ps.executeQuery();
-        ResultSet rs = ps.getResultSet();
-
-        rs.next();
-
-        String wal_pos = rs.getString("wal_pos");
-
-        this.setWalLogPosition(wal_pos);
+        if (this.databaseStatus.equals(DatabaseStatus.MASTER) || this.databaseStatus.equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)){
+            try {
+                Connection con  = this.getServerConnection();
+                PreparedStatement ps = con.prepareStatement("select pg_current_wal_lsn() as wal_pos");
+                ps.executeQuery();
+                ResultSet rs = ps.getResultSet();
+        
+                rs.next();
+        
+                String wal_pos = rs.getString("wal_pos");
+        
+                this.setWalLogPosition(wal_pos);                        
+            } catch (Exception e) {
+                log.warn("conneciton Failed to server:"+this.getServerAddress());
+            }
+        } else {
+            try {
+                Connection con  = this.getServerConnection();
+                PreparedStatement ps = con.prepareStatement("select pg_last_wal_replay_lsn() as wal_pos");
+                ps.executeQuery();
+                ResultSet rs = ps.getResultSet();
+                rs.next();
+                String wal_pos = rs.getString("wal_pos");
+                this.setWalLogPosition(wal_pos);                    
+            } catch (Exception e) {
+                log.warn("conneciton Failed to server:"+this.getServerAddress());
+            }
+        }
     }
 
     public DatabaseStatus getDatabaseStatus(){
