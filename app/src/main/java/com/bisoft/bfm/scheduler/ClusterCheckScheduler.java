@@ -106,15 +106,20 @@ public class ClusterCheckScheduler {
                                     try {
                                         if (watch_strategy.equals("availability")){                            
                                             if (selectedMaster != null){
-                                                String rewind_result = minipgAccessUtil.rewind(server, selectedMaster);
-                                                if (rewind_result != "OK"){
-                                                    log.info("MiniPG rewind was FAILED. Slave Target:",server);
-                                                    if (basebackup_slave_join == true){
-                                                        String result = rejoinCluster(selectedMaster, server);
-                                                        log.info("pg_basebackup join cluster result is:"+result);
-                                                    } else {
-                                                        log.info("pg_basebackup join is set to FALSE. passing for slave server:",server);
+                                                String start_result = minipgAccessUtil.startPg(server);
+                                                if (start_result != "OK"){
+                                                    log.info("Start server "+ server.getServerAddress()+" Failed. Try to rewind...");
+                                                    String rewind_result = minipgAccessUtil.rewind(server, selectedMaster);
+                                                    if (rewind_result != "OK"){
+                                                        log.info("MiniPG rewind was FAILED. Slave Target:",server);
+                                                        if (basebackup_slave_join == true){
+                                                            String rejoin_result = rejoinCluster(selectedMaster, server);
+                                                            log.info("pg_basebackup join cluster result is:"+rejoin_result);
+                                                        } else {
+                                                            log.info("pg_basebackup join is set to FALSE. passing for slave server:",server);
+                                                        }
                                                     }
+    
                                                 }
                                             }
                                         } else {
@@ -341,10 +346,22 @@ public class ClusterCheckScheduler {
     }
 
     public void checkLastWalPositions(){
+        PostgresqlServer leaderSlave = findLeaderSlave();
+        try {
+            this.bfmContext.getMasterServer().getWalPosition();    
+            leaderSlave.getWalPosition();
+        } catch (Exception e) {
+            log.info("Gel Wal position error.");
+            e.printStackTrace();            
+        }
         this.bfmContext.setMasterServerLastWalPos(this.bfmContext.getMasterServer().getWalLogPosition());
-        this.bfmContext.setLeaderSlaveServerLastWalPos(findLeaderSlave().getWalLogPosition());
-        log.info("Master Last Wal Pos(a) :"+ this.bfmContext.getMasterServerLastWalPos() + "\nLeader Slave ("+findLeaderSlave().getServerAddress()+") Last Wal Pos(a):"+ this.bfmContext.getLeaderSlaveServerLastWalPos());
-
+        this.bfmContext.setLeaderSlaveServerLastWalPos(leaderSlave.getWalLogPosition());
+        if (this.bfmContext.getMasterServerLastWalPos() != null){
+            log.info("Master Last Wal Pos(a) :"+ this.bfmContext.getMasterServerLastWalPos());
+        }
+        if (this.bfmContext.getLeaderSlaveServerLastWalPos() != null){
+            log.info("Leader Slave is :"+leaderSlave.getServerAddress()+" Last Wal Pos(a) :"+ this.bfmContext.getLeaderSlaveServerLastWalPos());
+        }        
     }
 
     public PostgresqlServer findLeader(){
@@ -400,6 +417,15 @@ public class ClusterCheckScheduler {
         log.info("remainingFailCount:"+remainingFailCount);
         if(remainingFailCount>0){
             log.warn("cluster is not healthy");
+            if (watch_strategy != "manual"){
+                try {
+                    String result = minipgAccessUtil.startPg(this.bfmContext.getMasterServer());
+                    log.info("Master Server start result is "+result);
+                } catch (Exception e) {
+                    log.info("Error on Master Server start error:");
+                    e.printStackTrace();
+                }
+            }
             log.warn(String.format("remaining ignorance count is: %s",String.valueOf(remainingFailCount)));
             // Save Master and slave (most close to master) lsn values thatS (a) values
         }else{
@@ -416,7 +442,7 @@ public class ClusterCheckScheduler {
                     log.info("Leader Slave Last Wal Pos:"+ leaderSlaveCurrentWalPos+ "\n Leader Slave Current Wal Pos:"+this.bfmContext.getLeaderSlaveServerLastWalPos());
                     log.info("Slave Wal Pos is move forwarding..Possibly BFM cant reach Master Server. Ignoring Failover..");
                 } else {
-                    log.info("Slave Wal Pos is still stooding..Failover starting..");
+                    log.info("Slave Wal Pos is stood..Failover starting..");
                     failover();
                 }    
 
