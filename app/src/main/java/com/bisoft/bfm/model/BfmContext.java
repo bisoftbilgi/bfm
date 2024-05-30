@@ -41,8 +41,6 @@ public class BfmContext {
 
     String masterServerLastWalPos;
 
-    String leaderSlaveServerLastWalPos;
-
     @PostConstruct
     public void init(){
         pgList = new ArrayList<>();
