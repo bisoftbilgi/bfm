@@ -55,6 +55,8 @@ public class ClusterCheckScheduler {
 
     int remainingFailCount = timeoutIgnoranceCount;
 
+    String leaderSlaveLastWalPos = "";
+
     @Scheduled(fixedDelay = 11000)
     public void amIMasterBfm(){
         try {
@@ -85,8 +87,12 @@ public class ClusterCheckScheduler {
                 //If the number of alive servers is 1
                 // this server should have the status MASTER_WITH_NO_SLAVE
                 if(numberOfAliveServers==1){
-                     master = this.bfmContext.getPgList().stream()
-                            .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE || server.getStatus() == DatabaseStatus.MASTER ).findFirst().get();
+                    try {
+                        master = this.bfmContext.getPgList().stream()
+                        .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE || server.getStatus() == DatabaseStatus.MASTER ).findFirst().get();                    
+                    } catch (Exception e) {
+                        log.warn("No Master server found in cluster...");
+                    }
                 }else{
                     // Else there should be a master server
                     Long count = this.bfmContext.getPgList().stream()
@@ -346,22 +352,17 @@ public class ClusterCheckScheduler {
     }
 
     public void checkLastWalPositions(){
-        PostgresqlServer leaderSlave = findLeaderSlave();
         try {
-            this.bfmContext.getMasterServer().getWalPosition();    
-            leaderSlave.getWalPosition();
+            this.bfmContext.getMasterServer().getWalPosition(); 
         } catch (Exception e) {
             log.info("Gel Wal position error.");
             e.printStackTrace();            
         }
         this.bfmContext.setMasterServerLastWalPos(this.bfmContext.getMasterServer().getWalLogPosition());
-        this.bfmContext.setLeaderSlaveServerLastWalPos(leaderSlave.getWalLogPosition());
+
         if (this.bfmContext.getMasterServerLastWalPos() != null){
             log.info("Master Last Wal Pos(a) :"+ this.bfmContext.getMasterServerLastWalPos());
         }
-        if (this.bfmContext.getLeaderSlaveServerLastWalPos() != null){
-            log.info("Leader Slave is :"+leaderSlave.getServerAddress()+" Last Wal Pos(a) :"+ this.bfmContext.getLeaderSlaveServerLastWalPos());
-        }        
     }
 
     public PostgresqlServer findLeader(){
@@ -415,6 +416,7 @@ public class ClusterCheckScheduler {
         remainingFailCount--;
         log.info("remainingFailCount:"+remainingFailCount);
         if(remainingFailCount>0){
+            this.leaderSlaveLastWalPos = findLeaderSlave().getWalLogPosition();            
             log.warn("cluster is not healthy");
             if (watch_strategy != "manual"){
                 try {
@@ -437,8 +439,8 @@ public class ClusterCheckScheduler {
                 // str1.compareTo (str2); 
                 // If str1 is lexicographically less than str2, a negative number will be returned, 
                 // 0 if equal or a positive number if str1 is greater.
-                if (leaderSlaveCurrentWalPos.compareTo(this.bfmContext.getLeaderSlaveServerLastWalPos()) > 0){
-                    log.info("Leader Slave Last Wal Pos:"+ leaderSlaveCurrentWalPos+ "\n Leader Slave Current Wal Pos:"+this.bfmContext.getLeaderSlaveServerLastWalPos());
+                if (leaderSlaveCurrentWalPos.compareTo(this.leaderSlaveLastWalPos) > 0){
+                    log.info("Leader Slave Last Wal Pos:"+ leaderSlaveLastWalPos+ "\n Leader Slave Current Wal Pos:"+leaderSlaveCurrentWalPos);
                     log.info("Slave Wal Pos is move forwarding..Possibly BFM cant reach Master Server. Ignoring Failover..");
                 } else {
                     log.info("Slave Wal Pos is stood..Failover starting..");
