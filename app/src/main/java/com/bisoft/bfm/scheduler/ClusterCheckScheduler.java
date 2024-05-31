@@ -106,7 +106,7 @@ public class ClusterCheckScheduler {
                 final PostgresqlServer selectedMaster = master;
 
                 this.bfmContext.getPgList().stream()
-                        .filter(server -> server.getStatus() == DatabaseStatus.INACCESSIBLE)
+                        .filter(server -> server.getStatus() == DatabaseStatus.INACCESSIBLE && server != this.bfmContext.getSplitBrainMaster())
                         .forEach(server ->
                                 {
                                     try {
@@ -153,6 +153,9 @@ public class ClusterCheckScheduler {
     public void checkCluster(){
         log.info("BFM Watch Strategy is :" + watch_strategy);
         log.info("Mail Notification is :" + mail_notification_enabled);
+        if (this.bfmContext.getSplitBrainMaster() != null){
+            log.info("Server:"+this.bfmContext.getSplitBrainMaster().getServerAddress()+ " is stopped for avoid to Split Brain status..");
+        }
         if(pairStatus.equals("no-pair") || pairStatus.equals("Passive") || pairStatus.equals("Unreachable")){
             log.info("this is the active bfm pair");
             this.bfmContext.setMasterBfm(true);
@@ -192,10 +195,10 @@ public class ClusterCheckScheduler {
             this.bfmContext.setMasterServer(postgresqlServer);
         }
         
-        if (status.equals(DatabaseStatus.MASTER_WITH_NO_SLAVE) && this.bfmContext.getMasterServer() != null  && this.bfmContext.getMasterServer().getServerAddress().equals(postgresqlServer.getServerAddress())){
-            status = DatabaseStatus.MASTER;
-            postgresqlServer.setDatabaseStatus(status);
-        }
+        // if (status.equals(DatabaseStatus.MASTER_WITH_NO_SLAVE) && this.bfmContext.getMasterServer() != null  && this.bfmContext.getMasterServer().getServerAddress().equals(postgresqlServer.getServerAddress())){
+        //     status = DatabaseStatus.MASTER;
+        //     postgresqlServer.setDatabaseStatus(status);
+        // }
         log.info(String.format("Status of %s is %s",postgresqlServer.getServerAddress(),status));
         log.info(minipgAccessUtil.status(postgresqlServer));
     }
@@ -310,6 +313,7 @@ public class ClusterCheckScheduler {
             for(PostgresqlServer pg : this.bfmContext.getPgList()){
                 if (pg.getServerAddress() != leaderPg.getServerAddress() && pg.getStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)){
                     try {
+                        this.bfmContext.setSplitBrainMaster(pg);
                         minipgAccessUtil.stopPg(pg);
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -406,6 +410,7 @@ public class ClusterCheckScheduler {
     public void healthy(){
         remainingFailCount = timeoutIgnoranceCount;
         bfmContext.setClusterStatus(ClusterStatus.HEALTHY);
+        bfmContext.setSplitBrainMaster(null);
     }
 
     public void warning(){
