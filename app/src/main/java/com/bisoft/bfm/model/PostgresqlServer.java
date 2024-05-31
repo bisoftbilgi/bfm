@@ -1,15 +1,22 @@
 package com.bisoft.bfm.model;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.bisoft.bfm.dto.DatabaseStatus;
 import com.bisoft.bfm.dto.PgVersion;
+
 import lombok.Builder;
 import lombok.Data;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 
 
 @Data
@@ -28,6 +35,7 @@ public class PostgresqlServer {
     private int priority;
     private String walLogPosition;
     private int sizeBehindMaster;
+    private LocalDateTime lastCheckDateTime;
 
     public DatabaseStatus getStatus(){
         return databaseStatus;
@@ -108,6 +116,7 @@ public class PostgresqlServer {
     }
 
     public DatabaseStatus getDatabaseStatus(){
+        this.setLastCheckDateTime(LocalDateTime.now());
         this.hasSlaveServer();
         this.isServerMaster();
         if (this.isMaster == null && this.hasSlave == null) {
