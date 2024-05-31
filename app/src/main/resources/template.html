@@ -1,0 +1,183 @@
+<link href="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<!------ Include the above in your HEAD tag ---------->
+<style>
+    .register{
+    background: -webkit-linear-gradient(left, #3931af, #00c6ff);
+    margin-top: 3%;
+    padding: 3%;
+}
+.register-left{
+    text-align: center;
+    color: #fff;
+    margin-top: 4%;
+}
+.register-left input{
+    border: none;
+    border-radius: 1.5rem;
+    padding: 2%;
+    width: 60%;
+    background: #f8f9fa;
+    font-weight: bold;
+    color: #383d41;
+    margin-top: 30%;
+    margin-bottom: 3%;
+    cursor: pointer;
+}
+.register-right{
+    background: #f8f9fa;
+    border-top-left-radius: 10% 50%;
+    border-bottom-left-radius: 10% 50%;
+}
+.register-left img{
+    margin-top: 15%;
+    margin-bottom: 5%;
+    width: 25%;
+    -webkit-animation: mover 2s infinite  alternate;
+    animation: mover 1s infinite  alternate;
+}
+@-webkit-keyframes mover {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-20px); }
+}
+@keyframes mover {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-20px); }
+}
+.register-left p{
+    font-weight: lighter;
+    padding: 12%;
+    margin-top: -9%;
+}
+.register .register-form{
+    padding: 10%;
+    margin-top: 10%;
+}
+.btnRegister{
+    float: right;
+    margin-top: 10%;
+    border: none;
+    border-radius: 1.5rem;
+    padding: 2%;
+    background: #0062cc;
+    color: #fff;
+    font-weight: 600;
+    width: 50%;
+    cursor: pointer;
+}
+.register .nav-tabs{
+    margin-top: 3%;
+    border: none;
+    background: #0062cc;
+    border-radius: 1.5rem;
+    width: 28%;
+    float: right;
+}
+.register .nav-tabs .nav-link{
+    padding: 2%;
+    height: 34px;
+    font-weight: 600;
+    color: #fff;
+    border-top-right-radius: 1.5rem;
+    border-bottom-right-radius: 1.5rem;
+}
+.register .nav-tabs .nav-link:hover{
+    border: none;
+}
+.register .nav-tabs .nav-link.active{
+    width: 100px;
+    color: #0062cc;
+    border: 2px solid #0062cc;
+    border-top-left-radius: 1.5rem;
+    border-bottom-left-radius: 1.5rem;
+}
+.register-heading{
+    text-align: center;
+    margin-top: 8%;
+    margin-bottom: -15%;
+    color: #495057;
+}
+</style>
+<div class="container register">
+    <div class="row">
+        
+        <div class="col-md-3 register-left" style="margin-top: 10%;">
+            
+            <img src="https://static.wixstatic.com/media/3d1dd3_f88bd54146da421782dbde310691a8d8~mv2.png/v1/fill/w_384,h_135,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/BFM%20Logo-01%20(1).png" alt=""/>
+            <h3>Welcome</h3>
+            <p>BFM Cluster</p>
+        </div>
+        <div class="col-md-9 register-right">                        
+            <div class="tab-content" id="myTabContent">
+                <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+                    <h3 class="register-heading">Cluster Overview</h3>
+                    <div class="row register-form">
+                        <div class="col-md-12">
+                            
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div id="div_cluster_cover" class="card text-white bg-gradient" >
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-6" style="font-size: large;">Cluster Status : </div>
+                                                <div id="div_cluster_status" class="col-md-6" style="font-size: large;"> {{ CLUSTER_STATUS }} </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>                       
+
+                            <div class="row" style="margin-top:1%;">
+                                <div class="col-md-12">
+                                    <div class="card bg-primary text-white bg-gradient" >
+                                        <div class="card-body">
+                                            <table class="table">
+                                                <thead>
+                                                    <th>Server Address</th>
+                                                    <th>Server Status</th>
+                                                    <th>Last Wal Position</th>
+                                                    <th style="width: 100%;">Server Last Check</th>
+                                                </thead>
+                                                <tbody class="text-white">
+                                                    {{ SERVER_ROWS }}
+                                                </tbody>
+                                            </table>
+                                        
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    window.addEventListener("load", function(){
+        
+        cluster_status = document.getElementById("div_cluster_status").innerText
+        if (cluster_status === "HEALTHY"){
+            document.getElementById("div_cluster_cover").classList.remove("bg-warning");
+            document.getElementById("div_cluster_cover").classList.remove("bg-danger");
+            document.getElementById("div_cluster_cover").classList.add("bg-success");
+        } else if (cluster_status === "WARNING"){
+            document.getElementById("div_cluster_cover").classList.remove("bg-success");
+            document.getElementById("div_cluster_cover").classList.remove("bg-danger");
+            document.getElementById("div_cluster_cover").classList.add("bg-warning");
+        } else if (cluster_status === "NOT_HEALTHY"){
+            document.getElementById("div_cluster_cover").classList.remove("bg-success");
+            document.getElementById("div_cluster_cover").classList.remove("bg-warning");
+            document.getElementById("div_cluster_cover").classList.add("bg-danger");
+        } else {
+            document.getElementById("div_cluster_cover").classList.remove("bg-success");
+            document.getElementById("div_cluster_cover").classList.remove("bg-warning");
+            document.getElementById("div_cluster_cover").classList.remove("bg-danger");
+            document.getElementById("div_cluster_cover").classList.add("bg-dark");
+        }
+    });
+</script>
