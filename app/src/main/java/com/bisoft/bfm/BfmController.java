@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Controller
@@ -34,23 +35,24 @@ public class BfmController {
 
     @RequestMapping(path = "/cluster-status",method = RequestMethod.GET)
     public @ResponseBody String clusterStatus(){
-        String slaveServerAddresses = "";
-
-        for(PostgresqlServer pg : this.bfmContext.getPgList()){
-            if (pg.getStatus().equals(DatabaseStatus.SLAVE)){
-                if (slaveServerAddresses.length() > 3){
-                    slaveServerAddresses = slaveServerAddresses + " - ";    
-                }
-
-                slaveServerAddresses = slaveServerAddresses + pg.getServerAddress();
-            }
-        }
-
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String retval = "";
-        retval = retval + "Cluster Status :"+this.bfmContext.getClusterStatus();
-        retval = retval +"\n" + "Master Server Address :" + this.bfmContext.getMasterServer().getServerAddress();
-        retval = retval +"\n" + "Slave Server Addresses :" + slaveServerAddresses;
-        retval = retval + "\n";
+        retval = retval + "\nCluster Status : "+this.bfmContext.getClusterStatus();
+        for(PostgresqlServer pg : this.bfmContext.getPgList()){
+            try {
+                pg.getWalPosition();    
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            
+            retval = retval +"\n" + "Server Address : "+pg.getServerAddress();
+            retval = retval+ "\nStatus : "+pg.getDatabaseStatus(); 
+            retval = retval+ "\nLast Wal Position : "+pg.getWalLogPosition();
+            String formattedDate = pg.getLastCheckDateTime().format(dateFormatter);     
+            retval = retval+ "\nLast Server Check : "+formattedDate;
+            retval = retval + "\n";
+        }
+        retval = retval+ "\nLast Check Log: \n"+ this.bfmContext.getLastCheckLog() +"\n";
 
         return retval;
     }

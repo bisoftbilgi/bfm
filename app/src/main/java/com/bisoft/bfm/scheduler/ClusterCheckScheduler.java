@@ -151,10 +151,12 @@ public class ClusterCheckScheduler {
 
     @Scheduled(fixedDelay = 5000)
     public void checkCluster(){
-        log.info("BFM Watch Strategy is :" + watch_strategy);
-        log.info("Mail Notification is :" + mail_notification_enabled);
+        this.bfmContext.setLastCheckLog("");
+
         if (this.bfmContext.getSplitBrainMaster() != null){
             log.info("Server:"+this.bfmContext.getSplitBrainMaster().getServerAddress()+ " is stopped for avoid to Split Brain status..");
+            this.bfmContext.setLastCheckLog(this.bfmContext.getLastCheckLog() + 
+            "Server:"+this.bfmContext.getSplitBrainMaster().getServerAddress()+ " is stopped for avoid to Split Brain status..\n");
         }
         if(pairStatus.equals("no-pair") || pairStatus.equals("Passive") || pairStatus.equals("Unreachable")){
             log.info("this is the active bfm pair");
@@ -164,7 +166,7 @@ public class ClusterCheckScheduler {
             this.bfmContext.setMasterBfm(false);
             return;
         }
-        log.info("-----Cluster Healthcheck Started-----");
+        // log.info("-----Cluster Healthcheck Started-----");
         
 
         bfmContext.getPgList().stream().forEach(server -> {
@@ -172,6 +174,9 @@ public class ClusterCheckScheduler {
                 checkServer(server);
             }catch(Exception e){
                 log.error(String.format("Unable to connect to server : %s",server.getServerAddress()));
+                this.bfmContext.setLastCheckLog(this.bfmContext.getLastCheckLog() + 
+                String.format("Unable to connect to server : %s",server.getServerAddress())+ "\n");
+    
             }
         });
 
@@ -183,9 +188,11 @@ public class ClusterCheckScheduler {
         isClusterHealthy();
 
 
-        log.info(String.format("-----Cluster Status is %s -----",this.bfmContext.getClusterStatus()));
+        log.info(String.format("Cluster Status is %s \n\n\n",this.bfmContext.getClusterStatus()));
+        this.bfmContext.setLastCheckLog(this.bfmContext.getLastCheckLog() +
+                                        String.format("Cluster Status is %s ",this.bfmContext.getClusterStatus())+ "\n");
 
-        log.info("-----Cluster Healthcheck Finished-----\n\n\n");
+        // log.info("-----Cluster Healthcheck Finished-----\n\n\n");
     }
 
     public void checkServer(PostgresqlServer postgresqlServer) throws Exception {
@@ -200,7 +207,9 @@ public class ClusterCheckScheduler {
         //     postgresqlServer.setDatabaseStatus(status);
         // }
         log.info(String.format("Status of %s is %s",postgresqlServer.getServerAddress(),status));
-        log.info(minipgAccessUtil.status(postgresqlServer));
+        this.bfmContext.setLastCheckLog(this.bfmContext.getLastCheckLog() +
+                                        String.format("Status of %s is %s",postgresqlServer.getServerAddress(),status)+"\n");
+        //log.info(minipgAccessUtil.status(postgresqlServer));
     }
 
     public void isClusterHealthy(){
@@ -209,81 +218,6 @@ public class ClusterCheckScheduler {
             return;
         }
 
-        // Warning Healty UnHealty states
-        // 1. One Master with no slave or one of slaves is unreachable Warning
-        // 1.1 One Master Without no slave Warning
-        
-        // 1 -> Try to  start slave and connect to master  inform state to dba
-        //  pg_rewind rejoin to cluster
-        // if fail try to pg_basebackup (if properties file basebackup slave join set to ON)
-
-        // bfm with parameters
-        // bfm_ctl list clusters (Show status(Healty/War/UnHealty) Nodes LSN Timestamp Roles)
-        // bfm_ctl reinit slave SlaveNODE option=pg_rewind/pg_basebackup
-
-
-
-        // 1. If a cluster has only one master without any slave connected and all the other nodes are unreachable, cluster is in warning status
-
-        // 1.1 Start the slaves
-
-        // 1.2 Connect slaves to the master node
-        // DONE (checkUnreachable)
-
-
-        // 2. If a cluster has more than one master cluster is unhealthy
-
-        // 2.1 Check lsn positions
-
-        // 2.2 Choose master node with higher lsn position 
-
-        // 2.3 Shutdown other nodes  
-
-        // 2.4 Inform the DBA
-        // DONE (isClusterHealty-Line 299 stopPg())
-
-
-
-        // 3. If a cluster has a only one slave node and other nodes are unreachable, cluster is unhealthy
-
-        // 3.1 Check last known master lsn and the current slave lsn (a)
-
-        // 3.2 Wait 5 seconds
-
-        // 3.3 Check last known master lsn and the current slave lsn (b)
-
-        // 3.4 if a->master_lsn ==  b->master_lsn and a->slave_lsn == b->slave_lsn 
-        // and pg_wal_lsn_diff(b->master_lsn,b->slave_lsn) between 1 and 'X' bytes then promote slave
-
-        // 3.5 if a->master_lsn <  b->master_lsn recheck cluster 
-
-        // 3.6 if a->master_lsn ==  b->master_lsn and a->slave_lsn < b->slave_lsn  do recheck, inform dba
-
-        // 3.7 if a
-        // psql -c "select t.*,pg_current_wal_lsn() from pg_ls_waldir() t order by modification desc limit 1"
-        
-        // master_lsn, master_timestamp if no  data inform dba
-
-        // Data sharing with other bfm pairs
-
-
-
-
-
-
-
-
-
-
-
-
-        // 4. If a cluster has only slave nodes and there is no master node, clsuter is unhealthy
-
-        // 5. If a cluster has more than one or more master without slaves connected and has other nodes with slave status not connected to master nodes, cluster is unhealthy
-
-        // 6. If a cluster has only one master and other servers are slave to that master, cluster is healthy
-        // pg_ctl status
-
         long clusterCount = this.bfmContext.getPgList().size();
 
         long masterCount = this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.MASTER)).count();
@@ -291,7 +225,7 @@ public class ClusterCheckScheduler {
         long masterWithNoslaveCount = this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)).count();
 
         if(masterCount ==  1L){
-            log.info("Cluster has a master node");
+            // log.info("Cluster has a master node");
             this.bfmContext.setClusterStatus(ClusterStatus.HEALTHY);
             healthy();
             checkLastWalPositions();
@@ -364,9 +298,9 @@ public class ClusterCheckScheduler {
         }
         this.bfmContext.setMasterServerLastWalPos(this.bfmContext.getMasterServer().getWalLogPosition());
 
-        if (this.bfmContext.getMasterServerLastWalPos() != null){
-            log.info("Master Last Wal Pos(a) :"+ this.bfmContext.getMasterServerLastWalPos());
-        }
+        // if (this.bfmContext.getMasterServerLastWalPos() != null){
+        //     log.info("Master Last Wal Pos(a) :"+ this.bfmContext.getMasterServerLastWalPos());
+        // }
     }
 
     public PostgresqlServer findLeader(){

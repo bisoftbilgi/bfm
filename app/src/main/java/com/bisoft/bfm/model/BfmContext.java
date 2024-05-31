@@ -43,6 +43,8 @@ public class BfmContext {
 
     PostgresqlServer splitBrainMaster;
 
+    String lastCheckLog = "";
+
     @PostConstruct
     public void init(){
         pgList = new ArrayList<>();
