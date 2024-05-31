@@ -41,6 +41,8 @@ public class BfmContext {
 
     String masterServerLastWalPos;
 
+    PostgresqlServer splitBrainMaster;
+
     @PostConstruct
     public void init(){
         pgList = new ArrayList<>();
