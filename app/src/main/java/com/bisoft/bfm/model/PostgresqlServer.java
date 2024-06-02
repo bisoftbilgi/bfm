@@ -8,7 +8,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.bisoft.bfm.dto.DatabaseStatus;
 import com.bisoft.bfm.dto.PgVersion;
@@ -113,6 +115,29 @@ public class PostgresqlServer {
                 log.warn("conneciton Failed to server:"+this.getServerAddress());
             }
         }
+    }
+
+    public Map<String,String> getReplayLagMap(){
+        Map<String,String> replayLagMap = new HashMap<>();
+        if (this.databaseStatus.equals(DatabaseStatus.MASTER)){
+            try {
+                Connection con  = this.getServerConnection();
+                PreparedStatement ps = con.prepareStatement("select client_addr,replay_lag from pg_stat_replication;");
+                ps.executeQuery();
+                ResultSet rs = ps.getResultSet();
+                while(rs.next()){
+                    String slave_addr = rs.getString("client_addr");
+                    String replay_lag = rs.getString("replay_lag");
+                    if (replay_lag == null) replay_lag = "0";
+                    replayLagMap.put(slave_addr, replay_lag);
+                }
+            
+            } catch (Exception e) {
+                log.warn("conneciton Failed to server:"+this.getServerAddress());
+            }
+        }
+        
+        return replayLagMap;
     }
 
     public DatabaseStatus getDatabaseStatus(){

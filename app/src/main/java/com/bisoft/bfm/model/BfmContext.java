@@ -10,7 +10,9 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @Data
@@ -44,6 +46,8 @@ public class BfmContext {
     PostgresqlServer splitBrainMaster;
 
     String lastCheckLog = "";
+
+    Map<String,String> replayLagMap = new HashMap<>();
 
     @PostConstruct
     public void init(){
