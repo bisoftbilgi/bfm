@@ -7,6 +7,7 @@ import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
@@ -81,25 +82,34 @@ public class BfmController {
         ResourceLoader resourceLoader = new DefaultResourceLoader();
         Resource resource = resourceLoader.getResource("classpath:template.html");
         String retval = asString(resource);
+        if (this.bfmContext.getClusterStatus() == null){
+            retval = retval.replace("{{ CLUSTER_STATUS }}", "Cluster Starting...");
+            retval = retval.replace("{{ SERVER_ROWS }}", "");
+            return retval;        
+        } else {
+            Map<String,String> replyLagMap = this.bfmContext.getReplayLagMap();
 
-        String server_rows = "";
-        for(PostgresqlServer pg : this.bfmContext.getPgList()){
-            try {
-                pg.getWalPosition();    
-            } catch (Exception e) {
-                e.printStackTrace();
+            String server_rows = "";
+            for(PostgresqlServer pg : this.bfmContext.getPgList()){
+                try {
+                    pg.getWalPosition();    
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                server_rows = server_rows + "<tr>";
+                server_rows = server_rows +  "<td>"+pg.getServerAddress()+"</td>";
+                server_rows = server_rows +  "<td>"+pg.getDatabaseStatus()+"</td>";
+                server_rows = server_rows +  "<td>"+pg.getWalLogPosition()+"</td>";
+                String formattedDate = pg.getLastCheckDateTime().format(dateFormatter);
+                server_rows = server_rows +  "<td>"+formattedDate+"</td>";
+                server_rows = server_rows +  "<td>"+(replyLagMap.get(pg.getServerAddress().split(":")[0]) == null ? " ":replyLagMap.get(pg.getServerAddress().split(":")[0]))+"</td>";
+                server_rows = server_rows + "</tr>";
             }
-            server_rows = server_rows + "<tr>";
-            server_rows = server_rows +  "<td>"+pg.getServerAddress()+"</td>";
-            server_rows = server_rows +  "<td>"+pg.getDatabaseStatus()+"</td>";
-            server_rows = server_rows +  "<td>"+pg.getWalLogPosition()+"</td>";
-            String formattedDate = pg.getLastCheckDateTime().format(dateFormatter);
-            server_rows = server_rows +  "<td>"+formattedDate+"</td>";
-            server_rows = server_rows + "</tr>";
+    
+            retval = retval.replace("{{ CLUSTER_STATUS }}", this.bfmContext.getClusterStatus().toString());
+            retval = retval.replace("{{ SERVER_ROWS }}", server_rows);
+            return retval;    
         }
-
-        retval = retval.replace("{{ CLUSTER_STATUS }}", this.bfmContext.getClusterStatus().toString());
-        retval = retval.replace("{{ SERVER_ROWS }}", server_rows);
-        return retval;
+        
     }
 }

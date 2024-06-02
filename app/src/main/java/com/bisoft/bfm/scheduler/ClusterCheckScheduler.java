@@ -345,10 +345,12 @@ public class ClusterCheckScheduler {
         remainingFailCount = timeoutIgnoranceCount;
         bfmContext.setClusterStatus(ClusterStatus.HEALTHY);
         bfmContext.setSplitBrainMaster(null);
+        checkReplayLag();
     }
 
     public void warning(){
         bfmContext.setClusterStatus(ClusterStatus.WARNING);
+        checkReplayLag();
     }
 
     public void nothealthy(){
@@ -514,5 +516,9 @@ public class ClusterCheckScheduler {
                         }
                         
                     });         
-        }
+    }
+    public void checkReplayLag(){
+        PostgresqlServer masterServer = this.bfmContext.getMasterServer();
+        this.bfmContext.setReplayLagMap(masterServer.getReplayLagMap());  
+    }
 }

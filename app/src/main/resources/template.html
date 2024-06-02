@@ -33,7 +33,7 @@
 .register-left img{
     margin-top: 15%;
     margin-bottom: 5%;
-    width: 25%;
+    width: 80%;
     -webkit-animation: mover 2s infinite  alternate;
     animation: mover 1s infinite  alternate;
 }
@@ -102,13 +102,12 @@
 <div class="container register">
     <div class="row">
         
-        <div class="col-md-3 register-left" style="margin-top: 10%;">
-            
+        <div class="col-md-2 register-left">
             <img src="https://static.wixstatic.com/media/3d1dd3_f88bd54146da421782dbde310691a8d8~mv2.png/v1/fill/w_384,h_135,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/BFM%20Logo-01%20(1).png" alt=""/>
             <h3>Welcome</h3>
             <p>BFM Cluster</p>
         </div>
-        <div class="col-md-9 register-right">                        
+        <div class="col-md-10 register-right">                        
             <div class="tab-content" id="myTabContent">
                 <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
                     <h3 class="register-heading">Cluster Overview</h3>
@@ -137,7 +136,8 @@
                                                     <th>Server Address</th>
                                                     <th>Server Status</th>
                                                     <th>Last Wal Position</th>
-                                                    <th style="width: 100%;">Server Last Check</th>
+                                                    <th>Server Last Check</th>
+                                                    <th>Replay Lag</th>
                                                 </thead>
                                                 <tbody class="text-white">
                                                     {{ SERVER_ROWS }}
