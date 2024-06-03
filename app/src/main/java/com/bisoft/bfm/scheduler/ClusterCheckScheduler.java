@@ -176,18 +176,19 @@ public class ClusterCheckScheduler {
         }else{
             log.info(String.format("Bfm pair is active in %s",bfmPair));
             this.bfmContext.setMasterBfm(false);
-            
             try {
-                String last_saved_status = bfmAccessUtil.getLastSavedStatus();
                 Gson gson = new GsonBuilder().setPrettyPrinting().create();
-                PrintWriter out;
-                try {
-                    out = new PrintWriter("./bfm_status.json");
-                    out.println(gson.toJson(gson.fromJson(last_saved_status, ContextStatus.class)));
-                    out.close();
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
+                String last_saved_status = bfmAccessUtil.getLastSavedStatus();
+                if (last_saved_status.length()>3){
+                    try {
+                        PrintWriter out = new PrintWriter("./bfm_status.json");
+                        out.println(gson.toJson(gson.fromJson(last_saved_status, ContextStatus.class)));
+                        out.close();
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }                
+                
             } catch (Exception e) {
                 e.printStackTrace();
             }
