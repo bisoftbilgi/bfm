@@ -1,5 +1,7 @@
 package com.bisoft.bfm;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -8,6 +10,7 @@ import java.io.UncheckedIOException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
@@ -42,6 +45,28 @@ public class BfmController {
             return "Active";
         }
         return "Passive";
+    }
+
+    @RequestMapping(path = "/last-saved-stat",method = RequestMethod.GET)
+    public @ResponseBody String lastSavedStat(){
+        String retval="";
+        if(bfmContext.isMasterBfm() == true){            
+            try {
+            File myObj = new File("./bfm_status.json");
+            Scanner myReader = new Scanner(myObj);
+            while (myReader.hasNextLine()) {
+                String data = myReader.nextLine();
+                retval += data;
+            }
+            myReader.close();
+            } catch (FileNotFoundException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+            }
+            return retval;
+        } else {
+            return "";
+        }
     }
 
     @RequestMapping(path = "/cluster-status",method = RequestMethod.GET)
