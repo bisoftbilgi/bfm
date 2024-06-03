@@ -2,6 +2,7 @@ package com.bisoft.bfm;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -23,7 +24,12 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.bisoft.bfm.dto.DatabaseStatus;
 import com.bisoft.bfm.model.BfmContext;
+import com.bisoft.bfm.model.ContextServer;
+import com.bisoft.bfm.model.ContextStatus;
 import com.bisoft.bfm.model.PostgresqlServer;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.stream.JsonReader;
 
 import lombok.RequiredArgsConstructor;
 
@@ -108,32 +114,57 @@ public class BfmController {
         ResourceLoader resourceLoader = new DefaultResourceLoader();
         Resource resource = resourceLoader.getResource("classpath:template.html");
         String retval = asString(resource);
-        if (this.bfmContext.getClusterStatus() == null){
-            retval = retval.replace("{{ CLUSTER_STATUS }}", "Cluster Starting...");
-            retval = retval.replace("{{ SERVER_ROWS }}", "");
-            return retval;        
-        } else {
-            String server_rows = "";
-            for(PostgresqlServer pg : this.bfmContext.getPgList()){
-                try {
-                    pg.getWalPosition();    
-                } catch (Exception e) {
-                    e.printStackTrace();
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            if (this.bfmContext.getClusterStatus() == null){
+                retval = retval.replace("{{ CLUSTER_STATUS }}", "Cluster Starting...");
+                retval = retval.replace("{{ SERVER_ROWS }}", "");
+                return retval;        
+            } else {
+                String server_rows = "";
+                for(PostgresqlServer pg : this.bfmContext.getPgList()){
+                    try {
+                        pg.getWalPosition();    
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    server_rows = server_rows + "<tr>";
+                    server_rows = server_rows +  "<td>"+pg.getServerAddress()+"</td>";
+                    server_rows = server_rows +  "<td>"+pg.getDatabaseStatus()+"</td>";
+                    server_rows = server_rows +  "<td>"+pg.getWalLogPosition()+"</td>";
+                    String formattedDate = pg.getLastCheckDateTime().format(dateFormatter);
+                    server_rows = server_rows +  "<td>"+formattedDate+"</td>";
+                    server_rows = server_rows +  "<td>"+(pg.getDatabaseStatus() == DatabaseStatus.MASTER ? " " : pg.getReplayLag())+"</td>";
+                    server_rows = server_rows + "</tr>";
                 }
-                server_rows = server_rows + "<tr>";
-                server_rows = server_rows +  "<td>"+pg.getServerAddress()+"</td>";
-                server_rows = server_rows +  "<td>"+pg.getDatabaseStatus()+"</td>";
-                server_rows = server_rows +  "<td>"+pg.getWalLogPosition()+"</td>";
-                String formattedDate = pg.getLastCheckDateTime().format(dateFormatter);
-                server_rows = server_rows +  "<td>"+formattedDate+"</td>";
-                server_rows = server_rows +  "<td>"+(pg.getDatabaseStatus() == DatabaseStatus.MASTER ? " " : pg.getReplayLag())+"</td>";
-                server_rows = server_rows + "</tr>";
-            }
-    
-            retval = retval.replace("{{ CLUSTER_STATUS }}", this.bfmContext.getClusterStatus().toString());
-            retval = retval.replace("{{ SERVER_ROWS }}", server_rows);
-            return retval;    
-        }
         
+                retval = retval.replace("{{ CLUSTER_STATUS }}", this.bfmContext.getClusterStatus().toString());
+                retval = retval.replace("{{ SERVER_ROWS }}", server_rows);
+                return retval;    
+            }
+        } else {
+            
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            String server_rows = "";
+            try {
+                JsonReader reader = new JsonReader(new FileReader("./bfm_status.json"));
+                ContextStatus cs = gson.fromJson(reader, ContextStatus.class);
+                
+                for (ContextServer pg : cs.getClusterServers()){
+                    server_rows = server_rows + "<tr>"
+                                    +  "<td>"+pg.getAddress()+"</td>"
+                                    +  "<td>"+pg.getDatabaseStatus()+"</td>"
+                                    +  "<td>"+pg.getLastWalPos()+"</td>"
+                                    +  "<td>"+pg.getLastCheck()+"</td>"
+                                    +  "<td>"+pg.getReplayLag()+"</td>"
+                                    + "</tr>";
+                }
+                                
+                retval = retval.replace("{{ CLUSTER_STATUS }}", cs.getClusterStatus());
+                retval = retval.replace("{{ SERVER_ROWS }}", server_rows);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+            return retval; 
+        }
     }
 }
