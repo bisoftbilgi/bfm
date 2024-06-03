@@ -179,7 +179,7 @@ public class ClusterCheckScheduler {
             try {
                 Gson gson = new GsonBuilder().setPrettyPrinting().create();
                 String last_saved_status = bfmAccessUtil.getLastSavedStatus();
-                if (last_saved_status.length()>3){
+                if (last_saved_status != "Unreachable"){
                     try {
                         PrintWriter out = new PrintWriter("./bfm_status.json");
                         out.println(gson.toJson(gson.fromJson(last_saved_status, ContextStatus.class)));
