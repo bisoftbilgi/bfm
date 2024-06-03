@@ -74,24 +74,24 @@ public class BfmContext {
 
         });
 
-        try{
-            for (Enumeration ifaces = NetworkInterface.getNetworkInterfaces(); ifaces.hasMoreElements();) {
-            NetworkInterface iface = (NetworkInterface) ifaces.nextElement();
-            // Iterate all IP addresses assigned to each card...
-            for (Enumeration inetAddrs = iface.getInetAddresses(); inetAddrs.hasMoreElements();) {
-                InetAddress inetAddr = (InetAddress) inetAddrs.nextElement();
-                if (!inetAddr.isLoopbackAddress()) {
-                    if (this.getMasterServer().getServerAddress() == inetAddr.toString().replace("/","")){
-                        this.isMasterBfm = Boolean.TRUE;
-                    } else {
-                        this.isMasterBfm = Boolean.FALSE;
-                    }
-                }
-            }
-        }
-        } catch (Exception e){
-            e.printStackTrace();
-        }
+        // try{
+        //     for (Enumeration ifaces = NetworkInterface.getNetworkInterfaces(); ifaces.hasMoreElements();) {
+        //     NetworkInterface iface = (NetworkInterface) ifaces.nextElement();
+        //     // Iterate all IP addresses assigned to each card...
+        //     for (Enumeration inetAddrs = iface.getInetAddresses(); inetAddrs.hasMoreElements();) {
+        //         InetAddress inetAddr = (InetAddress) inetAddrs.nextElement();
+        //         if (!inetAddr.isLoopbackAddress()) {
+        //             if (this.getMasterServer().getServerAddress() == inetAddr.toString().replace("/","")){
+        //                 this.isMasterBfm = Boolean.TRUE;
+        //             } else {
+        //                 this.isMasterBfm = Boolean.FALSE;
+        //             }
+        //         }
+        //     }
+        // }
+        // } catch (Exception e){
+        //     e.printStackTrace();
+        // }
     }
 
 }
