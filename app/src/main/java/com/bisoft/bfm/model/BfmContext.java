@@ -1,14 +1,5 @@
 package com.bisoft.bfm.model;
 
-import com.bisoft.bfm.dto.ClusterStatus;
-import com.bisoft.bfm.helper.SymmetricEncryptionUtil;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
-
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
@@ -17,6 +8,17 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.annotation.PostConstruct;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import com.bisoft.bfm.dto.ClusterStatus;
+import com.bisoft.bfm.helper.SymmetricEncryptionUtil;
+
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
 @Component
 @Data
