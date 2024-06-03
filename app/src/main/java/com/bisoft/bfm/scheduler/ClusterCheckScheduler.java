@@ -1,8 +1,13 @@
 package com.bisoft.bfm.scheduler;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,8 +20,9 @@ import com.bisoft.bfm.helper.BfmAccessUtil;
 import com.bisoft.bfm.helper.EmailService;
 import com.bisoft.bfm.helper.MinipgAccessUtil;
 import com.bisoft.bfm.model.BfmContext;
+import com.bisoft.bfm.model.ContextServer;
+import com.bisoft.bfm.model.ContextStatus;
 import com.bisoft.bfm.model.PostgresqlServer;
-import com.bisoft.bfm.model.Status;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
@@ -311,20 +317,31 @@ public class ClusterCheckScheduler {
             e.printStackTrace();            
         }
         this.bfmContext.setMasterServerLastWalPos(this.bfmContext.getMasterServer().getWalLogPosition());
+
         // Gson gson = new Gson();
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        List<ContextServer> contextServerList = new ArrayList<ContextServer>();
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        this.bfmContext.getPgList().stream()
+        .forEach(s -> {
+            String formattedDate = s.getLastCheckDateTime().format(dateFormatter);
+            ContextServer server = new ContextServer(s.getServerAddress(), s.getDatabaseStatus().toString(), 
+            formattedDate, s.getWalLogPosition() ,s.getReplayLag());
+            contextServerList.add(server);
+        });
+        ContextStatus cs = new ContextStatus(this.bfmContext.getClusterStatus().toString(), contextServerList);
+        String json_str = gson.toJson(cs);
+        PrintWriter out;
         try {
-            Status status = new Status(this.bfmContext.getMasterServer().getServerAddress(),this.bfmContext.getMasterServer().getWalLogPosition(), this.bfmContext.getMasterServer().getDatabaseStatus().toString());
-            String jsonStr_status = gson.toJson(status);
-            PrintWriter out = new PrintWriter("./bfm_status.json");
-            out.println(jsonStr_status);
+            out = new PrintWriter("./bfm_status.json");
+            out.println(json_str);
             out.close();
-        } catch (JsonIOException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-
+            
+        
         // if (this.bfmContext.getMasterServerLastWalPos() != null){
         //     log.info("Master Last Wal Pos(a) :"+ this.bfmContext.getMasterServerLastWalPos());
         // }
@@ -546,6 +563,11 @@ public class ClusterCheckScheduler {
     }
     public void checkReplayLag(){
         PostgresqlServer masterServer = this.bfmContext.getMasterServer();
-        this.bfmContext.setReplayLagMap(masterServer.getReplayLagMap());  
+        Map<String,String> replayLagMap = masterServer.getReplayLagMap();
+        this.bfmContext.getPgList().stream()
+        .filter(s -> s.getDatabaseStatus().equals(DatabaseStatus.SLAVE))
+        .forEach(slave -> {
+            slave.setReplayLag(replayLagMap.get(slave.getServerAddress().split(":")[0]));
+        }); 
     }
 }

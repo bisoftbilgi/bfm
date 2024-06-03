@@ -50,8 +50,6 @@ public class BfmContext {
 
     String lastCheckLog = "";
 
-    Map<String,String> replayLagMap = new HashMap<>();
-
     @PostConstruct
     public void init(){
         pgList = new ArrayList<>();
