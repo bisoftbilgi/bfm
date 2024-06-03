@@ -179,7 +179,15 @@ public class ClusterCheckScheduler {
             
             try {
                 String last_saved_status = bfmAccessUtil.getLastSavedStatus();
-                System.out.println(last_saved_status);
+                Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                PrintWriter out;
+                try {
+                    out = new PrintWriter("./bfm_status.json");
+                    out.println(gson.toJson(gson.fromJson(last_saved_status, ContextStatus.class)));
+                    out.close();
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
