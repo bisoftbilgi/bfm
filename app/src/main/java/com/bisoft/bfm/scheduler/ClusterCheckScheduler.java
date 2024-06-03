@@ -41,6 +41,8 @@ public class ClusterCheckScheduler {
     @Autowired
     private EmailService mailService;
 
+    private String pairStatus ="Active";
+
     @Value("${watcher.cluster-pair:no-pair}")
     private String bfmPair;
 
@@ -68,7 +70,6 @@ public class ClusterCheckScheduler {
 
     @Scheduled(fixedDelay = 11000)
     public void amIMasterBfm(){
-        String pairStatus = "";
         try {
             pairStatus = bfmAccessUtil.isPairAlive();
             if(pairStatus.equals("no-pair")){
@@ -161,7 +162,6 @@ public class ClusterCheckScheduler {
 
     @Scheduled(fixedDelay = 5000)
     public void checkCluster(){
-
         this.bfmContext.setLastCheckLog("");
 
         if (this.bfmContext.getSplitBrainMaster() != null){
@@ -169,10 +169,13 @@ public class ClusterCheckScheduler {
             this.bfmContext.setLastCheckLog(this.bfmContext.getLastCheckLog() + 
             "Server:"+this.bfmContext.getSplitBrainMaster().getServerAddress()+ " is stopped for avoid to Split Brain status..\n");
         }
-        if(this.bfmContext.isMasterBfm() == Boolean.TRUE){
+        if(pairStatus.equals("no-pair") || pairStatus.equals("Passive") || pairStatus.equals("Unreachable")){
             log.info("this is the active bfm pair");
+            this.bfmContext.setMasterBfm(true);
         }else{
-            log.info(String.format("Bfm pair is active in %s",bfmPair));            
+            log.info(String.format("Bfm pair is active in %s",bfmPair));
+            this.bfmContext.setMasterBfm(false);
+            
             try {
                 String last_saved_status = bfmAccessUtil.getLastSavedStatus();
                 System.out.println(last_saved_status);
