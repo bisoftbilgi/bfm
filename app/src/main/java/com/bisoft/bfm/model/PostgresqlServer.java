@@ -38,6 +38,7 @@ public class PostgresqlServer {
     private String walLogPosition;
     private int sizeBehindMaster;
     private LocalDateTime lastCheckDateTime;
+    private String replayLag;
 
     public DatabaseStatus getStatus(){
         return databaseStatus;

@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.bisoft.bfm.dto.DatabaseStatus;
 import com.bisoft.bfm.model.BfmContext;
 import com.bisoft.bfm.model.PostgresqlServer;
 
@@ -112,8 +113,6 @@ public class BfmController {
             retval = retval.replace("{{ SERVER_ROWS }}", "");
             return retval;        
         } else {
-            Map<String,String> replyLagMap = this.bfmContext.getReplayLagMap();
-
             String server_rows = "";
             for(PostgresqlServer pg : this.bfmContext.getPgList()){
                 try {
@@ -127,7 +126,7 @@ public class BfmController {
                 server_rows = server_rows +  "<td>"+pg.getWalLogPosition()+"</td>";
                 String formattedDate = pg.getLastCheckDateTime().format(dateFormatter);
                 server_rows = server_rows +  "<td>"+formattedDate+"</td>";
-                server_rows = server_rows +  "<td>"+(replyLagMap.get(pg.getServerAddress().split(":")[0]) == null ? " ":replyLagMap.get(pg.getServerAddress().split(":")[0]))+"</td>";
+                server_rows = server_rows +  "<td>"+(pg.getDatabaseStatus() == DatabaseStatus.MASTER ? " " : pg.getReplayLag())+"</td>";
                 server_rows = server_rows + "</tr>";
             }
     
