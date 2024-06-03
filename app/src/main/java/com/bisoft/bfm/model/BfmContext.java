@@ -1,10 +1,7 @@
 package com.bisoft.bfm.model;
 
-import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,25 +70,6 @@ public class BfmContext {
             pgList.add(pgserver);
 
         });
-
-        // try{
-        //     for (Enumeration ifaces = NetworkInterface.getNetworkInterfaces(); ifaces.hasMoreElements();) {
-        //     NetworkInterface iface = (NetworkInterface) ifaces.nextElement();
-        //     // Iterate all IP addresses assigned to each card...
-        //     for (Enumeration inetAddrs = iface.getInetAddresses(); inetAddrs.hasMoreElements();) {
-        //         InetAddress inetAddr = (InetAddress) inetAddrs.nextElement();
-        //         if (!inetAddr.isLoopbackAddress()) {
-        //             if (this.getMasterServer().getServerAddress() == inetAddr.toString().replace("/","")){
-        //                 this.isMasterBfm = Boolean.TRUE;
-        //             } else {
-        //                 this.isMasterBfm = Boolean.FALSE;
-        //             }
-        //         }
-        //     }
-        // }
-        // } catch (Exception e){
-        //     e.printStackTrace();
-        // }
     }
 
 }
