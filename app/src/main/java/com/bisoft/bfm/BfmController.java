@@ -80,22 +80,40 @@ public class BfmController {
     public @ResponseBody String clusterStatus(){
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String retval = "";
-        retval = retval + "\nCluster Status : "+this.bfmContext.getClusterStatus();
-        for(PostgresqlServer pg : this.bfmContext.getPgList()){
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            retval = retval + "\nCluster Status : "+this.bfmContext.getClusterStatus();
+            for(PostgresqlServer pg : this.bfmContext.getPgList()){
+                try {
+                    pg.getWalPosition();    
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                
+                retval = retval +"\n" + "Server Address : "+pg.getServerAddress();
+                retval = retval+ "\nStatus : "+pg.getDatabaseStatus(); 
+                retval = retval+ "\nLast Wal Position : "+pg.getWalLogPosition();
+                String formattedDate = pg.getLastCheckDateTime().format(dateFormatter);     
+                retval = retval+ "\nLast Server Check : "+formattedDate;
+                retval = retval + "\n";
+            }
+            retval = retval+ "\nLast Check Log: \n"+ this.bfmContext.getLastCheckLog() +"\n";
+        } else {
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
             try {
-                pg.getWalPosition();    
-            } catch (Exception e) {
+                JsonReader reader = new JsonReader(new FileReader("./bfm_status.json"));
+                ContextStatus cs = gson.fromJson(reader, ContextStatus.class);
+                
+                for (ContextServer pg : cs.getClusterServers()){
+                    retval = retval +"\n" + "Server Address : "+pg.getAddress();
+                    retval = retval+ "\nStatus : "+pg.getDatabaseStatus(); 
+                    retval = retval+ "\nLast Wal Position : "+pg.getLastWalPos();   
+                    retval = retval+ "\nLast Server Check : "+pg.getLastCheck();
+                    retval = retval + "\n";
+                }
+            } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
-            
-            retval = retval +"\n" + "Server Address : "+pg.getServerAddress();
-            retval = retval+ "\nStatus : "+pg.getDatabaseStatus(); 
-            retval = retval+ "\nLast Wal Position : "+pg.getWalLogPosition();
-            String formattedDate = pg.getLastCheckDateTime().format(dateFormatter);     
-            retval = retval+ "\nLast Server Check : "+formattedDate;
-            retval = retval + "\n";
         }
-        retval = retval+ "\nLast Check Log: \n"+ this.bfmContext.getLastCheckLog() +"\n";
 
         return retval;
     }
