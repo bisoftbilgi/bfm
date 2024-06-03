@@ -1,7 +1,14 @@
 package com.bisoft.bfm.scheduler;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Writer;
+import java.nio.charset.Charset;
 import java.util.Comparator;
 
+import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -14,6 +21,10 @@ import com.bisoft.bfm.helper.EmailService;
 import com.bisoft.bfm.helper.MinipgAccessUtil;
 import com.bisoft.bfm.model.BfmContext;
 import com.bisoft.bfm.model.PostgresqlServer;
+import com.bisoft.bfm.model.Status;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonIOException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -164,6 +175,14 @@ public class ClusterCheckScheduler {
         }else{
             log.info(String.format("Bfm pair is active in %s",bfmPair));
             this.bfmContext.setMasterBfm(false);
+            
+            try {
+                String last_saved_status = bfmAccessUtil.getLastSavedStatus();
+                System.out.println(last_saved_status);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            
             return;
         }
         // log.info("-----Cluster Healthcheck Started-----");
@@ -297,6 +316,19 @@ public class ClusterCheckScheduler {
             e.printStackTrace();            
         }
         this.bfmContext.setMasterServerLastWalPos(this.bfmContext.getMasterServer().getWalLogPosition());
+        // Gson gson = new Gson();
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        try {
+            Status status = new Status(this.bfmContext.getMasterServer().getServerAddress(),this.bfmContext.getMasterServer().getWalLogPosition(), this.bfmContext.getMasterServer().getDatabaseStatus().toString());
+            String jsonStr_status = gson.toJson(status);
+            PrintWriter out = new PrintWriter("./bfm_status.json");
+            out.println(jsonStr_status);
+            out.close();
+        } catch (JsonIOException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         // if (this.bfmContext.getMasterServerLastWalPos() != null){
         //     log.info("Master Last Wal Pos(a) :"+ this.bfmContext.getMasterServerLastWalPos());
