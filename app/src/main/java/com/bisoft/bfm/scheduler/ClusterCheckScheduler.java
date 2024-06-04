@@ -62,12 +62,37 @@ public class ClusterCheckScheduler {
     @Value("${bfm.basebackup_slave_join:false}")
     public boolean basebackup_slave_join;
 
+    @Value("${bfm.data-loss-tolerance:100K}")
+    public String data_loss_tolerance;
+
     @Value("${bfm.mail-notification-enabled:false}")
     public boolean mail_notification_enabled;
 
     int remainingFailCount = timeoutIgnoranceCount;
 
     String leaderSlaveLastWalPos = "";
+
+    public double getDoubleFromString(String strParam){
+        double retval = 0.0;
+        if (strParam.endsWith("G")){
+            strParam = strParam.replaceAll("[^\\p{IsDigit}]", "");
+            retval = Double.parseDouble(strParam);
+            retval = retval * 1024 * 1024 * 1024; 
+        } else if (strParam.endsWith("M")){
+            strParam = strParam.replaceAll("[^\\p{IsDigit}]", "");
+            retval = Double.parseDouble(strParam);
+            retval = retval * 1024 * 1024; 
+        } else if (strParam.endsWith("K")){
+            strParam = strParam.replaceAll("[^\\p{IsDigit}]", "");
+            retval = Double.parseDouble(strParam);
+            retval = retval * 1024; 
+        } else {
+            strParam = strParam.replaceAll("[^\\p{IsDigit}]", "");
+            retval = Double.parseDouble(strParam);
+        }
+
+        return retval;
+    }
 
     @Scheduled(fixedDelay = 11000)
     public void amIMasterBfm(){
@@ -422,12 +447,8 @@ public class ClusterCheckScheduler {
                 }
             }
             log.warn(String.format("remaining ignorance count is: %s",String.valueOf(remainingFailCount)));
-            // Save Master and slave (most close to master) lsn values thatS (a) values
         }else{
             if (watch_strategy != "manual"){
-                // Get Master and slave (most close to master) lsn values thatS (b) values
-                // Than compare a and b values 
-                // than make a decision to what you want
                 String leaderSlaveCurrentWalPos = findLeaderSlave().getWalLogPosition();
 
                 // str1.compareTo (str2); 
@@ -437,15 +458,31 @@ public class ClusterCheckScheduler {
                     log.info("Leader Slave Last Wal Pos:"+ leaderSlaveLastWalPos+ "\n Leader Slave Current Wal Pos:"+leaderSlaveCurrentWalPos);
                     log.info("Slave Wal Pos is move forwarding..Possibly BFM cant reach Master Server. Ignoring Failover..");
                 } else {
-                    log.info("Slave Wal Pos is stood..Failover starting..");
-                    failover();
+                    //pg_wal_lsn_diff(b->master_lsn,b->slave_lsn) between 1 and 'X' bytes
+                    Double data_loss_size = findLeaderSlave().getDataLossSize(this.bfmContext.getMasterServerLastWalPos());
+                    if (data_loss_size < getDoubleFromString(data_loss_tolerance)){
+                        failover();
+                    } else {
+                        log.warn("Data Loss Tolerance is:"+ getDoubleFromString(data_loss_tolerance) 
+                        + ".Data loss size calculated as " + data_loss_size + " between Leader Slave Wal Position and Master Last Wal Position."
+                        + "Failover ignored.. Please manual respond to failure.. ");
+                        if (mail_notification_enabled == Boolean.TRUE){
+                            mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                            "Data Loss Tolerance is:"+ getDoubleFromString(data_loss_tolerance) 
+                            + ".Data loss size calculated as " + data_loss_size + " between Leader Slave Wal Position and Master Last Wal Position."
+                            + "Failover ignored.. Please manual respond to failure.. ");                                    
+                        }
+                    }
+                    
                 }    
 
             } else {
                 this.bfmContext.setClusterStatus(ClusterStatus.NOT_HEALTHY);
-                mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
-                "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
-                + "\nAutomatic Failover is OFF. Please manual respond to failure...Master Server : " + this.bfmContext.getMasterServer().getServerAddress());
+                if (mail_notification_enabled == Boolean.TRUE){
+                    mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                    "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
+                    + "\nAutomatic Failover is OFF. Please manual respond to failure...Master Server : " + this.bfmContext.getMasterServer().getServerAddress());    
+                }
             }
             
         }
