@@ -141,6 +141,24 @@ public class PostgresqlServer {
         return replayLagMap;
     }
 
+    public double getDataLossSize(String masterLastWalPos){
+        double retval = 0.0;
+        try {
+            Connection con  = this.getServerConnection();
+            PreparedStatement ps = con.prepareStatement("select pg_wal_lsn_diff('"+ masterLastWalPos +"',pg_last_wal_replay_lsn()) ;");
+            ps.executeQuery();
+            ResultSet rs = ps.getResultSet();
+            while(rs.next()){
+                String diff_size = rs.getString("pg_wal_lsn_diff");
+                retval = Double.parseDouble(diff_size);
+            }
+        } catch (Exception e) {
+            log.warn("conneciton Failed to server:"+this.getServerAddress());
+        }
+
+        return retval;
+    }
+
     public DatabaseStatus getDatabaseStatus(){
         this.setLastCheckDateTime(LocalDateTime.now());
         this.hasSlaveServer();
