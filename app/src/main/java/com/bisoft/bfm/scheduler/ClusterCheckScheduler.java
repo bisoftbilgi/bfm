@@ -1,7 +1,6 @@
 package com.bisoft.bfm.scheduler;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -25,7 +24,6 @@ import com.bisoft.bfm.model.ContextStatus;
 import com.bisoft.bfm.model.PostgresqlServer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonIOException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +69,8 @@ public class ClusterCheckScheduler {
     int remainingFailCount = timeoutIgnoranceCount;
 
     String leaderSlaveLastWalPos = "";
+
+    Boolean isWarningMailSended = Boolean.FALSE;
 
     public double getDoubleFromString(String strParam){
         double retval = 0.0;
@@ -287,10 +287,11 @@ public class ClusterCheckScheduler {
             log.warn("Cluster has a master with no slave (cluster size is 2), not healthy but ingoring failover");
             warning();
             checkSlaves();
-            if (mail_notification_enabled == true){
+            if (mail_notification_enabled == true && this.isWarningMailSended == Boolean.FALSE){
                 mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
                     "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
                     + "\nMaster (With No Slave) Server:"+ this.bfmContext.getMasterServer().getServerAddress());
+                this.isWarningMailSended = Boolean.TRUE;
             }        
             checkLastWalPositions();
     
@@ -421,6 +422,7 @@ public class ClusterCheckScheduler {
 
     public void healthy(){
         remainingFailCount = timeoutIgnoranceCount;
+        isWarningMailSended = Boolean.FALSE;
         bfmContext.setClusterStatus(ClusterStatus.HEALTHY);
         bfmContext.setSplitBrainMaster(null);
         checkReplayLag();
