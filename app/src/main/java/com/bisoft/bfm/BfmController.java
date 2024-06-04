@@ -173,7 +173,7 @@ public class BfmController {
                                     +  "<td>"+pg.getDatabaseStatus()+"</td>"
                                     +  "<td>"+pg.getLastWalPos()+"</td>"
                                     +  "<td>"+pg.getLastCheck()+"</td>"
-                                    +  "<td>"+(pg.getDatabaseStatus() == "MASTER" ? " " : pg.getReplayLag())+"</td>"
+                                    +  "<td>"+(pg.getReplayLag() == null ? " " : pg.getReplayLag())+"</td>"
                                     + "</tr>";
                 }
                                 
