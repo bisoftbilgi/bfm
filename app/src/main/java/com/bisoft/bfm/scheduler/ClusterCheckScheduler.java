@@ -594,27 +594,34 @@ public class ClusterCheckScheduler {
     }
 
     public PostgresqlServer selectNewMaster() {
+        if (this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0).filter(server -> server.getStatus() == DatabaseStatus.MASTER || server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE).count() > 0){
+            if(this.bfmContext.getPgList().size() == 2 &&
+            this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0).filter(server -> server.getStatus() == DatabaseStatus.SLAVE).count() == 0){
+                return this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0)
+                        .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE)
+                        .sorted(Comparator.comparingInt(PostgresqlServer::getPriority).reversed())
+                        .findFirst().get();
+            }
 
-        if(this.bfmContext.getPgList().size() == 2 &&
-                this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0).filter(server -> server.getStatus() == DatabaseStatus.SLAVE).count() == 0){
+            if(this.bfmContext.getPgList().size() == 2 &&
+            this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0).filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE).count() > 1){
+                
+                return this.findLeader();
+
+            }
+
+
             return this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0)
-                    .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE)
+                    .filter(server -> server.getStatus() == DatabaseStatus.SLAVE)
                     .sorted(Comparator.comparingInt(PostgresqlServer::getPriority).reversed())
                     .findFirst().get();
+        } else {
+            log.warn("There is no master in Cluster...");
+            System.exit( 0 );
+            return null;
         }
 
-        if(this.bfmContext.getPgList().size() == 2 &&
-        this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0).filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE).count() > 1){
-            
-            return this.findLeader();
-
-        }
-
-
-        return this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0)
-                .filter(server -> server.getStatus() == DatabaseStatus.SLAVE)
-                .sorted(Comparator.comparingInt(PostgresqlServer::getPriority).reversed())
-                .findFirst().get();
+        
     }
 
     public String rejoinCluster(PostgresqlServer masterServer, PostgresqlServer targetSlave){
