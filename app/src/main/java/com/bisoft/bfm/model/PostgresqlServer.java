@@ -61,7 +61,7 @@ public class PostgresqlServer {
                 is_in_recovery = ! rs.getBoolean(1);
             }
         }catch (Exception e){
-            log.error(e.getMessage());
+            // log.error(e.getMessage());
             log.error("Unable get master status of "+this.getServerAddress());
         }
         this.isMaster = is_in_recovery;
@@ -80,7 +80,7 @@ public class PostgresqlServer {
             this.hasSlave = hasSlave;
             return hasSlave;
         }catch (Exception e){
-            log.error(e.getMessage());
+            // log.error(e.getMessage());
             log.error("Unable to get replication status of "+this.getServerAddress());
         }
         this.hasSlave = hasSlave;
