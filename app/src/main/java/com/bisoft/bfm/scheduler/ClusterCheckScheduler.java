@@ -72,7 +72,7 @@ public class ClusterCheckScheduler {
     @Value("${bfm.mail-notification-enabled:false}")
     public boolean mail_notification_enabled;
 
-    int remainingFailCount = timeoutIgnoranceCount;
+    int remainingFailCount = (timeoutIgnoranceCount == 0) ? 3 : timeoutIgnoranceCount;
 
     String leaderSlaveLastWalPos = "";
 
@@ -463,7 +463,7 @@ public class ClusterCheckScheduler {
                 // If str1 is lexicographically less than str2, a negative number will be returned, 
                 // 0 if equal or a positive number if str1 is greater.
                 if (leaderSlaveCurrentWalPos.compareTo(this.leaderSlaveLastWalPos) > 0){
-                    log.info("Leader Slave Last Wal Pos:"+ leaderSlaveLastWalPos+ "\n Leader Slave Current Wal Pos:"+leaderSlaveCurrentWalPos);
+                    log.info("Leader Slave Last Wal Pos:"+ leaderSlaveLastWalPos+ " Leader Slave Current Wal Pos:"+leaderSlaveCurrentWalPos);
                     log.info("Slave Wal Pos is move forwarding..Possibly BFM cant reach Master Server. Ignoring Failover..");
                 } else {
                     String downMasterLastWalPos = this.bfmContext.getMasterServerLastWalPos();
@@ -474,9 +474,9 @@ public class ClusterCheckScheduler {
                         Gson gson = new GsonBuilder().setPrettyPrinting().create();
                         try {
                             JsonReader reader = new JsonReader(new FileReader("./bfm_status.json"));
-                            ContextStatus cs = gson.fromJson(reader, ContextStatus.class);                            
-                            String downMasterLastCheck = cs.getClusterServers().stream().filter(s -> s.getDatabaseStatus() == "MASTER").findFirst().get().getLastCheck();
-                            downMasterLastWalPos = cs.getClusterServers().stream().filter(s -> s.getDatabaseStatus() == "MASTER").findFirst().get().getLastWalPos();
+                            ContextStatus cs = gson.fromJson(reader, ContextStatus.class);   
+                            String downMasterLastCheck = cs.getClusterServers().stream().filter(s -> s.getDatabaseStatus().equals("MASTER")).findFirst().get().getLastCheck();
+                            downMasterLastWalPos = cs.getClusterServers().stream().filter(s -> s.getDatabaseStatus().equals("MASTER")).findFirst().get().getLastWalPos();
                             DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
                             LocalDateTime downMasterLastCheckDT  = LocalDateTime.parse(downMasterLastCheck, dateFormatter);
                             diff_hours = java.time.Duration.between(LocalDateTime.now(), downMasterLastCheckDT).toHours(); 
@@ -487,7 +487,7 @@ public class ClusterCheckScheduler {
                         }
                     
                         if (status_file_expire.contains("H")){
-                            if (Integer.parseInt(status_file_expire.replace("H", "")) > diff_hours){
+                            if (diff_hours > Integer.parseInt(status_file_expire.replace("H", ""))){
                                 doFailover = Boolean.FALSE;
                                 log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, "+diff_hours+ " Hours) old..");
                                 if (mail_notification_enabled==Boolean.TRUE){
@@ -497,7 +497,7 @@ public class ClusterCheckScheduler {
                                 }
                             }
                         } else if (status_file_expire.contains("D")){
-                            if (Integer.parseInt(status_file_expire.replace("D", "")) > diff_days){
+                            if (diff_days > Integer.parseInt(status_file_expire.replace("D", ""))){
                                 doFailover = Boolean.FALSE;
                                 log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, "+diff_hours+ " Hours) old..");
                                 if (mail_notification_enabled==Boolean.TRUE){
