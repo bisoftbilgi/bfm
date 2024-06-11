@@ -1,7 +1,9 @@
 package com.bisoft.bfm.scheduler;
 
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.PrintWriter;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -24,6 +26,7 @@ import com.bisoft.bfm.model.ContextStatus;
 import com.bisoft.bfm.model.PostgresqlServer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.stream.JsonReader;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +65,9 @@ public class ClusterCheckScheduler {
 
     @Value("${bfm.data-loss-tolerance:100K}")
     public String data_loss_tolerance;
+
+    @Value("${bfm.status-file-expire:1H}")
+    public String status_file_expire;
 
     @Value("${bfm.mail-notification-enabled:false}")
     public boolean mail_notification_enabled;
@@ -460,22 +466,68 @@ public class ClusterCheckScheduler {
                     log.info("Leader Slave Last Wal Pos:"+ leaderSlaveLastWalPos+ "\n Leader Slave Current Wal Pos:"+leaderSlaveCurrentWalPos);
                     log.info("Slave Wal Pos is move forwarding..Possibly BFM cant reach Master Server. Ignoring Failover..");
                 } else {
+                    String downMasterLastWalPos = this.bfmContext.getMasterServerLastWalPos();
+                    long diff_hours = 0;
+                    long diff_days = 0;
+                    Boolean doFailover = Boolean.TRUE;
+                    if ( downMasterLastWalPos == null){                        
+                        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                        try {
+                            JsonReader reader = new JsonReader(new FileReader("./bfm_status.json"));
+                            ContextStatus cs = gson.fromJson(reader, ContextStatus.class);                            
+                            String downMasterLastCheck = cs.getClusterServers().stream().filter(s -> s.getDatabaseStatus() == "MASTER").findFirst().get().getLastCheck();
+                            downMasterLastWalPos = cs.getClusterServers().stream().filter(s -> s.getDatabaseStatus() == "MASTER").findFirst().get().getLastWalPos();
+                            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                            LocalDateTime downMasterLastCheckDT  = LocalDateTime.parse(downMasterLastCheck, dateFormatter);
+                            diff_hours = java.time.Duration.between(LocalDateTime.now(), downMasterLastCheckDT).toHours(); 
+                            diff_days = java.time.Duration.between(LocalDateTime.now(), downMasterLastCheckDT).toDays();
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                            log.warn("Cluster has no Master server, bfm_status.json not found..! Master Server Last Wal Position is null..");
+                        }
+                    
+                        if (status_file_expire.contains("H")){
+                            if (Integer.parseInt(status_file_expire.replace("H", "")) > diff_hours){
+                                doFailover = Boolean.FALSE;
+                                log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, "+diff_hours+ " Hours) old..");
+                                if (mail_notification_enabled==Boolean.TRUE){
+                                    log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");
+                                    mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                                    "Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");  
+                                }
+                            }
+                        } else if (status_file_expire.contains("D")){
+                            if (Integer.parseInt(status_file_expire.replace("D", "")) > diff_days){
+                                doFailover = Boolean.FALSE;
+                                log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, "+diff_hours+ " Hours) old..");
+                                if (mail_notification_enabled==Boolean.TRUE){
+                                    log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");
+                                    mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                                    "Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");  
+                                }
+                            }
+                        } else {
+                            doFailover = Boolean.FALSE;
+                            log.warn("status-file-expire parameter error:"+status_file_expire);
+                        }
+
+                    } 
+
                     //pg_wal_lsn_diff(b->master_lsn,b->slave_lsn) between 1 and 'X' bytes
-                    Double data_loss_size = findLeaderSlave().getDataLossSize(this.bfmContext.getMasterServerLastWalPos());
-                    if (data_loss_size < getDoubleFromString(data_loss_tolerance)){
+                    Double data_loss_size = findLeaderSlave().getDataLossSize(downMasterLastWalPos);
+                    if ((data_loss_size < getDoubleFromString(data_loss_tolerance)) && doFailover == Boolean.TRUE){
                         failover();
                     } else {
-                        log.warn("Data Loss Tolerance is:"+ getDoubleFromString(data_loss_tolerance) 
+                        log.warn("Data Loss Tolerance is:"+ getDoubleFromString(data_loss_tolerance)+ " doFailover flag is:"+ doFailover 
                         + ".Data loss size calculated as " + data_loss_size + " between Leader Slave Wal Position and Master Last Wal Position."
                         + "Failover ignored.. Please manual respond to failure.. ");
                         if (mail_notification_enabled == Boolean.TRUE){
                             mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
-                            "Data Loss Tolerance is:"+ getDoubleFromString(data_loss_tolerance) 
+                            "Data Loss Tolerance is:"+ getDoubleFromString(data_loss_tolerance) + " doFailover flag is:"+ doFailover 
                             + ".Data loss size calculated as " + data_loss_size + " between Leader Slave Wal Position and Master Last Wal Position."
                             + "Failover ignored.. Please manual respond to failure.. ");                                    
                         }
-                    }
-                    
+                    }                 
                 }    
 
             } else {
