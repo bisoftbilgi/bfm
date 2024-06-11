@@ -482,7 +482,8 @@ public class MinipgAccessUtil {
                 String result = (EntityUtils.toString(response1.getEntity()));
                 return result;
             }catch (Exception e){
-                log.error("Eror on Stop DB:"+pgServer.getServerAddress() + "\nerror:"+ e.getStackTrace());
+                log.error("Error on Stop DB:"+pgServer.getServerAddress());
+                // log.error(e.getMessage);
             }
 
 
@@ -527,7 +528,8 @@ public class MinipgAccessUtil {
                 // and ensure it is fully consumed
                 result = (EntityUtils.toString(response1.getEntity()));
             }catch (Exception e){
-                log.error("Eror on Start DB:"+pgServer.getServerAddress() + "\nerror:"+ e.getStackTrace());
+                log.error("Error on Start DB:"+pgServer.getServerAddress());
+                // log.error(e.getMessage);
             }
 
 
