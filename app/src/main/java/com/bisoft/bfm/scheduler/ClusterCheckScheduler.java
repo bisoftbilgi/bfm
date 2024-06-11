@@ -617,7 +617,7 @@ public class ClusterCheckScheduler {
                     .findFirst().get();
         } else {
             log.warn("There is no master in Cluster...");
-            System.exit( 0 );
+            // System.exit( 0 );
             return null;
         }
 
