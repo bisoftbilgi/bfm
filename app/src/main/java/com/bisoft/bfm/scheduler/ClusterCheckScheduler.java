@@ -474,13 +474,19 @@ public class ClusterCheckScheduler {
                         Gson gson = new GsonBuilder().setPrettyPrinting().create();
                         try {
                             JsonReader reader = new JsonReader(new FileReader("./bfm_status.json"));
-                            ContextStatus cs = gson.fromJson(reader, ContextStatus.class);   
-                            String downMasterLastCheck = cs.getClusterServers().stream().filter(s -> s.getDatabaseStatus().equals("MASTER")).findFirst().get().getLastCheck();
-                            downMasterLastWalPos = cs.getClusterServers().stream().filter(s -> s.getDatabaseStatus().equals("MASTER")).findFirst().get().getLastWalPos();
-                            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                            LocalDateTime downMasterLastCheckDT  = LocalDateTime.parse(downMasterLastCheck, dateFormatter);
-                            diff_hours = java.time.Duration.between(LocalDateTime.now(), downMasterLastCheckDT).toHours(); 
-                            diff_days = java.time.Duration.between(LocalDateTime.now(), downMasterLastCheckDT).toDays();
+                            ContextStatus cs = gson.fromJson(reader, ContextStatus.class); 
+                            if (cs != null){
+                                String downMasterLastCheck = cs.getClusterServers().stream().filter(s -> s.getDatabaseStatus().equals("MASTER")).findFirst().get().getLastCheck();
+                                downMasterLastWalPos = cs.getClusterServers().stream().filter(s -> s.getDatabaseStatus().equals("MASTER")).findFirst().get().getLastWalPos();
+                                DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                                LocalDateTime downMasterLastCheckDT  = LocalDateTime.parse(downMasterLastCheck, dateFormatter);
+                                diff_hours = java.time.Duration.between(LocalDateTime.now(), downMasterLastCheckDT).toHours(); 
+                                diff_days = java.time.Duration.between(LocalDateTime.now(), downMasterLastCheckDT).toDays();
+                            } else {
+                                log.warn("bfm_status.json is empty. Ignore Failover routine. Please manual respond.");
+                                status_file_expire = "99E";
+                            }  
+                            
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
                             log.warn("Cluster has no Master server, bfm_status.json not found..! Master Server Last Wal Position is null..");
@@ -508,7 +514,9 @@ public class ClusterCheckScheduler {
                             }
                         } else {
                             doFailover = Boolean.FALSE;
-                            log.warn("status-file-expire parameter error:"+status_file_expire);
+                            if (status_file_expire != "99E"){
+                                log.warn("status-file-expire parameter error:"+status_file_expire);
+                            }                            
                         }
 
                     } 
@@ -519,12 +527,12 @@ public class ClusterCheckScheduler {
                         failover();
                     } else {
                         log.warn("Data Loss Tolerance is:"+ getDoubleFromString(data_loss_tolerance)+ " doFailover flag is:"+ doFailover 
-                        + ".Data loss size calculated as " + data_loss_size + " between Leader Slave Wal Position and Master Last Wal Position."
+                        + ".Data loss size calculated as " + Double.toString(data_loss_size) + " between Leader Slave Wal Position and Master Last Wal Position."
                         + "Failover ignored.. Please manual respond to failure.. ");
                         if (mail_notification_enabled == Boolean.TRUE){
                             mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
                             "Data Loss Tolerance is:"+ getDoubleFromString(data_loss_tolerance) + " doFailover flag is:"+ doFailover 
-                            + ".Data loss size calculated as " + data_loss_size + " between Leader Slave Wal Position and Master Last Wal Position."
+                            + ".Data loss size calculated as " + Double.toString(data_loss_size) + " between Leader Slave Wal Position and Master Last Wal Position."
                             + "Failover ignored.. Please manual respond to failure.. ");                                    
                         }
                     }                 
