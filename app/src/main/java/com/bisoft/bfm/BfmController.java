@@ -136,6 +136,8 @@ public class BfmController {
             if (this.bfmContext.getClusterStatus() == null){
                 retval = retval.replace("{{ CLUSTER_STATUS }}", "Cluster Starting...");
                 retval = retval.replace("{{ SERVER_ROWS }}", "");
+                retval = retval.replace("{{ CLASS_CARD_BODY }}", "bg-primary");
+                retval = retval.replace("{{ CLASS_SERVER_ROWS }}", "text-white");
                 return retval;        
             } else {
                 String server_rows = "";
@@ -157,6 +159,8 @@ public class BfmController {
         
                 retval = retval.replace("{{ CLUSTER_STATUS }}", this.bfmContext.getClusterStatus().toString());
                 retval = retval.replace("{{ SERVER_ROWS }}", server_rows);
+                retval = retval.replace("{{ CLASS_CARD_BODY }}", "bg-primary");
+                retval = retval.replace("{{ CLASS_SERVER_ROWS }}", "text-white");
                 return retval;    
             }
         } else {
@@ -179,6 +183,8 @@ public class BfmController {
                                 
                 retval = retval.replace("{{ CLUSTER_STATUS }}", cs.getClusterStatus());
                 retval = retval.replace("{{ SERVER_ROWS }}", server_rows);
+                retval = retval.replace("{{ CLASS_CARD_BODY }}", "bg-warning");
+                retval = retval.replace("{{ CLASS_SERVER_ROWS }}", "text-black");
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
