@@ -365,6 +365,11 @@ public class ClusterCheckScheduler {
 
         this.bfmContext.getPgList().stream()
         .forEach(s -> {
+            try {
+                s.getWalPosition();    
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             String formattedDate = s.getLastCheckDateTime().format(dateFormatter);
             ContextServer server = new ContextServer(s.getServerAddress(), s.getDatabaseStatus().toString(), 
             formattedDate, s.getWalLogPosition() ,s.getReplayLag());

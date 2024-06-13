@@ -131,8 +131,8 @@
 
                             <div class="row" style="margin-top:1%;">
                                 <div class="col-md-12">
-                                    <div class="card bg-primary text-white bg-gradient" >
-                                        <div class="card-body">
+                                    <div class="card bg-warning bg-gradient" >
+                                        <div class="card-body {{ CLASS_CARD_BODY }}">
                                             <table class="table">
                                                 <thead>
                                                     <th>Server Address</th>
@@ -141,7 +141,7 @@
                                                     <th>Server Last Check</th>
                                                     <th>Replay Lag</th>
                                                 </thead>
-                                                <tbody class="text-white">
+                                                <tbody class="{{ CLASS_SERVER_ROWS }}">
                                                     {{ SERVER_ROWS }}
                                                 </tbody>
                                             </table>
