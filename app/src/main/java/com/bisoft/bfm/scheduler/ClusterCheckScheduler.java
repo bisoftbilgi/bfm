@@ -69,6 +69,9 @@ public class ClusterCheckScheduler {
     @Value("${bfm.status-file-expire:1H}")
     public String status_file_expire;
 
+    @Value("${bfm.ex-master-behavior:rejoin}")
+    public String ex_master_behavior;
+
     @Value("${bfm.mail-notification-enabled:false}")
     public boolean mail_notification_enabled;
 
@@ -307,8 +310,17 @@ public class ClusterCheckScheduler {
             for(PostgresqlServer pg : this.bfmContext.getPgList()){
                 if (pg.getServerAddress() != leaderPg.getServerAddress() && pg.getStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)){
                     try {
-                        this.bfmContext.setSplitBrainMaster(pg);
-                        minipgAccessUtil.stopPg(pg);
+                        if (ex_master_behavior.equals("stop")){
+                            this.bfmContext.setSplitBrainMaster(pg);
+                            minipgAccessUtil.stopPg(pg);
+                            log.info("Ex Master Stoppped...");
+                        } else if (ex_master_behavior.equals("rejoin")){
+                            log.info("Ex Master Rejoining to Cluster as Slave..");
+                            rejoinCluster(leaderPg, pg);
+                        } else {
+                            log.warn("Ex Master Behavior not set properly..");
+                        }
+                        
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -627,7 +639,6 @@ public class ClusterCheckScheduler {
         String rebase_result;
         try {
             rebase_result = minipgAccessUtil.rebaseUp(targetSlave, masterServer);
-            log.info(rebase_result);
             return rebase_result;    
         } catch (Exception e) {
             e.printStackTrace();
