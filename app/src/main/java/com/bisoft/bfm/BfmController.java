@@ -18,6 +18,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.FileCopyUtils;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -82,6 +84,7 @@ public class BfmController {
         String retval = "";
         if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
             retval = retval + "\nCluster Status : "+this.bfmContext.getClusterStatus();
+            retval = retval + "\nWatch Strategy : "+this.bfmContext.getWatch_strategy();
             for(PostgresqlServer pg : this.bfmContext.getPgList()){
                 try {
                     pg.getWalPosition();    
@@ -117,7 +120,30 @@ public class BfmController {
 
         return retval;
     }
-    
+
+    @RequestMapping(path = "/watch-strategy/{strategy}",method = RequestMethod.POST)
+    public @ResponseBody String setWatchStrategy(@PathVariable(value = "strategy") String new_strategy){
+        String retval = "";       
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            // availability,manual,performance,protection
+            // retval = retval + new_strategy;
+            if (new_strategy.equals("M")){
+                this.bfmContext.setWatch_strategy("manual");
+                retval = retval + "Watch strategy set to -manual-\n";
+            } else if (new_strategy.equals("A")){
+                this.bfmContext.setWatch_strategy("availability");
+                retval = retval + "Watch strategy set to -availability-\n";
+            } else {
+                retval = retval + "Watch strategy set FAIL. invalid Parameter:"+new_strategy +"\n";
+            }
+        } else {
+            retval = retval + "Please run on Active BFM pair...\n";
+        }
+
+        return retval;
+    }    
+
+
     public static String asString(Resource resource) {
         try (Reader reader = new InputStreamReader(resource.getInputStream())) {
             return FileCopyUtils.copyToString(reader);

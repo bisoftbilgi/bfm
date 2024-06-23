@@ -51,9 +51,6 @@ public class ClusterCheckScheduler {
     @Value("${app.timeout-ignorance-count:3}")
     int timeoutIgnoranceCount;
 
-    @Value("${bfm.watch-strategy:availability}")
-    public String watch_strategy;
-
     @Value("${server.pguser:postgres}")
     String pgUsername;
 
@@ -156,7 +153,7 @@ public class ClusterCheckScheduler {
                         .forEach(server ->
                                 {
                                     try {
-                                        if (watch_strategy.equals("availability")){                            
+                                        if (this.bfmContext.getWatch_strategy().equals("availability")){                            
                                             if (selectedMaster != null){
                                                 String start_result = minipgAccessUtil.startPg(server);
                                                 if (start_result != "OK"){
@@ -174,7 +171,7 @@ public class ClusterCheckScheduler {
                                                 }
                                             }
                                         } else {
-                                            log.info("Rewind or ReBaseUp ignoring..BFM watch strategy is:"+watch_strategy);
+                                            log.info("Rewind or ReBaseUp ignoring..BFM watch strategy is:"+this.bfmContext.getWatch_strategy());
                                             if (mail_notification_enabled == true){
                                                 mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
                                                 "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
@@ -461,7 +458,7 @@ public class ClusterCheckScheduler {
         if(remainingFailCount>0){
             this.leaderSlaveLastWalPos = findLeaderSlave().getWalLogPosition();            
             log.warn("cluster is not healthy");
-            if (watch_strategy != "manual"){
+            if (this.bfmContext.getWatch_strategy() != "manual"){
                 try {
                     String result = minipgAccessUtil.startPg(this.bfmContext.getMasterServer());
                     log.info("Master Server start result is "+result);
@@ -472,7 +469,7 @@ public class ClusterCheckScheduler {
             }
             log.warn(String.format("remaining ignorance count is: %s",String.valueOf(remainingFailCount)));
         }else{
-            if (watch_strategy != "manual"){
+            if (this.bfmContext.getWatch_strategy() != "manual"){
                 String leaderSlaveCurrentWalPos = findLeaderSlave().getWalLogPosition();
 
                 // str1.compareTo (str2); 
@@ -658,12 +655,12 @@ public class ClusterCheckScheduler {
                             log.info("Slave Server "+ server.getServerAddress()+" has NO MASTER. Replication could be down...");
                             if (remainingFailCount <= 0){
 
-                                if (watch_strategy == "manual"){
-                                    log.info("BFM is in"+ watch_strategy+". Please manual respond to incident..");
+                                if (this.bfmContext.getWatch_strategy() == "manual"){
+                                    log.info("BFM is in"+ this.bfmContext.getWatch_strategy()+". Please manual respond to incident..");
                                     if (mail_notification_enabled == true){
                                         mailService.sendMail("Slave Server "+server.getServerAddress()+" Out Of CLuster",
                                         "Slave server :"+ server.getServerAddress()+" has NO MASTER. Replication could be down..."
-                                        + "BFM is in"+ watch_strategy+". Please manual respond to incident..");
+                                        + "BFM is in"+ this.bfmContext.getWatch_strategy()+". Please manual respond to incident..");
                                     }
                                 } else {
                                     if (basebackup_slave_join == true){

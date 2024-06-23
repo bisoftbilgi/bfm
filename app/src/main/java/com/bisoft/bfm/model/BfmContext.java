@@ -38,6 +38,9 @@ public class BfmContext {
     @Value("${bfm.user-crypted:false}")
     public boolean isEncrypted;
 
+    @Value("${bfm.watch-strategy:availability}")
+    public String watch_strategy;
+    
     boolean isMasterBfm;
 
     ClusterStatus clusterStatus;
