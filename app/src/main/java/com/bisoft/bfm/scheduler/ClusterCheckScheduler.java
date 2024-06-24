@@ -313,7 +313,31 @@ public class ClusterCheckScheduler {
                             log.info("Ex Master Stoppped...");
                         } else if (ex_master_behavior.equals("rejoin")){
                             log.info("Ex Master Rejoining to Cluster as Slave..");
-                            rejoinCluster(leaderPg, pg);
+                            // rejoinCluster(leaderPg, pg);
+
+                            String rewind_result = "??";
+                            try {
+                                rewind_result = minipgAccessUtil.rewind(pg, leaderPg);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            if (rewind_result != "OK"){
+                                log.info("MiniPG rewind was FAILED. Slave Target:",pg);
+                                if (basebackup_slave_join == true){
+                                    log.info("Rejoin to cluster Wtih pg_basebackup started..");            
+                                    String rejoin_result = rejoinCluster(leaderPg, pg);
+                                    log.info("Slave server :"+pg.getServerAddress()+" reJoin result is:"+rejoin_result);
+                                    if (mail_notification_enabled == true){
+
+                                        mailService.sendMail("Slave Server "+pg.getServerAddress()+" Out Of CLuster",
+                                        "Slave server :"+ pg.getServerAddress()+" has NO MASTER."
+                                        + "\nCluster basebackup slave join is "+ basebackup_slave_join+". Slave server rejoin process completed."
+                                        + "\nCluster Master Server is:"+ leaderPg.getServerAddress());
+                                    }
+    
+                                }
+                            } 
+
                         } else {
                             log.warn("Ex Master Behavior not set properly..");
                         }
@@ -663,22 +687,31 @@ public class ClusterCheckScheduler {
                                         + "BFM is in"+ this.bfmContext.getWatch_strategy()+". Please manual respond to incident..");
                                     }
                                 } else {
-                                    if (basebackup_slave_join == true){
-                                        log.info("Rejoin to cluster Wtih pg_basebackup started..");
-                                        PostgresqlServer master = this.bfmContext.getPgList().stream()
-                                        .filter(s -> s.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE || s.getStatus() == DatabaseStatus.MASTER ).findFirst().get();
-            
-                                        String rejoin_result = rejoinCluster(master, server);
-                                        log.info("Slave server :"+server.getServerAddress()+" reJoin result is:"+rejoin_result);
-                                        if (mail_notification_enabled == true){
-    
-                                            mailService.sendMail("Slave Server "+server.getServerAddress()+" Out Of CLuster",
-                                            "Slave server :"+ server.getServerAddress()+" has NO MASTER."
-                                            + "\nCluster basebackup slave join is "+ basebackup_slave_join+". Slave server rejoin process completed."
-                                            + "\nCluster Master Server is:"+ master.getServerAddress());
-                                        }
-        
+                                    PostgresqlServer master = this.bfmContext.getPgList().stream()
+                                    .filter(s -> s.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE || s.getStatus() == DatabaseStatus.MASTER ).findFirst().get();
+
+                                    String rewind_result = "??";
+                                    try {
+                                        rewind_result = minipgAccessUtil.rewind(server, master);
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
                                     }
+                                    if (rewind_result != "OK"){
+                                        log.info("MiniPG rewind was FAILED. Slave Target:",server);
+                                        if (basebackup_slave_join == true){
+                                            log.info("Rejoin to cluster Wtih pg_basebackup started..");            
+                                            String rejoin_result = rejoinCluster(master, server);
+                                            log.info("Slave server :"+server.getServerAddress()+" reJoin result is:"+rejoin_result);
+                                            if (mail_notification_enabled == true){
+        
+                                                mailService.sendMail("Slave Server "+server.getServerAddress()+" Out Of CLuster",
+                                                "Slave server :"+ server.getServerAddress()+" has NO MASTER."
+                                                + "\nCluster basebackup slave join is "+ basebackup_slave_join+". Slave server rejoin process completed."
+                                                + "\nCluster Master Server is:"+ master.getServerAddress());
+                                            }
+            
+                                        }
+                                    }                                   
         
                                 }
 
