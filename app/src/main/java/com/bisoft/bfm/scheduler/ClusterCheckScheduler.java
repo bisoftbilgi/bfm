@@ -155,20 +155,26 @@ public class ClusterCheckScheduler {
                                     try {
                                         if (this.bfmContext.getWatch_strategy().equals("availability")){                            
                                             if (selectedMaster != null){
-                                                String start_result = minipgAccessUtil.startPg(server);
-                                                if (start_result != "OK"){
-                                                    String rewind_result = minipgAccessUtil.rewind(server, selectedMaster);
-                                                    if (! rewind_result.equals("OK")){
-                                                        log.info("MiniPG rewind was FAILED. Slave Target:",server);
-                                                        if (basebackup_slave_join == true){
-                                                            String rejoin_result = rejoinCluster(selectedMaster, server);
-                                                            log.info("pg_basebackup join cluster result is:"+rejoin_result);
-                                                        } else {
-                                                            log.info("pg_basebackup join is set to FALSE. passing for slave server:",server);
+                                                if (server.getRewindStarted() == Boolean.FALSE){
+                                                    String start_result = minipgAccessUtil.startPg(server);
+                                                    if (start_result != "OK"){
+                                                        server.setRewindStarted(Boolean.TRUE);
+                                                        String rewind_result = minipgAccessUtil.rewind(server, selectedMaster);
+                                                        if (! rewind_result.equals("OK")){
+                                                            log.info("MiniPG rewind was FAILED. Slave Target:",server);
+                                                            if (basebackup_slave_join == true){
+                                                                String rejoin_result = rejoinCluster(selectedMaster, server);
+                                                                log.info("pg_basebackup join cluster result is:"+rejoin_result);
+                                                            } else {
+                                                                log.info("pg_basebackup join is set to FALSE. passing for slave server:",server);
+                                                            }
                                                         }
+                                                        server.setRewindStarted(Boolean.FALSE);        
                                                     }
-    
+                                                } else {
+                                                    log.info("Rejoin processing...Passing.");
                                                 }
+                                                
                                             }
                                         } else {
                                             log.info("Rewind or ReBaseUp ignoring..BFM watch strategy is:"+this.bfmContext.getWatch_strategy());
