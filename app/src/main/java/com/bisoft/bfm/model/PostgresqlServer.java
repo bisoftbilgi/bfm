@@ -39,6 +39,10 @@ public class PostgresqlServer {
     private int sizeBehindMaster;
     private LocalDateTime lastCheckDateTime;
     private String replayLag;
+    @Builder.Default
+    private Boolean rejoinStarted = Boolean.FALSE;
+    @Builder.Default
+    private Boolean rewindStarted = Boolean.FALSE;
 
     public DatabaseStatus getStatus(){
         return databaseStatus;
