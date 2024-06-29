@@ -1,16 +1,18 @@
 package com.bisoft.bfm;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UncheckedIOException;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 
 import org.springframework.core.io.DefaultResourceLoader;
@@ -19,7 +21,6 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -82,37 +83,92 @@ public class BfmController {
     public @ResponseBody String clusterStatus(){
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String retval = "";
+        ArrayList<String> serverIPAddress = new ArrayList<String>();
+
+        // try {
+        //     Enumeration<NetworkInterface> b = NetworkInterface.getNetworkInterfaces();
+        //     while( b.hasMoreElements()){
+        //         for ( InterfaceAddress f : b.nextElement().getInterfaceAddresses())
+        //             if ( f.getAddress().toString().contains(".") && f.getAddress().toString() !="127.0.0.1")
+        //             serverIPAddress.add(f.getAddress().toString().replace("/",""));
+        //     }
+        // } catch (SocketException e) {
+        //     e.printStackTrace();
+        // }
+
         if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+           
             retval = retval + "\nCluster Status : "+this.bfmContext.getClusterStatus();
             retval = retval + "\nWatch Strategy : "+this.bfmContext.getWatch_strategy();
+            retval = retval + "\n\n"+ 
+                                String.format("%-25s", "Server Address :") + 
+                                "\t" + 
+                                String.format("%-10s", "Status :") + 
+                                "\t" + 
+                                String.format("%-20s", "Last Wal Position :") +
+                                "\t" + 
+                                String.format("%-20s", "Last Check Time :");
+            retval = retval + "\n"+ 
+                                "_".repeat(25) + 
+                                "\t" + 
+                                "_".repeat(10) + 
+                                "\t" + 
+                                "_".repeat(20) +
+                                "\t" + 
+                                "_".repeat(20);
             for(PostgresqlServer pg : this.bfmContext.getPgList()){
                 try {
                     pg.getWalPosition();    
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                
-                retval = retval +"\n" + "Server Address : "+pg.getServerAddress();
-                retval = retval+ "\nStatus : "+pg.getDatabaseStatus(); 
-                retval = retval+ "\nLast Wal Position : "+pg.getWalLogPosition();
                 String formattedDate = pg.getLastCheckDateTime().format(dateFormatter);     
-                retval = retval+ "\nLast Server Check : "+formattedDate;
-                retval = retval + "\n";
+                
+                retval = retval +"\n" + 
+                                String.format("%-25s", pg.getServerAddress())  +
+                                "\t" + 
+                                String.format("%-10s", pg.getDatabaseStatus()) +
+                                "\t" + 
+                                String.format("%20s", pg.getWalLogPosition()) +
+                                "\t" + 
+                                String.format("%-20s", formattedDate);
             }
-            retval = retval+ "\nLast Check Log: \n"+ this.bfmContext.getLastCheckLog() +"\n";
+            retval = retval+ "\n\nLast Check Log: \n"+ this.bfmContext.getLastCheckLog() +"\n";
         } else {
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             try {
                 JsonReader reader = new JsonReader(new FileReader("./bfm_status.json"));
                 ContextStatus cs = gson.fromJson(reader, ContextStatus.class);
-                
+
+                retval = retval + "\nCluster Status : "+cs.getClusterStatus();
+                retval = retval + "\n"+ 
+                                    String.format("%-25s", "Server Address :") + 
+                                    "\t" + 
+                                    String.format("%-10s", "Status :") + 
+                                    "\t" + 
+                                    String.format("%-20s", "Last Wal Position :") +
+                                    "\t" + 
+                                    String.format("%-20s", "Last Check Time :");
+                retval = retval + "\n"+ 
+                                    "_".repeat(25) + 
+                                    "\t" + 
+                                    "_".repeat(10) + 
+                                    "\t" + 
+                                    "_".repeat(20) +
+                                    "\t" + 
+                                    "_".repeat(20);
+
                 for (ContextServer pg : cs.getClusterServers()){
-                    retval = retval +"\n" + "Server Address : "+pg.getAddress();
-                    retval = retval+ "\nStatus : "+pg.getDatabaseStatus(); 
-                    retval = retval+ "\nLast Wal Position : "+pg.getLastWalPos();   
-                    retval = retval+ "\nLast Server Check : "+pg.getLastCheck();
-                    retval = retval + "\n";
+                    retval = retval +"\n" + 
+                    String.format("%-25s", pg.getAddress()) + 
+                    "\t" + 
+                    String.format("%-10s", pg.getDatabaseStatus()) +
+                    "\t" + 
+                    String.format("%20s", pg.getLastWalPos()) +
+                    "\t" + 
+                    String.format("%-20s", pg.getLastCheck());
                 }
+                retval = retval + "\n\n";
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
@@ -142,6 +198,38 @@ public class BfmController {
 
         return retval;
     }    
+
+    @RequestMapping(path = "/switchover/{targetPG}",method = RequestMethod.POST)
+    public @ResponseBody String switchOver(@PathVariable(value = "targetPG") String targetPG){
+        String retval = "";       
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            try{
+                String targetPG_IP = targetPG.split(":")[0];
+                String targetPG_Port = targetPG.split(":")[1];
+                if (targetPG_IP.length() < 7 || targetPG_Port.length()<1){
+                    retval = retval + "Please speicfy target server and port (e.g. 192.168.1.7:5432)\n";
+                } else {
+
+                    // set watch_startegy to manual
+                    // set mail notification to false
+                    // on CheckCluster if bfmContext.switchOverTo is not null run switchOver routine
+                        // check replay lag is 0
+                        // stop master
+                        // promote slave
+                        // turn ex-master to slave with pg_rewind, if fail use pg_basebackup
+                    // set watch_startegy to available
+                    // set mail notification to old value
+
+                }
+            } catch (Exception e) {
+                retval = retval + "Please speicfy target server and port (e.g. 192.168.1.7:5432)\n";
+            }            
+        } else {
+            retval = retval + "Please run on Active BFM pair...\n";
+        }
+
+        return retval;
+    }        
 
 
     public static String asString(Resource resource) {
