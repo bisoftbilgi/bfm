@@ -5,6 +5,7 @@ if [ ! -z $1 ] && [ $1 == "-h" ]; then
     echo "-status show cluster status"
     echo "-pause set watch strategy to manual"
     echo "-resume set watch strategy to availability"
+    echo "-switchOver 192.168.1.22:5432 switch to selected slave"
 fi
 
 if [ ! -z $1 ] && [ ! -z $2 ] && [ $1 == "-u" ]; then
@@ -29,6 +30,11 @@ if [ ! -z $1 ] && [ $1 == "-resume" ]; then
     export clsStrategy="A"
 fi
 
+if [ ! -z $1 ]  && [ ! -z $2 ] && [ $1 == "-switchOver" ]; then
+    export clsCommand="switchOver"
+    export targetSlave=$2
+fi
+
 if [ ! -z $2 ] && [ ! -z $3 ] && [ $2 == "-u" ]; then
     export clsUser=$3
 fi
@@ -51,6 +57,10 @@ if [ ! -z $2 ] && [ $2 == "-resume" ]; then
     export clsStrategy="A"
 fi
 
+if [ ! -z $2 ]  && [ ! -z $3 ] && [ $2 == "-switchOver" ]; then
+    export clsCommand="switchOver"
+    export targetSlave=$3
+fi
 
 if [ ! -z $3 ] && [ ! -z $4 ] &&[ $3 == "-u" ]; then
     export clsUser=$4
@@ -74,6 +84,11 @@ if [ ! -z $3 ] && [ $3 == "-resume" ]; then
     export clsStrategy="A"
 fi
 
+if [ ! -z $3 ]  && [ ! -z $4 ] && [ $3 == "-switchOver" ]; then
+    export clsCommand="switchOver"
+    export targetSlave=$4
+fi
+
 if [ ! -z $4 ] && [ $4 == "-status" ]; then
     export clsCommand="status"
 fi
@@ -88,6 +103,10 @@ if [ ! -z $4 ] && [ $4 == "-resume" ]; then
     export clsStrategy="A"
 fi
 
+if [ ! -z $4 ]  && [ ! -z $5 ] && [ $4 == "-switchOver" ]; then
+    export clsCommand="switchOver"
+    export targetSlave=$5
+fi
 
 if [ ! -z $5 ] && [ $5 == "-status" ]; then
     export clsCommand="status"
@@ -103,6 +122,11 @@ if [ ! -z $5 ] && [ $5 == "-resume" ]; then
     export clsStrategy="A"
 fi
 
+if [ ! -z $5 ]  && [ ! -z $6 ] && [ $5 == "-switchOver" ]; then
+    export clsCommand="switchOver"
+    export targetSlave=$6
+fi
+
 if [ -z $clsUser ] || [ -z $clsPwd ]; then
     echo "user or password NOT set. "
 else
@@ -110,6 +134,8 @@ else
         curl -X GET http://localhost:9994/bfm/cluster-status -u $clsUser:$clsPwd
     elif [ ! -z $clsCommand ] && [ $clsCommand == "strategy" ]; then
         curl -X POST  http://localhost:9994/bfm/watch-strategy/$clsStrategy -u $clsUser:$clsPwd
+    elif [ ! -z $clsCommand ] && [ $clsCommand == "switchOver" ]; then
+        curl -X POST  http://localhost:9994/bfm/switchover/$targetSlave -u $clsUser:$clsPwd
     else
         echo "command not found..."$clsCommand
     fi

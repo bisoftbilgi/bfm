@@ -36,6 +36,7 @@ public class PostgresqlServer {
     private DatabaseStatus databaseStatus;
     private int priority;
     private String walLogPosition;
+    private int timeLineId;
     private int sizeBehindMaster;
     private LocalDateTime lastCheckDateTime;
     private String replayLag;
@@ -119,6 +120,24 @@ public class PostgresqlServer {
             } catch (Exception e) {
                 log.warn("conneciton Failed to server:"+this.getServerAddress());
             }
+        }
+    }
+
+    public void checkTimeLineId() throws ClassNotFoundException, SQLException{
+        try {
+            Connection con  = this.getServerConnection();
+            PreparedStatement ps = con.prepareStatement("SELECT timeline_id FROM pg_control_checkpoint();");
+            ps.executeQuery();
+            ResultSet rs = ps.getResultSet();
+    
+            rs.next();
+    
+            String timeline_id = rs.getString("timeline_id");
+            
+            this.setTimeLineId(Integer.parseInt(timeline_id));  
+            log.info(this.getServerAddress() + " timeline_id: "+ this.getTimeLineId());                      
+        } catch (Exception e) {
+            log.warn("conneciton Failed to server:"+this.getServerAddress());
         }
     }
 
