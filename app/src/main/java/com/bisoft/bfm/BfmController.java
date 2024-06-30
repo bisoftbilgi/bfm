@@ -6,12 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UncheckedIOException;
-import java.net.InterfaceAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Scanner;
 
@@ -26,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.bisoft.bfm.dto.DatabaseStatus;
+import com.bisoft.bfm.helper.MinipgAccessUtil;
 import com.bisoft.bfm.model.BfmContext;
 import com.bisoft.bfm.model.ContextServer;
 import com.bisoft.bfm.model.ContextStatus;
@@ -42,6 +38,7 @@ import lombok.RequiredArgsConstructor;
 public class BfmController {
 
     private final BfmContext bfmContext;
+    private  final MinipgAccessUtil minipgAccessUtil;
 
     @RequestMapping(path = "/status",method = RequestMethod.GET)
     public @ResponseBody
@@ -83,7 +80,7 @@ public class BfmController {
     public @ResponseBody String clusterStatus(){
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String retval = "";
-        ArrayList<String> serverIPAddress = new ArrayList<String>();
+        // ArrayList<String> serverIPAddress = new ArrayList<String>();
 
         // try {
         //     Enumeration<NetworkInterface> b = NetworkInterface.getNetworkInterfaces();
@@ -199,30 +196,61 @@ public class BfmController {
         return retval;
     }    
 
-    @RequestMapping(path = "/switchover/{targetPG}",method = RequestMethod.POST)
-    public @ResponseBody String switchOver(@PathVariable(value = "targetPG") String targetPG){
-        String retval = "";       
+    @RequestMapping(path = "/switchover/{target}",method = RequestMethod.POST)
+    public @ResponseBody String switchOver(@PathVariable(value = "target") String targetPG){
+        String retval ="";       
         if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
             try{
                 String targetPG_IP = targetPG.split(":")[0];
                 String targetPG_Port = targetPG.split(":")[1];
-                if (targetPG_IP.length() < 7 || targetPG_Port.length()<1){
-                    retval = retval + "Please speicfy target server and port (e.g. 192.168.1.7:5432)\n";
-                } else {
 
-                    // set watch_startegy to manual
-                    // set mail notification to false
-                    // on CheckCluster if bfmContext.switchOverTo is not null run switchOver routine
-                        // check replay lag is 0
-                        // stop master
-                        // promote slave
-                        // turn ex-master to slave with pg_rewind, if fail use pg_basebackup
-                    // set watch_startegy to available
-                    // set mail notification to old value
+                if (targetPG_IP.length() < 7 || targetPG_Port.length()<1){
+                    retval = retval + "Please specify target server and port (e.g. 192.168.1.7:5432)"+ targetPG + "\n";
+                } else {
+                    PostgresqlServer switchOverToPG = this.bfmContext.getPgList().stream()
+                                                    .filter(s -> (s.getServerAddress().equals(targetPG))).findFirst().get();
+                    
+                    if (switchOverToPG == null){
+                        retval = retval + targetPG+ " Server not found in BFM Cluster\n";
+                    } else {
+                        if (switchOverToPG.getReplayLag().equals("0")){
+                            this.bfmContext.setCheckPaused(Boolean.TRUE);
+                            String ws = this.bfmContext.getWatch_strategy();
+                            Boolean mail_notify = this.bfmContext.isMail_notification_enabled();
+                            
+                            this.bfmContext.setWatch_strategy("manual");
+                            this.bfmContext.setMail_notification_enabled(Boolean.FALSE);
+
+                            PostgresqlServer old_master = this.bfmContext.getMasterServer();
+                            String res = "";
+                            res = minipgAccessUtil.prepareForSwitchOver(old_master);
+                            retval = retval +"prepare res:"+res+"\n";
+                            
+                            res = minipgAccessUtil.vipDown(old_master);
+                            retval = retval +"vip down res:"+res+"\n";
+
+                            res = minipgAccessUtil.promote(switchOverToPG);
+                            retval = retval +"promote res:"+res+"\n";
+
+                            res = minipgAccessUtil.vipUp(switchOverToPG);
+                            retval = retval +"vip up res:"+res+"\n";
+
+                            res = minipgAccessUtil.postSwitchOver(old_master, switchOverToPG);
+                            retval = retval +"post res:"+res+"\n";
+
+                            this.bfmContext.setWatch_strategy(ws);
+                            this.bfmContext.setMail_notification_enabled(mail_notify);
+                            retval = retval +"Switch Over Completed Succesfully :\n";
+                            this.bfmContext.setCheckPaused(Boolean.FALSE);
+
+                        } else {
+                            retval = retval + " Replay Lag is Not Zero(0) for selected Slave :"+ targetPG+"\n";
+                        }
+                    }
 
                 }
             } catch (Exception e) {
-                retval = retval + "Please speicfy target server and port (e.g. 192.168.1.7:5432)\n";
+                retval = retval + e.getMessage()+"\n-->"+targetPG+"\n";
             }            
         } else {
             retval = retval + "Please run on Active BFM pair...\n";

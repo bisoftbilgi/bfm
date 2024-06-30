@@ -41,6 +41,9 @@ public class BfmContext {
     @Value("${bfm.watch-strategy:availability}")
     public String watch_strategy;
     
+    @Value("${bfm.mail-notification-enabled:false}")
+    public boolean mail_notification_enabled;
+    
     boolean isMasterBfm;
 
     ClusterStatus clusterStatus;
@@ -50,6 +53,8 @@ public class BfmContext {
     String masterServerLastWalPos;
 
     PostgresqlServer splitBrainMaster;
+
+    boolean isCheckPaused = Boolean.FALSE;
 
     String lastCheckLog = "";
 

@@ -69,9 +69,6 @@ public class ClusterCheckScheduler {
     @Value("${bfm.ex-master-behavior:rejoin}")
     public String ex_master_behavior;
 
-    @Value("${bfm.mail-notification-enabled:false}")
-    public boolean mail_notification_enabled;
-
     int remainingFailCount = (timeoutIgnoranceCount == 0) ? 3 : timeoutIgnoranceCount;
 
     String leaderSlaveLastWalPos = "";
@@ -118,146 +115,153 @@ public class ClusterCheckScheduler {
 
     @Scheduled(fixedDelay = 7000)
     public void checkUnavilable() {
-
-        if(this.bfmContext.isMasterBfm()) {
-            try {
-
-                long numberOfAliveServers = this.bfmContext.getPgList().stream()
-                        .filter(server -> server.getStatus() != DatabaseStatus.INACCESSIBLE)
-                        .count();
-
-                PostgresqlServer master =null ;
-                //If the number of alive servers is 1
-                // this server should have the status MASTER_WITH_NO_SLAVE
-                if(numberOfAliveServers==1){
-                    try {
-                        master = this.bfmContext.getPgList().stream()
-                        .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE || server.getStatus() == DatabaseStatus.MASTER ).findFirst().get();                    
-                    } catch (Exception e) {
-                        log.warn("No Master server found in cluster...");
+        if (this.bfmContext.isCheckPaused() == Boolean.TRUE){
+            log.info("Cluster Check Paused...");
+        } else {
+            if(this.bfmContext.isMasterBfm()) {
+                try {
+    
+                    long numberOfAliveServers = this.bfmContext.getPgList().stream()
+                            .filter(server -> server.getStatus() != DatabaseStatus.INACCESSIBLE)
+                            .count();
+    
+                    PostgresqlServer master =null ;
+                    //If the number of alive servers is 1
+                    // this server should have the status MASTER_WITH_NO_SLAVE
+                    if(numberOfAliveServers==1){
+                        try {
+                            master = this.bfmContext.getPgList().stream()
+                            .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE || server.getStatus() == DatabaseStatus.MASTER ).findFirst().get();                    
+                        } catch (Exception e) {
+                            log.warn("No Master server found in cluster...");
+                        }
+                    }else{
+                        // Else there should be a master server
+                        Long count = this.bfmContext.getPgList().stream()
+                        .filter(server -> server.getStatus() == DatabaseStatus.MASTER).count();
+                        if (count == 1L ){
+                            master = this.bfmContext.getPgList().stream()
+                                .filter(server -> server.getStatus() == DatabaseStatus.MASTER).findFirst().get();
+                        }
                     }
-                }else{
-                    // Else there should be a master server
-                    Long count = this.bfmContext.getPgList().stream()
-                    .filter(server -> server.getStatus() == DatabaseStatus.MASTER).count();
-                    if (count == 1L ){
-                        master = this.bfmContext.getPgList().stream()
-                            .filter(server -> server.getStatus() == DatabaseStatus.MASTER).findFirst().get();
-                    }
-                }
-
-                final PostgresqlServer selectedMaster = master;
-
-                this.bfmContext.getPgList().stream()
-                        .filter(server -> server.getStatus() == DatabaseStatus.INACCESSIBLE && server != this.bfmContext.getSplitBrainMaster())
-                        .forEach(server ->
-                                {
-                                    try {
-                                        if (this.bfmContext.getWatch_strategy().equals("availability")){                            
-                                            if (selectedMaster != null){
-                                                if (server.getRewindStarted() == Boolean.FALSE){
-                                                    String start_result = minipgAccessUtil.startPg(server);
-                                                    if (start_result != "OK"){
-                                                        server.setRewindStarted(Boolean.TRUE);
-                                                        String rewind_result = minipgAccessUtil.rewind(server, selectedMaster);
-                                                        if (! rewind_result.equals("OK")){
-                                                            log.info("MiniPG rewind was FAILED. Slave Target:",server);
-                                                            if (basebackup_slave_join == true){
-                                                                String rejoin_result = rejoinCluster(selectedMaster, server);
-                                                                log.info("pg_basebackup join cluster result is:"+rejoin_result);
-                                                            } else {
-                                                                log.info("pg_basebackup join is set to FALSE. passing for slave server:",server);
+    
+                    final PostgresqlServer selectedMaster = master;
+    
+                    this.bfmContext.getPgList().stream()
+                            .filter(server -> server.getStatus() == DatabaseStatus.INACCESSIBLE && server != this.bfmContext.getSplitBrainMaster())
+                            .forEach(server ->
+                                    {
+                                        try {
+                                            if (this.bfmContext.getWatch_strategy().equals("availability")){                            
+                                                if (selectedMaster != null){
+                                                    if (server.getRewindStarted() == Boolean.FALSE){
+                                                        String start_result = minipgAccessUtil.startPg(server);
+                                                        if (start_result != "OK"){
+                                                            server.setRewindStarted(Boolean.TRUE);
+                                                            String rewind_result = minipgAccessUtil.rewind(server, selectedMaster);
+                                                            if (! rewind_result.equals("OK")){
+                                                                log.info("MiniPG rewind was FAILED. Slave Target:",server);
+                                                                if (basebackup_slave_join == true){
+                                                                    String rejoin_result = rejoinCluster(selectedMaster, server);
+                                                                    log.info("pg_basebackup join cluster result is:"+rejoin_result);
+                                                                } else {
+                                                                    log.info("pg_basebackup join is set to FALSE. passing for slave server:",server);
+                                                                }
                                                             }
+                                                            server.setRewindStarted(Boolean.FALSE);        
                                                         }
-                                                        server.setRewindStarted(Boolean.FALSE);        
+                                                    } else {
+                                                        log.info("Rejoin processing...Passing.");
                                                     }
-                                                } else {
-                                                    log.info("Rejoin processing...Passing.");
+                                                    
                                                 }
-                                                
+                                            } else {
+                                                log.info("Rewind or ReBaseUp ignoring..BFM watch strategy is:"+this.bfmContext.getWatch_strategy());
+                                                if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
+                                                    mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                                                    "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
+                                                    + "\nWatch Strategy is MANUAL. SLAVE JOIN (Rewind or Rebase) ignoring. Please manual respond to failure...Selected Master Server : " + selectedMaster.getServerAddress());
+                                                }    
                                             }
-                                        } else {
-                                            log.info("Rewind or ReBaseUp ignoring..BFM watch strategy is:"+this.bfmContext.getWatch_strategy());
-                                            if (mail_notification_enabled == true){
-                                                mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
-                                                "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
-                                                + "\nWatch Strategy is MANUAL. SLAVE JOIN (Rewind or Rebase) ignoring. Please manual respond to failure...Selected Master Server : " + selectedMaster.getServerAddress());
-                                            }    
+                                        } catch (Exception e) {
+                                            log.error(String.format("Unable to rewind %s", server.getServerAddress()));
                                         }
-                                    } catch (Exception e) {
-                                        log.error(String.format("Unable to rewind %s", server.getServerAddress()));
                                     }
-                                }
-                        );
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                log.error("Unable to find master server for cluster");
+                            );
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    log.error("Unable to find master server for cluster");
+                }
             }
-        }
-
+        }       
     }
 
     @Scheduled(fixedDelay = 5000)
     public void checkCluster(){
-        this.bfmContext.setLastCheckLog("");
+        if (this.bfmContext.isCheckPaused() == Boolean.TRUE){
+            log.info("Cluster Check Paused...");
+            findLeader();
+        } else {
+            this.bfmContext.setLastCheckLog("");
 
-        if (this.bfmContext.getSplitBrainMaster() != null){
-            log.info("Server:"+this.bfmContext.getSplitBrainMaster().getServerAddress()+ " is stopped for avoid to Split Brain status..");
-            this.bfmContext.setLastCheckLog(this.bfmContext.getLastCheckLog() + 
-            "Server:"+this.bfmContext.getSplitBrainMaster().getServerAddress()+ " is stopped for avoid to Split Brain status..\n");
-        }
-        if(pairStatus.equals("no-pair") || pairStatus.equals("Passive") || pairStatus.equals("Unreachable")){
-            log.info("this is the active bfm pair");
-            this.bfmContext.setMasterBfm(true);
-        }else{
-            log.info(String.format("Bfm pair is active in %s",bfmPair));
-            this.bfmContext.setMasterBfm(false);
-            try {
-                Gson gson = new GsonBuilder().setPrettyPrinting().create();
-                String last_saved_status = bfmAccessUtil.getLastSavedStatus();
-                if (last_saved_status != "Unreachable"){
-                    try {
-                        PrintWriter out = new PrintWriter("./bfm_status.json");
-                        out.println(gson.toJson(gson.fromJson(last_saved_status, ContextStatus.class)));
-                        out.close();
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                }                
-                
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            
-            return;
-        }
-        // log.info("-----Cluster Healthcheck Started-----");
-        
-
-        bfmContext.getPgList().stream().forEach(server -> {
-            try {
-                checkServer(server);
-            }catch(Exception e){
-                log.error(String.format("Unable to connect to server : %s",server.getServerAddress()));
+            if (this.bfmContext.getSplitBrainMaster() != null){
+                log.info("Server:"+this.bfmContext.getSplitBrainMaster().getServerAddress()+ " is stopped for avoid to Split Brain status..");
                 this.bfmContext.setLastCheckLog(this.bfmContext.getLastCheckLog() + 
-                String.format("Unable to connect to server : %s",server.getServerAddress())+ "\n");
-    
+                "Server:"+this.bfmContext.getSplitBrainMaster().getServerAddress()+ " is stopped for avoid to Split Brain status..\n");
             }
-        });
+            if(pairStatus.equals("no-pair") || pairStatus.equals("Passive") || pairStatus.equals("Unreachable")){
+                log.info("this is the active bfm pair");
+                this.bfmContext.setMasterBfm(true);
+            }else{
+                log.info(String.format("Bfm pair is active in %s",bfmPair));
+                this.bfmContext.setMasterBfm(false);
+                try {
+                    Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                    String last_saved_status = bfmAccessUtil.getLastSavedStatus();
+                    if (last_saved_status != "Unreachable"){
+                        try {
+                            PrintWriter out = new PrintWriter("./bfm_status.json");
+                            out.println(gson.toJson(gson.fromJson(last_saved_status, ContextStatus.class)));
+                            out.close();
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    }                
+                    
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                
+                return;
+            }
+            // log.info("-----Cluster Healthcheck Started-----");
+            
 
-        if (bfmContext.getMasterServer() == null){
-            PostgresqlServer master = this.selectNewMaster();
-            bfmContext.setMasterServer(master);
+            bfmContext.getPgList().stream().forEach(server -> {
+                try {
+                    checkServer(server);
+                }catch(Exception e){
+                    log.error(String.format("Unable to connect to server : %s",server.getServerAddress()));
+                    this.bfmContext.setLastCheckLog(this.bfmContext.getLastCheckLog() + 
+                    String.format("Unable to connect to server : %s",server.getServerAddress())+ "\n");
+        
+                }
+            });
+
+            if (bfmContext.getMasterServer() == null){
+                PostgresqlServer master = this.selectNewMaster();
+                bfmContext.setMasterServer(master);
+            }
+
+            isClusterHealthy();
+
+
+            log.info(String.format("Cluster Status is %s \n\n\n",this.bfmContext.getClusterStatus()));
+            this.bfmContext.setLastCheckLog(this.bfmContext.getLastCheckLog() +
+                                            String.format("Cluster Status is %s ",this.bfmContext.getClusterStatus())+ "\n");
+
+            // log.info("-----Cluster Healthcheck Finished-----\n\n\n");
         }
-
-        isClusterHealthy();
-
-
-        log.info(String.format("Cluster Status is %s \n\n\n",this.bfmContext.getClusterStatus()));
-        this.bfmContext.setLastCheckLog(this.bfmContext.getLastCheckLog() +
-                                        String.format("Cluster Status is %s ",this.bfmContext.getClusterStatus())+ "\n");
-
-        // log.info("-----Cluster Healthcheck Finished-----\n\n\n");
     }
 
     public void checkServer(PostgresqlServer postgresqlServer) throws Exception {
@@ -294,7 +298,7 @@ public class ClusterCheckScheduler {
             log.warn("Cluster has a master with no slave (cluster size is 2), not healthy but ingoring failover");
             warning();
             checkSlaves();
-            if (mail_notification_enabled == true && this.isWarningMailSended == Boolean.FALSE){
+            if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE && this.isWarningMailSended == Boolean.FALSE){
                 mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
                     "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
                     + "\nMaster (With No Slave) Server:"+ this.bfmContext.getMasterServer().getServerAddress());
@@ -326,7 +330,7 @@ public class ClusterCheckScheduler {
                                 if (basebackup_slave_join == true){
                                     log.info("Rejoin to cluster Wtih pg_basebackup started..");            
                                     rejoinCluster(leaderPg, pg);
-                                    if (mail_notification_enabled == true){
+                                    if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
                                         mailService.sendMail("Slave Server "+pg.getServerAddress()+" Out Of CLuster",
                                         "Slave server :"+ pg.getServerAddress()+" has NO MASTER."
                                         + "\nCluster basebackup slave join is "+ basebackup_slave_join+". Slave server rejoin process completed."
@@ -341,7 +345,7 @@ public class ClusterCheckScheduler {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                    if (mail_notification_enabled == true){
+                    if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
                         mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
                             "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus()
                             +"\nCluster has more than one MASTER server. Leader Master is :"+leaderPg.getServerAddress()  
@@ -356,7 +360,7 @@ public class ClusterCheckScheduler {
             log.error("Cluster has no master");
             this.bfmContext.setClusterStatus(ClusterStatus.NOT_HEALTHY);
             this.nothealthy();
-            if (mail_notification_enabled == true){
+            if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
 
                 String slaveServerAddresses = "";
 
@@ -424,15 +428,25 @@ public class ClusterCheckScheduler {
     public PostgresqlServer findLeader(){
         this.bfmContext.getPgList().stream().forEach( s -> {
             try{
+                s.checkTimeLineId();
                 s.getWalPosition();
             }
             catch(Exception e){
                 s.setWalLogPosition(null);
+                s.setTimeLineId(-1);
             }
         } );
 
-        PostgresqlServer leader = this.bfmContext.getPgList().stream()
+
+        PostgresqlServer leader_old = this.bfmContext.getPgList().stream()
             .sorted(Comparator.<PostgresqlServer, String>comparing(server-> server.getWalLogPosition(), Comparator.reverseOrder()))
+            .findFirst().get();
+
+        log.info("Old Style Leader :"+ leader_old.getServerAddress());
+
+        PostgresqlServer leader = this.bfmContext.getPgList().stream()
+            .sorted(Comparator.<PostgresqlServer, Integer>comparing(server -> server.getTimeLineId() , Comparator.reverseOrder())
+            .thenComparing(server -> server.getWalLogPosition(), Comparator.reverseOrder()))
             .findFirst().get();
 
         log.info("leader is "+ leader.getServerAddress());
@@ -529,7 +543,7 @@ public class ClusterCheckScheduler {
                             if (diff_hours > Integer.parseInt(status_file_expire.replace("H", ""))){
                                 doFailover = Boolean.FALSE;
                                 log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, "+diff_hours+ " Hours) old..");
-                                if (mail_notification_enabled==Boolean.TRUE){
+                                if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
                                     log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");
                                     mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
                                     "Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");  
@@ -539,7 +553,7 @@ public class ClusterCheckScheduler {
                             if (diff_days > Integer.parseInt(status_file_expire.replace("D", ""))){
                                 doFailover = Boolean.FALSE;
                                 log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, "+diff_hours+ " Hours) old..");
-                                if (mail_notification_enabled==Boolean.TRUE){
+                                if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
                                     log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");
                                     mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
                                     "Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");  
@@ -562,7 +576,7 @@ public class ClusterCheckScheduler {
                         log.warn("Data Loss Tolerance is:"+ getDoubleFromString(data_loss_tolerance)+ " doFailover flag is:"+ doFailover 
                         + ".Data loss size calculated as " + Double.toString(data_loss_size) + " between Leader Slave Wal Position and Master Last Wal Position."
                         + "Failover ignored.. Please manual respond to failure.. ");
-                        if (mail_notification_enabled == Boolean.TRUE){
+                        if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
                             mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
                             "Data Loss Tolerance is:"+ getDoubleFromString(data_loss_tolerance) + " doFailover flag is:"+ doFailover 
                             + ".Data loss size calculated as " + Double.toString(data_loss_size) + " between Leader Slave Wal Position and Master Last Wal Position."
@@ -573,7 +587,7 @@ public class ClusterCheckScheduler {
 
             } else {
                 this.bfmContext.setClusterStatus(ClusterStatus.NOT_HEALTHY);
-                if (mail_notification_enabled == Boolean.TRUE){
+                if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
                     mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
                     "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
                     + "\nAutomatic Failover is OFF. Please manual respond to failure...Master Server : " + this.bfmContext.getMasterServer().getServerAddress());    
@@ -677,7 +691,7 @@ public class ClusterCheckScheduler {
 
                                 if (this.bfmContext.getWatch_strategy() == "manual"){
                                     log.info("BFM is in"+ this.bfmContext.getWatch_strategy()+". Please manual respond to incident..");
-                                    if (mail_notification_enabled == true){
+                                    if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
                                         mailService.sendMail("Slave Server "+server.getServerAddress()+" Out Of CLuster",
                                         "Slave server :"+ server.getServerAddress()+" has NO MASTER. Replication could be down..."
                                         + "BFM is in"+ this.bfmContext.getWatch_strategy()+". Please manual respond to incident..");
@@ -698,7 +712,7 @@ public class ClusterCheckScheduler {
                                             log.info("Rejoin to cluster Wtih pg_basebackup started..");            
                                             String rejoin_result = rejoinCluster(master, server);
                                             log.info("Slave server :"+server.getServerAddress()+" reJoin result is:"+rejoin_result);
-                                            if (mail_notification_enabled == true){
+                                            if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
         
                                                 mailService.sendMail("Slave Server "+server.getServerAddress()+" Out Of CLuster",
                                                 "Slave server :"+ server.getServerAddress()+" has NO MASTER."

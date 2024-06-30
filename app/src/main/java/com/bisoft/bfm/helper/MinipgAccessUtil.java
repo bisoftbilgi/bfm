@@ -544,4 +544,109 @@ public class MinipgAccessUtil {
         }        
     }
 
+    public String postSwitchOver(PostgresqlServer old_master, PostgresqlServer new_master)throws Exception {
+        //log.info("username : "+username+", password : "+password);
+        log.info("prepairing for switchOver :"+old_master.getServerAddress());
+        final String serverAddress = old_master.getServerAddress().split(":")[0];
+        final String serverPort = old_master.getServerAddress().split(":")[1];
+        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                NoopHostnameVerifier.INSTANCE);
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(scsf)
+                .build();
+
+        PromoteDTO promoteDTO = PromoteDTO.builder()
+                                .masterIp(new_master.getServerAddress().split(":")[0])
+                                .port(new_master.getServerAddress().split(":")[1])
+                                .user(new_master.getUsername())
+                                .password(new_master.getPassword()).build();
+
+        ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
+        String json = ow.writeValueAsString(promoteDTO);
+
+        credsProvider.setCredentials(
+                new AuthScope(serverAddress, port),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+
+        try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credsProvider)
+                .build()) {
+
+            HttpPost request = new HttpPost(minipgUrl+"/minipg/post-so");
+            request.setHeader("Accept", "application/json");
+            request.setHeader("Content-type", "application/json");
+
+            final StringEntity entity = new StringEntity(json);
+            request.setEntity(entity);
+
+            try (CloseableHttpResponse response1 = httpclient.execute(request)) {
+                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                HttpEntity entity1 = (HttpEntity) response1.getEntity();
+                // do something useful with the response body
+                // and ensure it is fully consumed
+                String result = (EntityUtils.toString(response1.getEntity()));
+                return result;
+            }catch (Exception e){
+                log.error("Unable get post switch over from server "+old_master.getServerAddress());
+            }
+        } catch (IOException e) {
+            log.error("Unable get post switch over from server "+old_master.getServerAddress());
+        }
+        return "OK";
+    }
+
+    public String prepareForSwitchOver(PostgresqlServer old_master) throws Exception{
+        final String serverAddress = old_master.getServerAddress().split(":")[0];
+        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+        credsProvider.setCredentials(
+                new AuthScope(serverAddress, port),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                NoopHostnameVerifier.INSTANCE);
+
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(scsf)
+                .build();
+
+        try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credsProvider)
+                .build()) {
+
+            HttpGet httpGet = new HttpGet(minipgUrl+"/minipg/pre-so");
+
+            //timeout if server is shutdown
+            RequestConfig requestConfig = RequestConfig.custom()
+                    .setConnectTimeout(Timeout.of(5, TimeUnit.SECONDS))
+                    .setConnectionRequestTimeout(Timeout.of(5, TimeUnit.SECONDS))
+                    .build();
+
+            httpGet.setConfig(requestConfig);
+
+            try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
+                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                HttpEntity entity1 = (HttpEntity) response1.getEntity();
+                // do something useful with the response body
+                // and ensure it is fully consumed
+                String result = (EntityUtils.toString(response1.getEntity()));
+                return result;
+            }catch (Exception e){
+                log.error("Prepare for SwitchOver failed for "+old_master.getServerAddress());
+            }
+        } catch (IOException e) {
+            log.error("Promote failed "+old_master.getServerAddress()+" is unreacable");
+        }
+
+        return "OK";
+
+    }
+
 }
