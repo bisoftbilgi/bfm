@@ -137,7 +137,7 @@ public class PostgresqlServer {
             this.setTimeLineId(Integer.parseInt(timeline_id));  
             log.info(this.getServerAddress() + " timeline_id: "+ this.getTimeLineId());                      
         } catch (Exception e) {
-            log.warn("conneciton Failed to server:"+this.getServerAddress());
+            log.warn("Connection Failed to server:"+this.getServerAddress());
         }
     }
 

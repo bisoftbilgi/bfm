@@ -222,21 +222,11 @@ public class BfmController {
                             this.bfmContext.setMail_notification_enabled(Boolean.FALSE);
 
                             PostgresqlServer old_master = this.bfmContext.getMasterServer();
-                            String res = "";
-                            res = minipgAccessUtil.prepareForSwitchOver(old_master);
-                            retval = retval +"prepare res:"+res+"\n";
-                            
-                            res = minipgAccessUtil.vipDown(old_master);
-                            retval = retval +"vip down res:"+res+"\n";
-
-                            res = minipgAccessUtil.promote(switchOverToPG);
-                            retval = retval +"promote res:"+res+"\n";
-
-                            res = minipgAccessUtil.vipUp(switchOverToPG);
-                            retval = retval +"vip up res:"+res+"\n";
-
-                            res = minipgAccessUtil.postSwitchOver(old_master, switchOverToPG);
-                            retval = retval +"post res:"+res+"\n";
+                            minipgAccessUtil.prepareForSwitchOver(old_master);                            
+                            minipgAccessUtil.vipDown(old_master);
+                            minipgAccessUtil.promote(switchOverToPG);
+                            minipgAccessUtil.vipUp(switchOverToPG);
+                            minipgAccessUtil.postSwitchOver(old_master, switchOverToPG);
 
                             this.bfmContext.setWatch_strategy(ws);
                             this.bfmContext.setMail_notification_enabled(mail_notify);
