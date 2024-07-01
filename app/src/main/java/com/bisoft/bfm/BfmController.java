@@ -208,10 +208,11 @@ public class BfmController {
                     retval = retval + "Please specify target server and port (e.g. 192.168.1.7:5432)"+ targetPG + "\n";
                 } else {
                     PostgresqlServer switchOverToPG = this.bfmContext.getPgList().stream()
-                                                    .filter(s -> (s.getServerAddress().equals(targetPG))).findFirst().get();
-                    
+                                                    .filter(s -> (s.getServerAddress().equals(targetPG) 
+                                                                    && (s.getDatabaseStatus() != DatabaseStatus.MASTER 
+                                                                        || s.getDatabaseStatus() != DatabaseStatus.MASTER_WITH_NO_SLAVE))).findFirst().get();
                     if (switchOverToPG == null){
-                        retval = retval + targetPG+ " Server not found in BFM Cluster\n";
+                        retval = retval + targetPG+ " Server not found in BFM Cluster or Its not SLAVE.\n";
                     } else {
                         if (switchOverToPG.getReplayLag().equals("0")){
                             this.bfmContext.setCheckPaused(Boolean.TRUE);
