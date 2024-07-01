@@ -9,6 +9,7 @@ import java.io.UncheckedIOException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.bisoft.bfm.dto.ClusterStatus;
 import com.bisoft.bfm.dto.DatabaseStatus;
 import com.bisoft.bfm.helper.MinipgAccessUtil;
 import com.bisoft.bfm.model.BfmContext;
@@ -210,8 +212,7 @@ public class BfmController {
                     try {
                         PostgresqlServer switchOverToPG = this.bfmContext.getPgList().stream()
                         .filter(s -> (s.getServerAddress().equals(targetPG) 
-                                        && (s.getDatabaseStatus() != DatabaseStatus.MASTER 
-                                            || s.getDatabaseStatus() != DatabaseStatus.MASTER_WITH_NO_SLAVE))).findFirst().get();
+                                        && s.getDatabaseStatus().equals(DatabaseStatus.SLAVE))).findFirst().get();
 
                         if (switchOverToPG == null){
                             retval = retval + targetPG+ " Server not found in BFM Cluster or Its not SLAVE.\n";
@@ -225,16 +226,24 @@ public class BfmController {
                                 this.bfmContext.setMail_notification_enabled(Boolean.FALSE);
     
                                 PostgresqlServer old_master = this.bfmContext.getMasterServer();
-                                minipgAccessUtil.prepareForSwitchOver(old_master);                            
+                                String pre_result = minipgAccessUtil.prepareForSwitchOver(old_master);
+                                System.out.println("Prepare for SwitchOver result :" + pre_result);
                                 minipgAccessUtil.vipDown(old_master);
-                                minipgAccessUtil.promote(switchOverToPG);
+                                
+                                String promote_result = minipgAccessUtil.promote(switchOverToPG);
+                                System.out.println("Slave Promote Result :"+ promote_result);
                                 minipgAccessUtil.vipUp(switchOverToPG);
                                 minipgAccessUtil.postSwitchOver(old_master, switchOverToPG);
-    
+                                this.bfmContext.setCheckPaused(Boolean.FALSE);
+                                int checkCount = 3;
+                                while ((this.bfmContext.getClusterStatus() != ClusterStatus.HEALTHY) && (checkCount > 0)){
+                                    TimeUnit.SECONDS.sleep(5);
+                                }                                
+                                
                                 this.bfmContext.setWatch_strategy(ws);
                                 this.bfmContext.setMail_notification_enabled(mail_notify);
                                 retval = retval +"Switch Over Completed Succesfully :\n";
-                                this.bfmContext.setCheckPaused(Boolean.FALSE);
+                                
     
                             } else {
                                 retval = retval + " Replay Lag is Not Zero(0) for selected Slave :"+ targetPG+"\n";

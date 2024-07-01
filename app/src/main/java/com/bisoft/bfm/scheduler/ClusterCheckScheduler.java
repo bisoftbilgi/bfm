@@ -200,7 +200,6 @@ public class ClusterCheckScheduler {
     public void checkCluster(){
         if (this.bfmContext.isCheckPaused() == Boolean.TRUE){
             log.info("Cluster Check Paused...");
-            findLeader();
         } else {
             this.bfmContext.setLastCheckLog("");
 
