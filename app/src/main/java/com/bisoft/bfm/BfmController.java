@@ -204,41 +204,46 @@ public class BfmController {
                 String targetPG_IP = targetPG.split(":")[0];
                 String targetPG_Port = targetPG.split(":")[1];
 
-                if (targetPG_IP.length() < 7 || targetPG_Port.length()<1){
+                if (targetPG_IP.length() < 7 || targetPG_Port ==  null){
                     retval = retval + "Please specify target server and port (e.g. 192.168.1.7:5432)"+ targetPG + "\n";
                 } else {
-                    PostgresqlServer switchOverToPG = this.bfmContext.getPgList().stream()
-                                                    .filter(s -> (s.getServerAddress().equals(targetPG) 
-                                                                    && (s.getDatabaseStatus() != DatabaseStatus.MASTER 
-                                                                        || s.getDatabaseStatus() != DatabaseStatus.MASTER_WITH_NO_SLAVE))).findFirst().get();
-                    if (switchOverToPG == null){
-                        retval = retval + targetPG+ " Server not found in BFM Cluster or Its not SLAVE.\n";
-                    } else {
-                        if (switchOverToPG.getReplayLag().equals("0")){
-                            this.bfmContext.setCheckPaused(Boolean.TRUE);
-                            String ws = this.bfmContext.getWatch_strategy();
-                            Boolean mail_notify = this.bfmContext.isMail_notification_enabled();
-                            
-                            this.bfmContext.setWatch_strategy("manual");
-                            this.bfmContext.setMail_notification_enabled(Boolean.FALSE);
+                    try {
+                        PostgresqlServer switchOverToPG = this.bfmContext.getPgList().stream()
+                        .filter(s -> (s.getServerAddress().equals(targetPG) 
+                                        && (s.getDatabaseStatus() != DatabaseStatus.MASTER 
+                                            || s.getDatabaseStatus() != DatabaseStatus.MASTER_WITH_NO_SLAVE))).findFirst().get();
 
-                            PostgresqlServer old_master = this.bfmContext.getMasterServer();
-                            minipgAccessUtil.prepareForSwitchOver(old_master);                            
-                            minipgAccessUtil.vipDown(old_master);
-                            minipgAccessUtil.promote(switchOverToPG);
-                            minipgAccessUtil.vipUp(switchOverToPG);
-                            minipgAccessUtil.postSwitchOver(old_master, switchOverToPG);
-
-                            this.bfmContext.setWatch_strategy(ws);
-                            this.bfmContext.setMail_notification_enabled(mail_notify);
-                            retval = retval +"Switch Over Completed Succesfully :\n";
-                            this.bfmContext.setCheckPaused(Boolean.FALSE);
-
+                        if (switchOverToPG == null){
+                            retval = retval + targetPG+ " Server not found in BFM Cluster or Its not SLAVE.\n";
                         } else {
-                            retval = retval + " Replay Lag is Not Zero(0) for selected Slave :"+ targetPG+"\n";
+                            if (switchOverToPG.getReplayLag().equals("0")){
+                                this.bfmContext.setCheckPaused(Boolean.TRUE);
+                                String ws = this.bfmContext.getWatch_strategy();
+                                Boolean mail_notify = this.bfmContext.isMail_notification_enabled();
+                                
+                                this.bfmContext.setWatch_strategy("manual");
+                                this.bfmContext.setMail_notification_enabled(Boolean.FALSE);
+    
+                                PostgresqlServer old_master = this.bfmContext.getMasterServer();
+                                minipgAccessUtil.prepareForSwitchOver(old_master);                            
+                                minipgAccessUtil.vipDown(old_master);
+                                minipgAccessUtil.promote(switchOverToPG);
+                                minipgAccessUtil.vipUp(switchOverToPG);
+                                minipgAccessUtil.postSwitchOver(old_master, switchOverToPG);
+    
+                                this.bfmContext.setWatch_strategy(ws);
+                                this.bfmContext.setMail_notification_enabled(mail_notify);
+                                retval = retval +"Switch Over Completed Succesfully :\n";
+                                this.bfmContext.setCheckPaused(Boolean.FALSE);
+    
+                            } else {
+                                retval = retval + " Replay Lag is Not Zero(0) for selected Slave :"+ targetPG+"\n";
+                            }
                         }
+                    } catch (Exception e) {
+                        retval = retval + targetPG+ " Server not found in BFM Cluster or Its not SLAVE.\n";
                     }
-
+                    
                 }
             } catch (Exception e) {
                 retval = retval + e.getMessage()+"\n-->"+targetPG+"\n";
