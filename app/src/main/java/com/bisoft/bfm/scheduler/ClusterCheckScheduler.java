@@ -437,12 +437,11 @@ public class ClusterCheckScheduler {
             }
         } );
 
+        // PostgresqlServer leader_old = this.bfmContext.getPgList().stream()
+        //     .sorted(Comparator.<PostgresqlServer, String>comparing(server-> server.getWalLogPosition(), Comparator.reverseOrder()))
+        //     .findFirst().get();
 
-        PostgresqlServer leader_old = this.bfmContext.getPgList().stream()
-            .sorted(Comparator.<PostgresqlServer, String>comparing(server-> server.getWalLogPosition(), Comparator.reverseOrder()))
-            .findFirst().get();
-
-        log.info("Old Style Leader :"+ leader_old.getServerAddress());
+        // log.info("Old Style Leader :"+ leader_old.getServerAddress());
 
         PostgresqlServer leader = this.bfmContext.getPgList().stream()
             .sorted(Comparator.<PostgresqlServer, Integer>comparing(server -> server.getTimeLineId() , Comparator.reverseOrder())
