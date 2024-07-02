@@ -274,10 +274,11 @@ public class BfmController {
         String retval ="";       
         if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
             try{
-                String targetPG_IP = targetPG.split(":")[0];
-                String targetPG_Port = targetPG.split(":")[1];
 
-                if (targetPG_IP.length() < 7 || targetPG_Port ==  null){
+                if (targetPG.split(":")[0] == null 
+                    || targetPG.split(":")[1] == null 
+                    || (targetPG.split(":")[0]).length() < 7 
+                    || (targetPG.split(":")[1]).length() < 1){
                     retval = retval + "Please specify target server and port (e.g. 192.168.1.7:5432)"+ targetPG + "\n";
                 } else {
                     try {
@@ -315,6 +316,7 @@ public class BfmController {
                                 int checkCount = 3;
                                 while ((this.bfmContext.getClusterStatus() != ClusterStatus.HEALTHY) && (checkCount > 0)){
                                     TimeUnit.SECONDS.sleep(5);
+                                    checkCount--;
                                 }                                
                                 
                                 this.bfmContext.setWatch_strategy(ws);
@@ -339,7 +341,70 @@ public class BfmController {
         }
 
         return retval;
-    }        
+    } 
+    
+    @RequestMapping(path = "/reinit/{target}",method = RequestMethod.POST)
+    public @ResponseBody String reInit(@PathVariable(value = "target") String targetPG){
+        String retval ="";       
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+
+            if (targetPG.split(":")[0] == null || targetPG.split(":")[1] == null 
+                        || (targetPG.split(":")[0]).length() < 7 || (targetPG.split(":")[1]).length() < 1){
+
+                    retval = retval + "Please specify target server and port (e.g. 192.168.1.7:5432)"+ targetPG + "\n";
+
+                } else {
+                    try {
+                        PostgresqlServer target_server = this.bfmContext.getPgList().stream()
+                        .filter(s -> (s.getServerAddress().equals(targetPG) 
+                                        && s.getDatabaseStatus().equals(DatabaseStatus.SLAVE))).findFirst().get();
+
+                        if (target_server == null){
+                            retval = retval + targetPG+ " Server not found in BFM Cluster or Its not SLAVE.\n";
+                        } else {
+                            try {
+                                this.bfmContext.setCheckPaused(Boolean.TRUE);
+                                String ws = this.bfmContext.getWatch_strategy();
+                                Boolean mail_notify = this.bfmContext.isMail_notification_enabled();
+                                
+                                this.bfmContext.setWatch_strategy("manual");
+                                this.bfmContext.setMail_notification_enabled(Boolean.FALSE);
+
+                                PostgresqlServer master_server = this.bfmContext.getPgList().stream()
+                                .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE || server.getStatus() == DatabaseStatus.MASTER ).findFirst().get();                    
+
+                                target_server.setRewindStarted(Boolean.TRUE);
+                                String rewind_result = minipgAccessUtil.rewind(target_server, master_server);
+                                if (! rewind_result.equals("OK")){
+                                    log.info("pg_rewind was FAILED. starting rejoin with pg_basebackup. Target:",target_server);
+                                        String rejoin_result = minipgAccessUtil.rebaseUp(target_server, master_server);
+                                        log.info("pg_basebackup join cluster result is:"+rejoin_result);
+                                }
+                                target_server.setRewindStarted(Boolean.FALSE);
+
+                                this.bfmContext.setCheckPaused(Boolean.FALSE);
+                                int checkCount = 3;
+                                while ((this.bfmContext.getClusterStatus() != ClusterStatus.HEALTHY) && (checkCount > 0)){
+                                    TimeUnit.SECONDS.sleep(5);
+                                    checkCount--;
+                                }   
+                                this.bfmContext.setWatch_strategy(ws);
+                                this.bfmContext.setMail_notification_enabled(mail_notify);
+                                retval = retval +"Switch Over Completed Succesfully :\n";
+
+                            } catch (Exception e) {
+                                log.warn("No Master server found in cluster...");
+                            }
+                        }                        
+                    } catch (Exception e) {
+                        retval = retval + targetPG+ " Server not found in BFM Cluster or Its not SLAVE.\n";
+                    }     
+                }
+        } else {
+            retval = retval + "Please run on Active BFM pair...\n";
+        }
+        return retval;
+    }
 
 
     public static String asString(Resource resource) {
