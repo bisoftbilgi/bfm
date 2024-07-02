@@ -118,6 +118,11 @@ if [ ! -z $3 ]  && [ ! -z $4 ] && [ $3 == "-switchOver" ]; then
     export targetSlave=$4
 fi
 
+if [ ! -z $3 ]  && [ ! -z $4 ] && [ $3 == "-reinit" ]; then
+    export clsCommand="reinit"
+    export targetSlave=$4
+fi
+
 if [ ! -z $3 ]  && [ ! -z $4 ] && [ $3 == "-watchMode" ]; then
     export clsCommand="strategy"
     export clsStrategy=$4
@@ -145,6 +150,11 @@ fi
 
 if [ ! -z $4 ]  && [ ! -z $5 ] && [ $4 == "-switchOver" ]; then
     export clsCommand="switchOver"
+    export targetSlave=$5
+fi
+
+if [ ! -z $4 ]  && [ ! -z $5 ] && [ $4 == "-reinit" ]; then
+    export clsCommand="reinit"
     export targetSlave=$5
 fi
 
@@ -178,6 +188,11 @@ if [ ! -z $5 ]  && [ ! -z $6 ] && [ $5 == "-switchOver" ]; then
     export targetSlave=$6
 fi
 
+if [ ! -z $5 ]  && [ ! -z $6 ] && [ $5 == "-reinit" ]; then
+    export clsCommand="reinit"
+    export targetSlave=$6
+fi
+
 if [ ! -z $5 ]  && [ ! -z $6 ] && [ $5 == "-watchMode" ]; then
     export clsCommand="strategy"
     export clsStrategy=$6
@@ -202,6 +217,8 @@ else
         curl -X POST  http://$active_bfm/bfm/watch-strategy/$clsStrategy -u $clsUser:$clsPwd
     elif [ ! -z $clsCommand ] && [ $clsCommand == "switchOver" ]; then
         curl -X POST  http://$active_bfm/bfm/switchover/$targetSlave -u $clsUser:$clsPwd
+    elif [ ! -z $clsCommand ] && [ $clsCommand == "reinit" ]; then
+        curl -X POST  http://$active_bfm/bfm/reinit/$targetSlave -u $clsUser:$clsPwd        
     else
         echo "command not found..."$clsCommand
     fi
