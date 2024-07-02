@@ -104,7 +104,9 @@ public class BfmController {
             } catch (SocketException e) {
                 e.printStackTrace();
             }
-            return serverIPAddress.toString();
+
+            String bfmIpStr = this.bfmContext.getPgList().stream().filter(s -> (serverIPAddress.contains(s.getServerAddress().split(":")[0]))).findFirst().get().getServerAddress();
+            return (bfmIpStr.replace("5432","9994"));
         }
         return bfmPair;
     }
