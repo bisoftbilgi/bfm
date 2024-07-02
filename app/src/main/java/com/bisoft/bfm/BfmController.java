@@ -390,7 +390,7 @@ public class BfmController {
                                 }   
                                 this.bfmContext.setWatch_strategy(ws);
                                 this.bfmContext.setMail_notification_enabled(mail_notify);
-                                retval = retval +"Switch Over Completed Succesfully :\n";
+                                retval = retval +targetPG+" re-initialize Completed Succesfully :\n";
 
                             } catch (Exception e) {
                                 log.warn("No Master server found in cluster...");
