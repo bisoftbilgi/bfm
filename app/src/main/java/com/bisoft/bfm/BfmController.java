@@ -33,7 +33,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Controller
 @RequestMapping("/bfm")
 @RequiredArgsConstructor
@@ -76,6 +78,18 @@ public class BfmController {
         } else {
             return "";
         }
+    }
+
+    @RequestMapping(path = "/check-pause",method = RequestMethod.GET)
+    public @ResponseBody String clusterCheckPause(){
+        this.bfmContext.setCheckPaused(Boolean.TRUE);
+        return "Cluster check Paused.\n";
+    }
+
+    @RequestMapping(path = "/check-resume",method = RequestMethod.GET)
+    public @ResponseBody String clusterCheckResume(){
+        this.bfmContext.setCheckPaused(Boolean.FALSE);
+        return "Cluster check started.\n";
     }
 
     @RequestMapping(path = "/cluster-status",method = RequestMethod.GET)
@@ -226,14 +240,20 @@ public class BfmController {
                                 this.bfmContext.setMail_notification_enabled(Boolean.FALSE);
     
                                 PostgresqlServer old_master = this.bfmContext.getMasterServer();
-                                String pre_result = minipgAccessUtil.prepareForSwitchOver(old_master);
-                                System.out.println("Prepare for SwitchOver result :" + pre_result);
-                                minipgAccessUtil.vipDown(old_master);
+                                String result ="";
                                 
-                                String promote_result = minipgAccessUtil.promote(switchOverToPG);
-                                System.out.println("Slave Promote Result :"+ promote_result);
+                                result = minipgAccessUtil.prepareForSwitchOver(old_master);
+                                log.info("Prepare for SwitchOver result :" + result);
+
+                                minipgAccessUtil.vipDown(old_master);
+
+                                result = minipgAccessUtil.promote(switchOverToPG);
+                                log.info("Slave Promote Result :"+ result);
+
                                 minipgAccessUtil.vipUp(switchOverToPG);
-                                minipgAccessUtil.postSwitchOver(old_master, switchOverToPG);
+                                result = minipgAccessUtil.postSwitchOver(old_master, switchOverToPG);
+                                log.info("Ex-Master Rejoin Result :"+ result);
+
                                 this.bfmContext.setCheckPaused(Boolean.FALSE);
                                 int checkCount = 3;
                                 while ((this.bfmContext.getClusterStatus() != ClusterStatus.HEALTHY) && (checkCount > 0)){
