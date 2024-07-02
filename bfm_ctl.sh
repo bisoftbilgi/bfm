@@ -186,20 +186,22 @@ fi
 if [ -z $clsUser ] || [ -z $clsPwd ]; then
     echo "user or password NOT set. "
 else
+    active_bfm=$(curl -s http://localhost:9994/bfm/get-active-bfm -u $clsUser:$clsPwd)
+    echo -e "\nActive BFM :"$active_bfm
     if [ ! -z $clsCommand ] && [ $clsCommand == "status" ]; then
-        curl -X GET http://localhost:9994/bfm/cluster-status -u $clsUser:$clsPwd
+        curl -X GET http://$active_bfm/bfm/cluster-status -u $clsUser:$clsPwd        
     elif [ ! -z $clsCommand ] && [ $clsCommand == "pause" ]; then
-        curl -X GET http://localhost:9994/bfm/check-pause -u $clsUser:$clsPwd
+        curl -X GET http://$active_bfm/bfm/check-pause -u $clsUser:$clsPwd
     elif [ ! -z $clsCommand ] && [ $clsCommand == "resume" ]; then
-        curl -X GET http://localhost:9994/bfm/check-resume -u $clsUser:$clsPwd
+        curl -X GET http://$active_bfm/bfm/check-resume -u $clsUser:$clsPwd
     elif [ ! -z $clsCommand ] && [ $clsCommand == "mail-pause" ]; then
-        curl -X GET http://localhost:9994/bfm/mail-pause -u $clsUser:$clsPwd
+        curl -X GET http://$active_bfm/bfm/mail-pause -u $clsUser:$clsPwd
     elif [ ! -z $clsCommand ] && [ $clsCommand == "mail-resume" ]; then
-        curl -X GET http://localhost:9994/bfm/mail-resume -u $clsUser:$clsPwd        
+        curl -X GET http://$active_bfm/bfm/mail-resume -u $clsUser:$clsPwd        
     elif [ ! -z $clsCommand ] && [ $clsCommand == "strategy" ]; then
-        curl -X POST  http://localhost:9994/bfm/watch-strategy/$clsStrategy -u $clsUser:$clsPwd
+        curl -X POST  http://$active_bfm/bfm/watch-strategy/$clsStrategy -u $clsUser:$clsPwd
     elif [ ! -z $clsCommand ] && [ $clsCommand == "switchOver" ]; then
-        curl -X POST  http://localhost:9994/bfm/switchover/$targetSlave -u $clsUser:$clsPwd
+        curl -X POST  http://$active_bfm/bfm/switchover/$targetSlave -u $clsUser:$clsPwd
     else
         echo "command not found..."$clsCommand
     fi
