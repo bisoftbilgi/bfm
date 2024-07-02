@@ -357,7 +357,7 @@ public class BfmController {
                     try {
                         PostgresqlServer target_server = this.bfmContext.getPgList().stream()
                         .filter(s -> (s.getServerAddress().equals(targetPG) 
-                                        && s.getDatabaseStatus().equals(DatabaseStatus.SLAVE))).findFirst().get();
+                                        && (s.getDatabaseStatus().equals(DatabaseStatus.SLAVE) || s.getDatabaseStatus().equals(DatabaseStatus.INACCESSIBLE)))).findFirst().get();
 
                         if (target_server == null){
                             retval = retval + targetPG+ " Server not found in BFM Cluster or Its not SLAVE.\n";
