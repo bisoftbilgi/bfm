@@ -232,9 +232,7 @@ public class ClusterCheckScheduler {
                 }
                 
                 return;
-            }
-            // log.info("-----Cluster Healthcheck Started-----");
-            
+            }            
 
             bfmContext.getPgList().stream().forEach(server -> {
                 try {
@@ -254,12 +252,10 @@ public class ClusterCheckScheduler {
 
             isClusterHealthy();
 
-
-            log.info(String.format("Cluster Status is %s \n\n\n",this.bfmContext.getClusterStatus()));
+            log.info(String.format("Cluster Status is %s \n",this.bfmContext.getClusterStatus()));
             this.bfmContext.setLastCheckLog(this.bfmContext.getLastCheckLog() +
                                             String.format("Cluster Status is %s ",this.bfmContext.getClusterStatus())+ "\n");
 
-            // log.info("-----Cluster Healthcheck Finished-----\n\n\n");
         }
     }
 
@@ -273,7 +269,6 @@ public class ClusterCheckScheduler {
         log.info(String.format("Status of %s is %s",postgresqlServer.getServerAddress(),status));
         this.bfmContext.setLastCheckLog(this.bfmContext.getLastCheckLog() +
                                         String.format("Status of %s is %s",postgresqlServer.getServerAddress(),status)+"\n");
-        //log.info(minipgAccessUtil.status(postgresqlServer));
     }
 
     public void isClusterHealthy(){
@@ -418,11 +413,6 @@ public class ClusterCheckScheduler {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-            
-        
-        // if (this.bfmContext.getMasterServerLastWalPos() != null){
-        //     log.info("Master Last Wal Pos(a) :"+ this.bfmContext.getMasterServerLastWalPos());
-        // }
     }
 
     public PostgresqlServer findLeader(){
@@ -436,12 +426,6 @@ public class ClusterCheckScheduler {
                 s.setTimeLineId(-1);
             }
         } );
-
-        // PostgresqlServer leader_old = this.bfmContext.getPgList().stream()
-        //     .sorted(Comparator.<PostgresqlServer, String>comparing(server-> server.getWalLogPosition(), Comparator.reverseOrder()))
-        //     .findFirst().get();
-
-        // log.info("Old Style Leader :"+ leader_old.getServerAddress());
 
         PostgresqlServer leader = this.bfmContext.getPgList().stream()
             .sorted(Comparator.<PostgresqlServer, Integer>comparing(server -> server.getTimeLineId() , Comparator.reverseOrder())
