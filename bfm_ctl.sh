@@ -29,6 +29,14 @@ if [ ! -z $1 ] && [ $1 == "-resume" ]; then
     export clsCommand="resume"
 fi
 
+if [ ! -z $1 ] && [ $1 == "-mailPause" ]; then
+    export clsCommand="mail-pause"
+fi
+
+if [ ! -z $1 ] && [ $1 == "-mailResume" ]; then
+    export clsCommand="mail-resume"
+fi
+
 if [ ! -z $1 ]  && [ ! -z $2 ] && [ $1 == "-switchOver" ]; then
     export clsCommand="switchOver"
     export targetSlave=$2
@@ -57,6 +65,14 @@ fi
 
 if [ ! -z $2 ] && [ $2 == "-resume" ]; then
     export clsCommand="resume"
+fi
+
+if [ ! -z $2 ] && [ $2 == "-mailPause" ]; then
+    export clsCommand="mail-pause"
+fi
+
+if [ ! -z $2 ] && [ $2 == "-mailResume" ]; then
+    export clsCommand="mail-resume"
 fi
 
 if [ ! -z $2 ]  && [ ! -z $3 ] && [ $2 == "-switchOver" ]; then
@@ -89,6 +105,14 @@ if [ ! -z $3 ] && [ $3 == "-resume" ]; then
     export clsCommand="resume"
 fi
 
+if [ ! -z $3 ] && [ $3 == "-mailPause" ]; then
+    export clsCommand="mail-pause"
+fi
+
+if [ ! -z $3 ] && [ $3 == "-mailResume" ]; then
+    export clsCommand="mail-resume"
+fi
+
 if [ ! -z $3 ]  && [ ! -z $4 ] && [ $3 == "-switchOver" ]; then
     export clsCommand="switchOver"
     export targetSlave=$4
@@ -109,6 +133,14 @@ fi
 
 if [ ! -z $4 ] && [ $4 == "-resume" ]; then
     export clsCommand="resume"
+fi
+
+if [ ! -z $4 ] && [ $4 == "-mailPause" ]; then
+    export clsCommand="mail-pause"
+fi
+
+if [ ! -z $4 ] && [ $4 == "-mailResume" ]; then
+    export clsCommand="mail-resume"
 fi
 
 if [ ! -z $4 ]  && [ ! -z $5 ] && [ $4 == "-switchOver" ]; then
@@ -133,6 +165,14 @@ if [ ! -z $5 ] && [ $5 == "-resume" ]; then
     export clsCommand="resume"
 fi
 
+if [ ! -z $5 ] && [ $5 == "-mailPause" ]; then
+    export clsCommand="mail-pause"
+fi
+
+if [ ! -z $5 ] && [ $5 == "-mailResume" ]; then
+    export clsCommand="mail-resume"
+fi
+
 if [ ! -z $5 ]  && [ ! -z $6 ] && [ $5 == "-switchOver" ]; then
     export clsCommand="switchOver"
     export targetSlave=$6
@@ -152,6 +192,10 @@ else
         curl -X GET http://localhost:9994/bfm/check-pause -u $clsUser:$clsPwd
     elif [ ! -z $clsCommand ] && [ $clsCommand == "resume" ]; then
         curl -X GET http://localhost:9994/bfm/check-resume -u $clsUser:$clsPwd
+    elif [ ! -z $clsCommand ] && [ $clsCommand == "mail-pause" ]; then
+        curl -X GET http://localhost:9994/bfm/mail-pause -u $clsUser:$clsPwd
+    elif [ ! -z $clsCommand ] && [ $clsCommand == "mail-resume" ]; then
+        curl -X GET http://localhost:9994/bfm/mail-resume -u $clsUser:$clsPwd        
     elif [ ! -z $clsCommand ] && [ $clsCommand == "strategy" ]; then
         curl -X POST  http://localhost:9994/bfm/watch-strategy/$clsStrategy -u $clsUser:$clsPwd
     elif [ ! -z $clsCommand ] && [ $clsCommand == "switchOver" ]; then
