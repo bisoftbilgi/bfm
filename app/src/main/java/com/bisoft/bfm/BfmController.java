@@ -6,11 +6,17 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UncheckedIOException;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -43,6 +49,9 @@ public class BfmController {
 
     private final BfmContext bfmContext;
     private  final MinipgAccessUtil minipgAccessUtil;
+
+    @Value("${watcher.cluster-pair:no-pair}")
+    private String bfmPair;
 
     @RequestMapping(path = "/status",method = RequestMethod.GET)
     public @ResponseBody
@@ -80,6 +89,26 @@ public class BfmController {
         }
     }
 
+    @RequestMapping(path = "/get-active-bfm",method = RequestMethod.GET)
+    public @ResponseBody String getActiveBfm(){
+        if(bfmContext.isMasterBfm() == true){
+            ArrayList<String> serverIPAddress = new ArrayList<String>();
+
+            try {
+                Enumeration<NetworkInterface> b = NetworkInterface.getNetworkInterfaces();
+                while( b.hasMoreElements()){
+                    for ( InterfaceAddress f : b.nextElement().getInterfaceAddresses())
+                        if ( f.getAddress().toString().contains(".") && f.getAddress().toString() !="127.0.0.1")
+                        serverIPAddress.add(f.getAddress().toString().replace("/",""));
+                }
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
+            return serverIPAddress.toString();
+        }
+        return bfmPair;
+    }
+
     @RequestMapping(path = "/check-pause",method = RequestMethod.GET)
     public @ResponseBody String clusterCheckPause(){
         this.bfmContext.setCheckPaused(Boolean.TRUE);
@@ -108,18 +137,6 @@ public class BfmController {
     public @ResponseBody String clusterStatus(){
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String retval = "";
-        // ArrayList<String> serverIPAddress = new ArrayList<String>();
-
-        // try {
-        //     Enumeration<NetworkInterface> b = NetworkInterface.getNetworkInterfaces();
-        //     while( b.hasMoreElements()){
-        //         for ( InterfaceAddress f : b.nextElement().getInterfaceAddresses())
-        //             if ( f.getAddress().toString().contains(".") && f.getAddress().toString() !="127.0.0.1")
-        //             serverIPAddress.add(f.getAddress().toString().replace("/",""));
-        //     }
-        // } catch (SocketException e) {
-        //     e.printStackTrace();
-        // }
 
         if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
            
