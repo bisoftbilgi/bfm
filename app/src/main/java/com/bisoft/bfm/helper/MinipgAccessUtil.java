@@ -546,7 +546,7 @@ public class MinipgAccessUtil {
 
     public String postSwitchOver(PostgresqlServer old_master, PostgresqlServer new_master)throws Exception {
         //log.info("username : "+username+", password : "+password);
-        log.info("prepairing for switchOver :"+old_master.getServerAddress());
+        log.info("Post switchOver starting for server :"+old_master.getServerAddress());
         final String serverAddress = old_master.getServerAddress().split(":")[0];
         final String serverPort = old_master.getServerAddress().split(":")[1];
         String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
