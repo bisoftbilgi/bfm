@@ -106,7 +106,7 @@ public class PostgresqlServer {
         
                 this.setWalLogPosition(wal_pos);                        
             } catch (Exception e) {
-                log.warn("conneciton Failed to server:"+this.getServerAddress());
+                log.warn("Connection Failed to server:"+this.getServerAddress());
             }
         } else {
             try {
@@ -118,7 +118,7 @@ public class PostgresqlServer {
                 String wal_pos = rs.getString("wal_pos");
                 this.setWalLogPosition(wal_pos);                    
             } catch (Exception e) {
-                log.warn("conneciton Failed to server:"+this.getServerAddress());
+                log.warn("Connection Failed to server:"+this.getServerAddress());
             }
         }
     }
@@ -157,7 +157,7 @@ public class PostgresqlServer {
                 }
             
             } catch (Exception e) {
-                log.warn("conneciton Failed to server:"+this.getServerAddress());
+                log.warn("Connection Failed to server:"+this.getServerAddress());
             }
         }
         
@@ -176,7 +176,7 @@ public class PostgresqlServer {
                 retval = Double.parseDouble(diff_size);
             }
         } catch (Exception e) {
-            log.warn("conneciton Failed to server:"+this.getServerAddress());
+            log.warn("Connection Failed to server:"+this.getServerAddress());
         }
 
         return retval;
