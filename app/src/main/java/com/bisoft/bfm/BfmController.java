@@ -92,6 +92,18 @@ public class BfmController {
         return "Cluster check started.\n";
     }
 
+    @RequestMapping(path = "/mail-pause",method = RequestMethod.GET)
+    public @ResponseBody String clusterMailPause(){
+        this.bfmContext.setMail_notification_enabled(Boolean.FALSE);
+        return "Mail Notifications Paused.\n";
+    }
+
+    @RequestMapping(path = "/mail-resume",method = RequestMethod.GET)
+    public @ResponseBody String clusterMailResume(){
+        this.bfmContext.setMail_notification_enabled(Boolean.TRUE);
+        return "Mail Notifications started.\n";
+    }
+
     @RequestMapping(path = "/cluster-status",method = RequestMethod.GET)
     public @ResponseBody String clusterStatus(){
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -120,6 +132,10 @@ public class BfmController {
                                 "\t" + 
                                 String.format("%-20s", "Last Wal Position :") +
                                 "\t" + 
+                                String.format("%-12s", "Replay Lag :") +
+                                "\t" + 
+                                String.format("%-10s", "Timeline :") +
+                                "\t" + 
                                 String.format("%-20s", "Last Check Time :");
             retval = retval + "\n"+ 
                                 "_".repeat(25) + 
@@ -128,21 +144,30 @@ public class BfmController {
                                 "\t" + 
                                 "_".repeat(20) +
                                 "\t" + 
+                                "_".repeat(12) +
+                                "\t" + 
+                                "_".repeat(10) +
+                                "\t" + 
                                 "_".repeat(20);
             for(PostgresqlServer pg : this.bfmContext.getPgList()){
                 try {
-                    pg.getWalPosition();    
+                    pg.getWalPosition();
+                    pg.checkTimeLineId();   
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                 String formattedDate = pg.getLastCheckDateTime().format(dateFormatter);     
-                
+                String timeLineStr = Integer.toString(pg.getTimeLineId());
                 retval = retval +"\n" + 
                                 String.format("%-25s", pg.getServerAddress())  +
                                 "\t" + 
                                 String.format("%-10s", pg.getDatabaseStatus()) +
                                 "\t" + 
                                 String.format("%20s", pg.getWalLogPosition()) +
+                                "\t" + 
+                                String.format("%12s", (pg.getReplayLag() == null ? "" : pg.getReplayLag())) +
+                                "\t" + 
+                                String.format("%10s", timeLineStr)+
                                 "\t" + 
                                 String.format("%-20s", formattedDate);
             }
@@ -161,25 +186,38 @@ public class BfmController {
                                     "\t" + 
                                     String.format("%-20s", "Last Wal Position :") +
                                     "\t" + 
+                                    String.format("%-12s", "Replay Lag :") +
+                                    "\t" + 
+                                    String.format("%-10s", "Timeline :") +
+                                    "\t" + 
                                     String.format("%-20s", "Last Check Time :");
                 retval = retval + "\n"+ 
-                                    "_".repeat(25) + 
-                                    "\t" + 
-                                    "_".repeat(10) + 
-                                    "\t" + 
-                                    "_".repeat(20) +
-                                    "\t" + 
-                                    "_".repeat(20);
+                                "_".repeat(25) + 
+                                "\t" + 
+                                "_".repeat(10) + 
+                                "\t" + 
+                                "_".repeat(20) +
+                                "\t" + 
+                                "_".repeat(12) +
+                                "\t" + 
+                                "_".repeat(10) +
+                                "\t" + 
+                                "_".repeat(20);
 
                 for (ContextServer pg : cs.getClusterServers()){
+                    String timeLineStr = Integer.toString(pg.getTimeline());
                     retval = retval +"\n" + 
-                    String.format("%-25s", pg.getAddress()) + 
-                    "\t" + 
-                    String.format("%-10s", pg.getDatabaseStatus()) +
-                    "\t" + 
-                    String.format("%20s", pg.getLastWalPos()) +
-                    "\t" + 
-                    String.format("%-20s", pg.getLastCheck());
+                                    String.format("%-25s", pg.getAddress()) + 
+                                    "\t" + 
+                                    String.format("%-10s", pg.getDatabaseStatus()) +
+                                    "\t" + 
+                                    String.format("%20s", pg.getLastWalPos()) +
+                                    "\t" + 
+                                    String.format("%12s", (pg.getReplayLag() == null ? "" : pg.getReplayLag())) +
+                                    "\t" + 
+                                    String.format("%10s", timeLineStr)+
+                                    "\t" + 
+                                    String.format("%-20s", pg.getLastCheck());
                 }
                 retval = retval + "\n\n";
             } catch (FileNotFoundException e) {

@@ -399,12 +399,13 @@ public class ClusterCheckScheduler {
         .forEach(s -> {
             try {
                 s.getWalPosition();    
+                s.checkTimeLineId();
             } catch (Exception e) {
                 e.printStackTrace();
             }
             String formattedDate = s.getLastCheckDateTime().format(dateFormatter);
             ContextServer server = new ContextServer(s.getServerAddress(), s.getDatabaseStatus().toString(), 
-            formattedDate, s.getWalLogPosition() ,s.getReplayLag());
+            formattedDate, s.getWalLogPosition() ,(s.getReplayLag() == null ? "0" : s.getReplayLag() ), s.getTimeLineId());
             contextServerList.add(server);
         });
         ContextStatus cs = new ContextStatus(this.bfmContext.getClusterStatus().toString(), contextServerList);

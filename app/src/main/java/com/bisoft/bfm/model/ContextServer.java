@@ -11,13 +11,15 @@ public class ContextServer {
     private String lastCheck;
     private String lastWalPos;
     private String replayLag;
+    private int timeline;
 
-    public ContextServer(String address, String databaseStatus, String lastCheck, String lastWalPos, String replayLag) {
+    public ContextServer(String address, String databaseStatus, String lastCheck, String lastWalPos, String replayLag, int timeline) {
         this.address = address;
         this.databaseStatus = databaseStatus;
         this.lastCheck = lastCheck;
         this.lastWalPos = lastWalPos;
         this.replayLag = replayLag;
+        this.timeline = timeline;
     }  
     
     
