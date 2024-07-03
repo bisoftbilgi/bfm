@@ -427,6 +427,9 @@ public class BfmController {
                 retval = retval.replace("{{ SERVER_ROWS }}", "");
                 retval = retval.replace("{{ CLASS_CARD_BODY }}", "bg-primary");
                 retval = retval.replace("{{ CLASS_SERVER_ROWS }}", "text-white");
+                retval = retval.replace("{{ CHECK_PAUSED }}", "");
+                retval = retval.replace("{{ MAIL_ENABLED }}", "");
+                retval = retval.replace("{{ ACTIVE_BFM }}", "");
                 return retval;        
             } else {
                 String server_rows = "";
@@ -467,6 +470,7 @@ public class BfmController {
             
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             String server_rows = "";
+            String slave_options = "";
             try {
                 JsonReader reader = new JsonReader(new FileReader("./bfm_status.json"));
                 ContextStatus cs = gson.fromJson(reader, ContextStatus.class);
@@ -480,12 +484,20 @@ public class BfmController {
                                     +  "<td>"+pg.getTimeline()+"</td>"
                                     +  "<td>"+pg.getLastCheck()+"</td>"
                                     + "</tr>";
+                    if (pg.getDatabaseStatus().equals("SLAVE")){
+                        slave_options = slave_options + 
+                                        "<option value=\""+pg.getAddress()+"\">"+pg.getAddress()+"</option>";
+                    }
                 }
                                 
                 retval = retval.replace("{{ CLUSTER_STATUS }}", cs.getClusterStatus());
                 retval = retval.replace("{{ SERVER_ROWS }}", server_rows);
                 retval = retval.replace("{{ CLASS_CARD_BODY }}", "bg-warning");
                 retval = retval.replace("{{ CLASS_SERVER_ROWS }}", "text-black");
+                retval = retval.replace("{{ CHECK_PAUSED }}",cs.getCheckPaused());
+                retval = retval.replace("{{ MAIL_ENABLED }}",cs.getMailNotifyEnabled());
+                retval = retval.replace("{{ ACTIVE_BFM }}", this.getActiveBfm());
+                retval = retval.replace("{{ SLAVE_OPTIONS }}", slave_options);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
