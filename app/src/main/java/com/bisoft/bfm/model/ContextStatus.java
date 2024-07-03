@@ -11,10 +11,14 @@ public class ContextStatus {
 
     private String clusterStatus;
     private List<ContextServer> clusterServers;
+    private String checkPaused;
+    private String mailNotifyEnabled;
 
-    public ContextStatus(String clusterStatus, List<ContextServer> clusterServers) {
+    public ContextStatus(String clusterStatus, List<ContextServer> clusterServers, String checkPaused, String mailNotifyEnabled) {
         this.clusterStatus = clusterStatus;
         this.clusterServers = clusterServers;
+        this.checkPaused = checkPaused;
+        this.mailNotifyEnabled = mailNotifyEnabled;
     }   
     
 }
