@@ -430,6 +430,7 @@ public class BfmController {
                 return retval;        
             } else {
                 String server_rows = "";
+                String slave_options = "";
                 for(PostgresqlServer pg : this.bfmContext.getPgList()){
                     try {
                         pg.getWalPosition();    
@@ -440,16 +441,26 @@ public class BfmController {
                     server_rows = server_rows +  "<td>"+pg.getServerAddress()+"</td>";
                     server_rows = server_rows +  "<td>"+pg.getDatabaseStatus()+"</td>";
                     server_rows = server_rows +  "<td>"+pg.getWalLogPosition()+"</td>";
+                    server_rows = server_rows +  "<td>"+(pg.getReplayLag() == null ? "0" : pg.getReplayLag())+"</td>";
+                    server_rows = server_rows +  "<td>"+pg.getTimeLineId()+"</td>";
                     String formattedDate = pg.getLastCheckDateTime().format(dateFormatter);
                     server_rows = server_rows +  "<td>"+formattedDate+"</td>";
-                    server_rows = server_rows +  "<td>"+(pg.getDatabaseStatus() == DatabaseStatus.MASTER ? " " : pg.getReplayLag())+"</td>";
                     server_rows = server_rows + "</tr>";
+
+                    if (pg.getDatabaseStatus().equals(DatabaseStatus.SLAVE)){
+                        slave_options = slave_options + 
+                                        "<option value=\""+pg.getServerAddress()+"\">"+pg.getServerAddress()+"</option>";
+                    }
                 }
         
                 retval = retval.replace("{{ CLUSTER_STATUS }}", this.bfmContext.getClusterStatus().toString());
                 retval = retval.replace("{{ SERVER_ROWS }}", server_rows);
                 retval = retval.replace("{{ CLASS_CARD_BODY }}", "bg-primary");
                 retval = retval.replace("{{ CLASS_SERVER_ROWS }}", "text-white");
+                retval = retval.replace("{{ CHECK_PAUSED }}", (this.bfmContext.isCheckPaused() == Boolean.TRUE ? "TRUE" : "FALSE"));
+                retval = retval.replace("{{ MAIL_ENABLED }}", (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE ? "TRUE" : "FALSE"));
+                retval = retval.replace("{{ ACTIVE_BFM }}", this.getActiveBfm());
+                retval = retval.replace("{{ SLAVE_OPTIONS }}", slave_options);
                 return retval;    
             }
         } else {
@@ -465,8 +476,9 @@ public class BfmController {
                                     +  "<td>"+pg.getAddress()+"</td>"
                                     +  "<td>"+pg.getDatabaseStatus()+"</td>"
                                     +  "<td>"+pg.getLastWalPos()+"</td>"
+                                    +  "<td>"+(pg.getReplayLag() == null ? "0" : pg.getReplayLag())+"</td>"
+                                    +  "<td>"+pg.getTimeline()+"</td>"
                                     +  "<td>"+pg.getLastCheck()+"</td>"
-                                    +  "<td>"+(pg.getReplayLag() == null ? " " : pg.getReplayLag())+"</td>"
                                     + "</tr>";
                 }
                                 
