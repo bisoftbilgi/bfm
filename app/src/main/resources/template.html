@@ -197,7 +197,8 @@
                                                                     </select>      
                                                                 </td>
                                                                 <td>
-                                                                    <input id="check_btn" name="check_btn" type="button" class="btn btn-primary" value="Set" data-toggle="modal" data-target="#bfmModal" disabled>
+                                                                    <input id="check_btn" name="check_btn" type="button" class="btn btn-primary" value="Set" disabled onclick="set_cluster_check();">
+                                                                    <!-- <input id="check_btn" name="check_btn" type="button" class="btn btn-primary" value="Set" data-toggle="modal" data-target="#bfmModal" disabled> -->
                                                                 </td>
                                                             </tr>
                                                             <tr>
@@ -212,7 +213,7 @@
                                                                     </select>
                                                                 </td>
                                                                 <td>
-                                                                    <input id="mail_btn" name="mail_btn" type="button" class="btn btn-primary" value="Set" disabled>
+                                                                    <input id="mail_btn" name="mail_btn" type="button" class="btn btn-primary" value="Set" disabled onclick="set_mail_notification();">
                                                                 </td>
                                                             </tr>
                                                             <tr>
@@ -231,7 +232,7 @@
                                                                     </select>
                                                                 </td>
                                                                 <td>
-                                                                    <input id="start_btn" name="start_btn" type="button" class="btn btn-primary" value="Start" disabled>
+                                                                    <input id="start_btn" name="start_btn" type="button" class="btn btn-primary" value="Start" disabled onclick="start_reinit_or_switch();">
                                                                 </td>
                                                             </tr>
                                                         </tbody>
@@ -266,6 +267,8 @@
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
             </button>
+            <label id="axbu" name="axbu" style="display: none;">{{ USERNAME }}</label>
+            <label id="axbp" name="axbp" style="display: none;">{{ PASSWORD }}</label>
             </div>
             <div class="modal-body">
             ...
@@ -280,13 +283,12 @@
 
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <!-- <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script> -->
+    <script src="https://code.jquery.com/jquery-3.3.1.js" integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
     <script>
-
-        window.addEventListener("load", function () {
-            
+        window.addEventListener("load", function () {            
             document.getElementById("check_options").value = document.getElementById("check_paused").innerText;
             document.getElementById("mail_options").value = document.getElementById("mail_enabled").innerText;
     
@@ -346,26 +348,89 @@
             document.getElementById('check_btn').setAttribute('disabled', true);
             document.getElementById('mail_btn').setAttribute('disabled', true);        
         };
-    
+
+        function bfm_sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
         function set_cluster_check(){
-                var active_bfm = document.getElementById("active_bfm").innerText;
-    
-                // console.log('requested url:'+'/api/backup_policy_update?db_code='+db_code+'&policy='+textarea_object.value);
-                // $.ajax({
-                //     url:'/api/backup_policy_update?db_code='+db_code+'&policy='+textarea_object.value,
-                //     type: "POST",
-                //     success: function (data) {
-                //         // let x = JSON.stringify(data);
-                //         // console.log(x);
-                //         // console.log(data);
-                //         document.getElementById('lbl_back_pol_'+db_code).innerHTML = textarea_object.value;
-                //         document.getElementById('btn_modal_close_'+db_code).click();
-                //     },
-                //     error: function (error) {
-                //         console.log(`Error ${error}`);
-                //     }
-                // });
+            // var active_bfm = document.getElementById("active_bfm").innerText
+            var active_bfm = 'localhost:9994'
+            var bfmUrl = '';
+            if (document.getElementById("check_options").value == "TRUE"){
+                var bfmUrl = 'http://' + active_bfm + '/bfm/check-pause';
+            } else if (document.getElementById("check_options").value == "FALSE"){
+                var bfmUrl = 'http://' + active_bfm + '/bfm/check-resume';
+            } else {
+                var bfmUrl = '#';
             }
+            
+            $.ajax({
+                url: bfmUrl,
+                type: "GET",
+                username: document.getElementById("axbu").innerText,
+                password: document.getElementById("axbp").innerText,
+                success: function (data) {
+                    window.location.reload();
+                },
+                error: function (error) {
+                    console.log(`Error ${error}`);
+                }
+            });
+        }
+
+        function set_mail_notification(){
+            // var active_bfm = document.getElementById("active_bfm").innerText
+            var active_bfm = 'localhost:9994'
+            var bfmUrl = '';
+            if (document.getElementById("mail_options").value == "TRUE"){
+                var bfmUrl = 'http://' + active_bfm + '/bfm/mail-resume';
+            } else if (document.getElementById("mail_options").value == "FALSE"){
+                var bfmUrl = 'http://' + active_bfm + '/bfm/mail-pause';
+            } else {
+                var bfmUrl = '#';
+            }
+            
+            $.ajax({
+                url: bfmUrl,
+                type: "GET",
+                username: document.getElementById("axbu").innerText,
+                password: document.getElementById("axbp").innerText,
+                success: function (data) {
+                    window.location.reload();
+                },
+                error: function (error) {
+                    console.log(`Error ${error}`);
+                }
+            });
+        }
+
+        function start_reinit_or_switch(){
+            // var active_bfm = document.getElementById("active_bfm").innerText
+            var active_bfm = 'localhost:9994'
+            var bfmUrl = '';
+            var targetPg = document.getElementById("slave_options").value;
+            if (document.getElementById("ops").value == "switchOver"){
+                var bfmUrl = 'http://' + active_bfm + '/bfm/switchover/'+targetPg;
+            } else if (document.getElementById("ops").value == "reinit"){
+                var bfmUrl = 'http://' + active_bfm + '/bfm/reinit/'+targetPg;
+            } else {
+                var bfmUrl = '#';
+            }
+
+            $.ajax({
+                url: bfmUrl,
+                type: "POST",
+                username: document.getElementById("axbu").innerText,
+                password: document.getElementById("axbp").innerText,
+                success: async function (data) {
+                    window.location.reload();                    
+                },
+                error: function (error) {
+                    console.log(`Error ${error}`);
+                }
+            });
+        }
     
     </script>  
 </body>
