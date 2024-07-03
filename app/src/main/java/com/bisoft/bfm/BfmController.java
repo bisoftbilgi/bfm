@@ -22,6 +22,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.FileCopyUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -441,6 +442,7 @@ public class BfmController {
                 retval = retval.replace("{{ CHECK_PAUSED }}", "");
                 retval = retval.replace("{{ MAIL_ENABLED }}", "");
                 retval = retval.replace("{{ ACTIVE_BFM }}", "");
+                retval = retval.replace("{{ WATCH_STRATEGY }}", "");
                 return retval;        
             } else {
                 String server_rows = "";
@@ -475,6 +477,7 @@ public class BfmController {
                 retval = retval.replace("{{ MAIL_ENABLED }}", (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE ? "TRUE" : "FALSE"));
                 retval = retval.replace("{{ ACTIVE_BFM }}", this.getActiveBfm());
                 retval = retval.replace("{{ SLAVE_OPTIONS }}", slave_options);
+                retval = retval.replace("{{ WATCH_STRATEGY }}", StringUtils.capitalize(this.bfmContext.getWatch_strategy()));
                 return retval;    
             }
         } else {
@@ -509,6 +512,7 @@ public class BfmController {
                 retval = retval.replace("{{ MAIL_ENABLED }}",cs.getMailNotifyEnabled());
                 retval = retval.replace("{{ ACTIVE_BFM }}", this.getActiveBfm());
                 retval = retval.replace("{{ SLAVE_OPTIONS }}", slave_options);
+                retval = retval.replace("{{ WATCH_STRATEGY }}", StringUtils.capitalize(cs.getWatchStrategy()));
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }

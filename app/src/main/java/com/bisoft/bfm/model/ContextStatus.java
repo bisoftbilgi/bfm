@@ -10,15 +10,17 @@ import lombok.Data;
 public class ContextStatus {
 
     private String clusterStatus;
-    private List<ContextServer> clusterServers;
     private String checkPaused;
     private String mailNotifyEnabled;
+    private String watchStrategy;
+    private List<ContextServer> clusterServers;
 
-    public ContextStatus(String clusterStatus, List<ContextServer> clusterServers, String checkPaused, String mailNotifyEnabled) {
-        this.clusterStatus = clusterStatus;
-        this.clusterServers = clusterServers;
+    public ContextStatus(String clusterStatus, String checkPaused, String mailNotifyEnabled, String watchStrategy, List<ContextServer> clusterServers) {
+        this.clusterStatus = clusterStatus;        
         this.checkPaused = checkPaused;
         this.mailNotifyEnabled = mailNotifyEnabled;
+        this.watchStrategy = watchStrategy;
+        this.clusterServers = clusterServers;
     }   
     
 }

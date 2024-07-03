@@ -403,9 +403,11 @@ public class ClusterCheckScheduler {
             formattedDate, s.getWalLogPosition() ,(s.getReplayLag() == null ? "0" : s.getReplayLag() ), s.getTimeLineId());
             contextServerList.add(server);
         });
-        ContextStatus cs = new ContextStatus(this.bfmContext.getClusterStatus().toString(), contextServerList, 
+        ContextStatus cs = new ContextStatus(this.bfmContext.getClusterStatus().toString(), 
                                                 (this.bfmContext.isCheckPaused() == Boolean.TRUE ? "TRUE" : "FALSE"), 
-                                                (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE ? "TRUE" : "FALSE"));
+                                                (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE ? "TRUE" : "FALSE"),
+                                                this.bfmContext.getWatch_strategy(),
+                                                contextServerList);
         String json_str = gson.toJson(cs);
         PrintWriter out;
         try {

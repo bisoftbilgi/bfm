@@ -217,6 +217,21 @@
                                                                 </td>
                                                             </tr>
                                                             <tr>
+                                                                <td>
+                                                                    <label>Watch Strategy : </label>
+                                                                </td>
+                                                                <td class="text-center"><label id="watch_strategy" name="watch_strategy">{{ WATCH_STRATEGY }}</label></td>
+                                                                <td>
+                                                                    <select name="watch_options" id="watch_options" class="form-control" onchange="enable_watch_btn();">
+                                                                        <option value="M" selected>Manual</option>
+                                                                        <option value="A">Availability</option>
+                                                                    </select>
+                                                                </td>
+                                                                <td>
+                                                                    <input id="watch_btn" name="watch_btn" type="button" class="btn btn-primary" value="Set" disabled onclick="set_watch_strategy();">
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
                                                                 <td><label>Switch Over / Re Initialize</label></td>
                                                                 <td>
                                                                     <select name="slave_options" id="slave_options" class="form-control" onchange="enable_slave_options();">
@@ -235,15 +250,13 @@
                                                                     <input id="start_btn" name="start_btn" type="button" class="btn btn-primary" value="Start" disabled onclick="start_reinit_or_switch();">
                                                                 </td>
                                                             </tr>
-                                                        </tbody>
-                                                        <tfoot>
                                                             <tr>
                                                                 <td>Active BFM : </td>
                                                                 <td><label id="active_bfm" name="active_bfm">{{ ACTIVE_BFM }}</label></td>
                                                                 <td></td>
                                                                 <td></td>
                                                             </tr>
-                                                        </tfoot>
+                                                        </tbody>
                                                     </table>                                           
                                                 </div>
                                             </div>
@@ -288,9 +301,14 @@
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
     <script>
-        window.addEventListener("load", function () {            
+        function set_values(){
             document.getElementById("check_options").value = document.getElementById("check_paused").innerText;
             document.getElementById("mail_options").value = document.getElementById("mail_enabled").innerText;
+            document.getElementById("watch_options").value = (document.getElementById("watch_strategy").innerText)[0];
+        }
+
+        window.addEventListener("load", function () {            
+            set_values();
             if (document.getElementById("check_paused").innerText == 'TRUE'){
                 document.getElementById("check_paused").className += "bg-danger";
             }
@@ -319,6 +337,7 @@
             document.getElementById('check_btn').removeAttribute('disabled');
             document.getElementById('mail_btn').setAttribute('disabled', true);
             document.getElementById('start_btn').setAttribute('disabled', true);
+            document.getElementById('watch_btn').setAttribute('disabled', true);
             document.getElementById('slave_options').selectedIndex = 0;
             document.getElementById('ops').selectedIndex = 0;
             document.getElementById('ops').setAttribute('disabled', true);
@@ -328,6 +347,17 @@
             document.getElementById('mail_btn').removeAttribute('disabled');
             document.getElementById('check_btn').setAttribute('disabled', true);
             document.getElementById('start_btn').setAttribute('disabled', true);
+            document.getElementById('watch_btn').setAttribute('disabled', true);
+            document.getElementById('slave_options').selectedIndex = 0;
+            document.getElementById('ops').selectedIndex = 0;
+            document.getElementById('ops').setAttribute('disabled', true);
+        };
+
+        function enable_watch_btn(){
+            document.getElementById('watch_btn').removeAttribute('disabled');
+            document.getElementById('check_btn').setAttribute('disabled', true);
+            document.getElementById('start_btn').setAttribute('disabled', true);
+            document.getElementById('mail_btn').setAttribute('disabled', true);
             document.getElementById('slave_options').selectedIndex = 0;
             document.getElementById('ops').selectedIndex = 0;
             document.getElementById('ops').setAttribute('disabled', true);
@@ -337,6 +367,7 @@
             document.getElementById('start_btn').removeAttribute('disabled');
             document.getElementById('check_btn').setAttribute('disabled', true);
             document.getElementById('mail_btn').setAttribute('disabled', true); 
+            document.getElementById('watch_btn').setAttribute('disabled', true);
         };
     
         function enable_slave_options(){
@@ -348,7 +379,8 @@
             }
             document.getElementById('start_btn').setAttribute('disabled', true);
             document.getElementById('check_btn').setAttribute('disabled', true);
-            document.getElementById('mail_btn').setAttribute('disabled', true);        
+            document.getElementById('mail_btn').setAttribute('disabled', true);   
+            document.getElementById('watch_btn').setAttribute('disabled', true);     
         };
 
         function bfm_sleep(ms) {
@@ -396,6 +428,25 @@
             $.ajax({
                 url: bfmUrl,
                 type: "GET",
+                username: document.getElementById("axbu").innerText,
+                password: document.getElementById("axbp").innerText,
+                success: function (data) {
+                    window.location.reload();
+                },
+                error: function (error) {
+                    console.log(`Error ${error}`);
+                }
+            });
+        }
+
+        function set_watch_strategy(){
+            // var active_bfm = document.getElementById("active_bfm").innerText
+            var active_bfm = 'localhost:9994'
+            var bfmUrl = 'http://' + active_bfm + '/bfm/watch-strategy/'+document.getElementById("watch_options").value;
+            
+            $.ajax({
+                url: bfmUrl,
+                type: "POST",
                 username: document.getElementById("axbu").innerText,
                 password: document.getElementById("axbp").innerText,
                 success: function (data) {
