@@ -291,7 +291,9 @@
         window.addEventListener("load", function () {            
             document.getElementById("check_options").value = document.getElementById("check_paused").innerText;
             document.getElementById("mail_options").value = document.getElementById("mail_enabled").innerText;
-    
+            if (document.getElementById("check_paused").innerText == 'TRUE'){
+                document.getElementById("check_paused").className += "bg-danger";
+            }
             cluster_status = document.getElementById("div_cluster_status").innerText
             if (cluster_status === "HEALTHY") {
                 document.getElementById("div_cluster_cover").classList.remove("bg-warning");
