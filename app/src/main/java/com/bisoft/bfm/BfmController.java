@@ -53,6 +53,12 @@ public class BfmController {
     @Value("${watcher.cluster-pair:no-pair}")
     private String bfmPair;
 
+    @Value("${server.pguser:postgres}")
+    private String username;
+
+    @Value("${server.pgpassword:postgres}")
+    private String password;
+
     @RequestMapping(path = "/status",method = RequestMethod.GET)
     public @ResponseBody
     List<PostgresqlServer> status(){
@@ -314,7 +320,10 @@ public class BfmController {
 
                                 this.bfmContext.setCheckPaused(Boolean.FALSE);
                                 int checkCount = 3;
-                                while ((this.bfmContext.getClusterStatus() != ClusterStatus.HEALTHY) && (checkCount > 0)){
+                                while (((this.bfmContext.getClusterStatus() != ClusterStatus.HEALTHY) || 
+                                                                    (this.bfmContext.getPgList().stream()
+                                                                    .filter(s -> (s.getDatabaseStatus().equals(DatabaseStatus.INACCESSIBLE))).count()) > 0) 
+                                        && (checkCount > 0)){
                                     TimeUnit.SECONDS.sleep(5);
                                     checkCount--;
                                 }                                
@@ -421,6 +430,8 @@ public class BfmController {
         ResourceLoader resourceLoader = new DefaultResourceLoader();
         Resource resource = resourceLoader.getResource("classpath:template.html");
         String retval = asString(resource);
+        retval = retval.replace("{{ USERNAME }}", username);
+        retval = retval.replace("{{ PASSWORD }}", password);
         if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
             if (this.bfmContext.getClusterStatus() == null){
                 retval = retval.replace("{{ CLUSTER_STATUS }}", "Cluster Starting...");
