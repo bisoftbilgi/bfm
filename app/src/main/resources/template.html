@@ -59,7 +59,7 @@
     }
 
     .register .register-form {
-        padding: 10%;
+        padding: 10% 10% 5% 10%;
         margin-top: 8%;
     }
 
@@ -183,13 +183,13 @@
                                                             <td><label>Cluster Check Paused: </label></td>
                                                             <td class="text-center"><label id="check_paused" name="check_paused">{{ CHECK_PAUSED }}</label></td>
                                                             <td>                                                                
-                                                                <select name="check_options" id="check_options" class="form-control">
+                                                                <select name="check_options" id="check_options" class="form-control" onchange="enable_check_btn();">
                                                                     <option value="TRUE" selected>TRUE</option>
                                                                     <option value="FALSE">FALSE</option>
                                                                 </select>      
                                                             </td>
                                                             <td>
-                                                                <input type="button" class="btn btn-primary" value="Set" disabled>
+                                                                <input id="check_btn" name="check_btn" type="button" class="btn btn-primary" value="Set" disabled>
                                                             </td>
                                                         </tr>
                                                         <tr>
@@ -198,32 +198,32 @@
                                                             </td>
                                                             <td class="text-center"><label id="mail_enabled" name="mail_enabled">{{ MAIL_ENABLED }}</label></td>
                                                             <td>
-                                                                <select name="mail_options" id="mail_options" class="form-control">
+                                                                <select name="mail_options" id="mail_options" class="form-control" onchange="enable_mail_btn();">
                                                                     <option value="TRUE" selected>TRUE</option>
                                                                     <option value="FALSE">FALSE</option>
                                                                 </select>
                                                             </td>
                                                             <td>
-                                                                <input type="button" class="btn btn-primary" value="Set" disabled>
+                                                                <input id="mail_btn" name="mail_btn" type="button" class="btn btn-primary" value="Set" disabled>
                                                             </td>
                                                         </tr>
                                                         <tr>
                                                             <td><label>Switch Over / Re Initialize</label></td>
                                                             <td>
-                                                                <select name="slave_options" id="slave_options" class="form-control">
+                                                                <select name="slave_options" id="slave_options" class="form-control" onchange="enable_slave_options();">
                                                                     <option value="" selected>Select Slave</option>
                                                                     {{ SLAVE_OPTIONS }}
                                                                 </select>
                                                             </td>
                                                             <td>
-                                                                <select name="ops" id="ops" class="form-control">
+                                                                <select name="ops" id="ops" class="form-control" disabled onchange="enable_start_btn();">
                                                                     <option value="" selected>Select Operation</option>
                                                                     <option value="switchOver">Switch Over</option>
                                                                     <option value="reinit">Re Initialize</option>
                                                                 </select>
                                                             </td>
                                                             <td>
-                                                                <input type="button" class="btn btn-primary" value="Start" disabled>
+                                                                <input id="start_btn" name="start_btn" type="button" class="btn btn-primary" value="Start" disabled>
                                                             </td>
                                                         </tr>
                                                     </tbody>
@@ -274,4 +274,41 @@
             document.getElementById("div_cluster_cover").classList.add("bg-dark");
         }
     });
+
+    function enable_check_btn(){
+        document.getElementById('check_btn').removeAttribute('disabled');
+        document.getElementById('mail_btn').setAttribute('disabled', true);
+        document.getElementById('start_btn').setAttribute('disabled', true);
+        document.getElementById('slave_options').selectedIndex = 0;
+        document.getElementById('ops').selectedIndex = 0;
+        document.getElementById('ops').setAttribute('disabled', true);
+    };
+
+    function enable_mail_btn(){
+        document.getElementById('mail_btn').removeAttribute('disabled');
+        document.getElementById('check_btn').setAttribute('disabled', true);
+        document.getElementById('start_btn').setAttribute('disabled', true);
+        document.getElementById('slave_options').selectedIndex = 0;
+        document.getElementById('ops').selectedIndex = 0;
+        document.getElementById('ops').setAttribute('disabled', true);
+    };
+
+    function enable_start_btn(){
+        document.getElementById('start_btn').removeAttribute('disabled');
+        document.getElementById('check_btn').setAttribute('disabled', true);
+        document.getElementById('mail_btn').setAttribute('disabled', true); 
+    };
+
+    function enable_slave_options(){
+        if (document.getElementById('slave_options').selectedIndex > 0){
+            document.getElementById('ops').removeAttribute('disabled');
+        } else {
+            document.getElementById('ops').selectedIndex = 0;
+            document.getElementById('ops').setAttribute('disabled', true);    
+        }
+        document.getElementById('start_btn').setAttribute('disabled', true);
+        document.getElementById('check_btn').setAttribute('disabled', true);
+        document.getElementById('mail_btn').setAttribute('disabled', true);        
+    };
+
 </script>
