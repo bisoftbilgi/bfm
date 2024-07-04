@@ -497,7 +497,6 @@
                 },
                 success: async function (data) {
                     if (document.getElementById("div_bfm_card").classList.value.includes("bg-warning")){
-                        console.log("refresh-wait");
                         await new Promise(r => setTimeout(r, 7000));                       
                     }
                     window.location.reload();
