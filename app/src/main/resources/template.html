@@ -478,9 +478,8 @@
         }
 
         function set_cluster_check(){
-            // var active_bfm = document.getElementById("active_bfm").innerText
+            var active_bfm = document.getElementById("active_bfm").innerText
             document.getElementById("overlay").style.display = 'block';
-            var active_bfm = 'localhost:9994'
             var bfmUrl = '';
             if (document.getElementById("check_options").value == "TRUE"){
                 var bfmUrl = 'http://' + active_bfm + '/bfm/check-pause';
@@ -505,9 +504,8 @@
         }
 
         function set_mail_notification(){
-            // var active_bfm = document.getElementById("active_bfm").innerText
+            var active_bfm = document.getElementById("active_bfm").innerText
             document.getElementById("overlay").style.display = 'block';
-            var active_bfm = 'localhost:9994'
             var bfmUrl = '';
             if (document.getElementById("mail_options").value == "TRUE"){
                 var bfmUrl = 'http://' + active_bfm + '/bfm/mail-resume';
@@ -532,9 +530,8 @@
         }
 
         function set_watch_strategy(){
-            // var active_bfm = document.getElementById("active_bfm").innerText
+            var active_bfm = document.getElementById("active_bfm").innerText
             document.getElementById("overlay").style.display = 'block';
-            var active_bfm = 'localhost:9994'
             var bfmUrl = 'http://' + active_bfm + '/bfm/watch-strategy/'+document.getElementById("watch_options").value;
             
             $.ajax({
@@ -552,9 +549,8 @@
         }
 
         function start_reinit_or_switch(){
-            // var active_bfm = document.getElementById("active_bfm").innerText
+            var active_bfm = document.getElementById("active_bfm").innerText
             document.getElementById("overlay").style.display = 'block';
-            var active_bfm = 'localhost:9994'
             var bfmUrl = '';
             var targetPg = document.getElementById("slave_options").value;
             if (document.getElementById("ops").value == "switchOver"){
