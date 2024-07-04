@@ -389,7 +389,7 @@
 
         }
         function fnc_auto_refresh(){
-            setTimeout(function () { window.location.reload(); }, 20000);
+            setTimeout(function () { if (document.getElementById("auto_refresh").checked == true){ window.location.reload();} }, 20000);
         }
         window.addEventListener("load", function () {            
             let bfm_auto_refresh = document.cookie;
