@@ -120,12 +120,14 @@ public class BfmController {
         return bfmPair;
     }
 
+    @CrossOrigin("*")
     @RequestMapping(path = "/check-pause",method = RequestMethod.GET)
     public @ResponseBody String clusterCheckPause(){
         this.bfmContext.setCheckPaused(Boolean.TRUE);
         return "Cluster check Paused.\n";
     }
 
+    @CrossOrigin("*")
     @RequestMapping(path = "/check-resume",method = RequestMethod.GET)
     public @ResponseBody String clusterCheckResume(){
         this.bfmContext.setCheckPaused(Boolean.FALSE);
