@@ -473,10 +473,6 @@
             document.getElementById('watch_btn').setAttribute('disabled', true);     
         };
 
-        function bfm_sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        }
-
         function set_cluster_check(){
             var active_bfm = document.getElementById("active_bfm").innerText
             document.getElementById("overlay").style.display = 'block';
@@ -499,9 +495,10 @@
                 beforeSend: function (xhr) {
                     xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
                 },
-                success: function (data) {
+                success: async function (data) {
                     if (document.getElementById("div_bfm_card").classList.value.includes("bg-warning")){
-                        bfm_sleep(7);
+                        console.log("refresh-wait");
+                        await new Promise(r => setTimeout(r, 7000));                       
                     }
                     window.location.reload();
                 },
