@@ -23,6 +23,7 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -46,6 +47,7 @@ import lombok.extern.slf4j.Slf4j;
 @Controller
 @RequestMapping("/bfm")
 @RequiredArgsConstructor
+@CrossOrigin("*")
 public class BfmController {
 
     private final BfmContext bfmContext;
