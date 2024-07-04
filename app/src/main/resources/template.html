@@ -575,9 +575,9 @@
             });
         }
         function set_auto_refresh(){
-            console.log(document.getElementById("auto_refresh").checked);
             if (document.getElementById("auto_refresh").checked == true){
                 document.cookie = "bfm_auto_refresh=on";
+                fnc_auto_refresh();
             } else {
                 document.cookie = "bfm_auto_refresh=off";
             }            
