@@ -495,9 +495,10 @@
                 headers: {
                     'Access-Control-Allow-Origin': '*'
                 },
-                crossDomain: true,                
-                username: document.getElementById("axbu").innerText,
-                password: document.getElementById("axbp").innerText,
+                crossDomain: true,
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                },
                 success: function (data) {
                     window.location.reload();
                 },
@@ -526,8 +527,9 @@
                     'Access-Control-Allow-Origin': '*'
                 },
                 crossDomain: true,                
-                username: document.getElementById("axbu").innerText,
-                password: document.getElementById("axbp").innerText,
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                },
                 success: function (data) {
                     window.location.reload();
                 },
@@ -549,8 +551,9 @@
                     'Access-Control-Allow-Origin': '*'
                 },
                 crossDomain: true,                
-                username: document.getElementById("axbu").innerText,
-                password: document.getElementById("axbp").innerText,
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                },
                 success: function (data) {
                     window.location.reload();
                 },
@@ -580,8 +583,9 @@
                     'Access-Control-Allow-Origin': '*'
                 },
                 crossDomain: true,                
-                username: document.getElementById("axbu").innerText,
-                password: document.getElementById("axbp").innerText,
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                },
                 success: async function (data) {
                     window.location.reload();                    
                 },
