@@ -492,6 +492,10 @@
             $.ajax({
                 url: bfmUrl,
                 type: "GET",
+                headers: {
+                    'Access-Control-Allow-Origin': '*'
+                },
+                crossDomain: true,                
                 username: document.getElementById("axbu").innerText,
                 password: document.getElementById("axbp").innerText,
                 success: function (data) {
@@ -518,6 +522,10 @@
             $.ajax({
                 url: bfmUrl,
                 type: "GET",
+                headers: {
+                    'Access-Control-Allow-Origin': '*'
+                },
+                crossDomain: true,                
                 username: document.getElementById("axbu").innerText,
                 password: document.getElementById("axbp").innerText,
                 success: function (data) {
@@ -537,6 +545,10 @@
             $.ajax({
                 url: bfmUrl,
                 type: "POST",
+                headers: {
+                    'Access-Control-Allow-Origin': '*'
+                },
+                crossDomain: true,                
                 username: document.getElementById("axbu").innerText,
                 password: document.getElementById("axbp").innerText,
                 success: function (data) {
@@ -564,6 +576,10 @@
             $.ajax({
                 url: bfmUrl,
                 type: "POST",
+                headers: {
+                    'Access-Control-Allow-Origin': '*'
+                },
+                crossDomain: true,                
                 username: document.getElementById("axbu").innerText,
                 password: document.getElementById("axbp").innerText,
                 success: async function (data) {
