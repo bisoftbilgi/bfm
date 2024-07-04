@@ -235,7 +235,7 @@
                                 <div class="row" style="margin-top:1%;">
                                     <div class="col-md-12">
                                         <div class="card bg-warning bg-gradient">
-                                            <div class="card-body {{ CLASS_CARD_BODY }}">
+                                            <div id="div_bfm_card" class="card-body {{ CLASS_CARD_BODY }}">
                                                 <table class="table">
                                                     <thead>
                                                         <th>Server Address</th>
@@ -500,6 +500,9 @@
                     xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
                 },
                 success: function (data) {
+                    if (document.getElementById("div_bfm_card").classList.value.includes("bg-warning")){
+                        bfm_sleep(7);
+                    }
                     window.location.reload();
                 },
                 error: function (error) {
