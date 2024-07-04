@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.net.InterfaceAddress;
@@ -123,6 +124,23 @@ public class BfmController {
     @RequestMapping(path = "/check-pause",method = RequestMethod.GET)
     public @ResponseBody String clusterCheckPause(){
         this.bfmContext.setCheckPaused(Boolean.TRUE);
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            try {
+                JsonReader reader = new JsonReader(new FileReader("./bfm_status.json"));
+                ContextStatus cs = gson.fromJson(reader, ContextStatus.class);
+                cs.setCheckPaused("TRUE");
+                String json_str = gson.toJson(cs);
+                PrintWriter out;
+                try {
+                    out = new PrintWriter("./bfm_status.json");
+                    out.println(json_str);
+                    out.close();
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
         return "Cluster check Paused.\n";
     }
 
