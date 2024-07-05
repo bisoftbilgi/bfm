@@ -142,6 +142,18 @@ public class ClusterCheckScheduler {
                         if (count == 1L ){
                             master = this.bfmContext.getPgList().stream()
                                 .filter(server -> server.getStatus() == DatabaseStatus.MASTER).findFirst().get();
+                        } else {
+                            log.warn("All server looks like DOWN. trying to start servers..");
+                            this.bfmContext.getPgList().stream().forEach(pg -> {
+                                try {
+                                    String start_result = minipgAccessUtil.startPg(pg);    
+                                    log.info("Start server "+ pg.getServerAddress() + " result is "+ start_result);
+                                    return;
+                                } catch (Exception e) {
+                                    log.warn("Error occurred on start pg "+ pg.getServerAddress());
+                                }
+                                
+                            });
                         }
                     }
     
