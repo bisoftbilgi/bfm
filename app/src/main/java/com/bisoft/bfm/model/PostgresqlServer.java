@@ -51,13 +51,21 @@ public class PostgresqlServer {
     }
 
     public Connection getServerConnection() throws ClassNotFoundException, SQLException {
-        Class.forName("org.postgresql.Driver");
-        connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
+        // Class.forName("org.postgresql.Driver");
+        // connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
+        if (connection != null && connection.isValid(5)){
+            return connection;
+        } else {
+            Class.forName("org.postgresql.Driver");
+            connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
+            return connection;
+        }
+
         // if(connection == null || this.databaseStatus == DatabaseStatus.INACCESSIBLE) {
             // Class.forName("org.postgresql.Driver");
             // connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
         // }
-        return connection;
+        // return connection;
     }
 
     public Boolean isServerMaster(){
