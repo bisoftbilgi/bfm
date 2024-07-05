@@ -107,6 +107,7 @@ public class PostgresqlServer {
                 this.setWalLogPosition(wal_pos);                        
             } catch (Exception e) {
                 log.warn("Connection Failed to server:"+this.getServerAddress());
+                this.databaseStatus = DatabaseStatus.INACCESSIBLE;
             }
         } else {
             try {
@@ -119,6 +120,7 @@ public class PostgresqlServer {
                 this.setWalLogPosition(wal_pos);                    
             } catch (Exception e) {
                 log.warn("Connection Failed to server:"+this.getServerAddress());
+                this.databaseStatus = DatabaseStatus.INACCESSIBLE;
             }
         }
     }
@@ -138,6 +140,7 @@ public class PostgresqlServer {
             // log.info(this.getServerAddress() + " timeline_id: "+ this.getTimeLineId());                      
         } catch (Exception e) {
             log.warn("Connection Failed to server:"+this.getServerAddress());
+            this.databaseStatus = DatabaseStatus.INACCESSIBLE;
         }
     }
 
@@ -177,6 +180,7 @@ public class PostgresqlServer {
             }
         } catch (Exception e) {
             log.warn("Connection Failed to server:"+this.getServerAddress());
+            this.databaseStatus = DatabaseStatus.INACCESSIBLE;
         }
 
         return retval;

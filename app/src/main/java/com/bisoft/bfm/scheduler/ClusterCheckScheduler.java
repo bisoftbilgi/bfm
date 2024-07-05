@@ -160,12 +160,12 @@ public class ClusterCheckScheduler {
                                                             server.setRewindStarted(Boolean.TRUE);
                                                             String rewind_result = minipgAccessUtil.rewind(server, selectedMaster);
                                                             if (! rewind_result.equals("OK")){
-                                                                log.info("MiniPG rewind was FAILED. Slave Target:",server);
+                                                                log.info("MiniPG rewind was FAILED. Slave Target:",server.getServerAddress());
                                                                 if (basebackup_slave_join == true){
                                                                     String rejoin_result = rejoinCluster(selectedMaster, server);
                                                                     log.info("pg_basebackup join cluster result is:"+rejoin_result);
                                                                 } else {
-                                                                    log.info("pg_basebackup join is set to FALSE. passing for slave server:",server);
+                                                                    log.info("pg_basebackup join is set to FALSE. passing for slave server:",server.getServerAddress());
                                                                 }
                                                             }
                                                             server.setRewindStarted(Boolean.FALSE);        
@@ -283,11 +283,33 @@ public class ClusterCheckScheduler {
 
         long masterWithNoslaveCount = this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)).count();
 
-        if(masterCount ==  1L){
+        if (masterCount ==  1L && masterWithNoslaveCount == 0){            
             // log.info("Cluster has a master node");
             this.bfmContext.setClusterStatus(ClusterStatus.HEALTHY);
             healthy();
-            checkLastWalPositions();
+            checkLastWalPositions();            
+        }else if (masterCount ==  1L && masterWithNoslaveCount > 0){
+            log.warn("Cluster has a master but, there is one or more master_with_no_slave server in cluster.");
+            this.bfmContext.getPgList().stream().filter(s -> (s.getDatabaseStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)))
+                                                .forEach(server -> {
+                                                    if (server.getRewindStarted() == Boolean.FALSE){
+                                                        server.setRewindStarted(Boolean.TRUE);
+                                                        try {
+                                                            String rewind_result = minipgAccessUtil.rewind(server, this.bfmContext.getMasterServer());
+                                                            if (! rewind_result.equals("OK")){
+                                                                log.info("pg_rewind was FAILED. Slave Target:",server.getServerAddress());
+                                                                    String rejoin_result = minipgAccessUtil.rebaseUp(server, this.bfmContext.getMasterServer());
+                                                                    log.info("pg_basebackup join cluster result is:"+rejoin_result);
+                                                            }
+                                                        } catch (Exception e) {
+                                                            log.warn("Error on Rejoin Master_With_No_slave server:"+ server.getServerAddress());
+                                                        }                                                        
+                                                        server.setRewindStarted(Boolean.FALSE);                                                    
+                                                    } else {
+                                                        log.info("Rejoin processing...Passing.");
+                                                    }
+                                                });
+
         }else if(clusterCount == 2 && masterCount == 0 && masterWithNoslaveCount==1){
             log.warn("Cluster has a master with no slave (cluster size is 2), not healthy but ingoring failover");
             warning();

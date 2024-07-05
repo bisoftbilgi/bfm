@@ -339,6 +339,23 @@ public class BfmController {
                                 result = minipgAccessUtil.postSwitchOver(old_master, switchOverToPG);
                                 log.info("Ex-Master Rejoin Result :"+ result);
 
+                                this.bfmContext.getPgList().stream().filter(s -> (!s.getServerAddress().equals(switchOverToPG.getServerAddress()) &&
+                                                                                    !s.getServerAddress().equals(old_master.getServerAddress())))
+                                                                    .forEach(pg -> {
+                                                                        try {
+                                                                            pg.setRewindStarted(Boolean.TRUE);
+                                                                            String rewind_result = minipgAccessUtil.rewind(pg, switchOverToPG);
+                                                                            if (! rewind_result.equals("OK")){
+                                                                                log.info("pg_rewind was FAILED. Slave Target:",pg.getServerAddress());
+                                                                                String rejoin_result = minipgAccessUtil.rebaseUp(pg, switchOverToPG);
+                                                                                log.info("pg_basebackup join cluster result is:"+rejoin_result);
+                                                                            }
+                                                                            pg.setRewindStarted(Boolean.FALSE);                                                                            
+                                                                        } catch (Exception e) {
+                                                                            log.warn(pg.getServerAddress() + " Rejoin FAILED. error :"+e);
+                                                                        }
+                                                                    });
+
                                 this.bfmContext.setCheckPaused(Boolean.FALSE);
                                 int checkCount = 3;
                                 while (((this.bfmContext.getClusterStatus() != ClusterStatus.HEALTHY) || 
