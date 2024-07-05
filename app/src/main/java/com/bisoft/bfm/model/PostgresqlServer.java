@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import com.bisoft.bfm.dto.DatabaseStatus;
 import com.bisoft.bfm.dto.PgVersion;
@@ -51,21 +50,17 @@ public class PostgresqlServer {
     }
 
     public Connection getServerConnection() throws ClassNotFoundException, SQLException {
-        // Class.forName("org.postgresql.Driver");
-        // connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
-        if (connection != null && connection.isValid(5)){
-            return connection;
-        } else {
-            Class.forName("org.postgresql.Driver");
-            connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
-            return connection;
-        }
+        if (connection != null){
+            connection.close();
+        }        
+        Class.forName("org.postgresql.Driver");
+        connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
 
         // if(connection == null || this.databaseStatus == DatabaseStatus.INACCESSIBLE) {
-            // Class.forName("org.postgresql.Driver");
-            // connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
+        //     Class.forName("org.postgresql.Driver");
+        //     connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
         // }
-        // return connection;
+        return connection;
     }
 
     public Boolean isServerMaster(){
@@ -110,12 +105,12 @@ public class PostgresqlServer {
                 PreparedStatement ps = con.prepareStatement("select pg_current_wal_lsn() as wal_pos");
                 ps.executeQuery();
                 ResultSet rs = ps.getResultSet();
-        
+
                 rs.next();
-        
+
                 String wal_pos = rs.getString("wal_pos");
-        
-                this.setWalLogPosition(wal_pos);                        
+
+                this.setWalLogPosition(wal_pos);
             } catch (Exception e) {
                 log.warn("Connection Failed to server:"+this.getServerAddress());
                 this.databaseStatus = DatabaseStatus.INACCESSIBLE;
@@ -128,7 +123,7 @@ public class PostgresqlServer {
                 ResultSet rs = ps.getResultSet();
                 rs.next();
                 String wal_pos = rs.getString("wal_pos");
-                this.setWalLogPosition(wal_pos);                    
+                this.setWalLogPosition(wal_pos);
             } catch (Exception e) {
                 log.warn("Connection Failed to server:"+this.getServerAddress());
                 this.databaseStatus = DatabaseStatus.INACCESSIBLE;
@@ -142,13 +137,13 @@ public class PostgresqlServer {
             PreparedStatement ps = con.prepareStatement("SELECT timeline_id FROM pg_control_checkpoint();");
             ps.executeQuery();
             ResultSet rs = ps.getResultSet();
-    
+
             rs.next();
-    
+
             String timeline_id = rs.getString("timeline_id");
-            
-            this.setTimeLineId(Integer.parseInt(timeline_id));  
-            // log.info(this.getServerAddress() + " timeline_id: "+ this.getTimeLineId());                      
+
+            this.setTimeLineId(Integer.parseInt(timeline_id));
+            // log.info(this.getServerAddress() + " timeline_id: "+ this.getTimeLineId());
         } catch (Exception e) {
             log.warn("Connection Failed to server:"+this.getServerAddress());
             this.databaseStatus = DatabaseStatus.INACCESSIBLE;
@@ -169,12 +164,12 @@ public class PostgresqlServer {
                     if (replay_lag == null) replay_lag = "0";
                     replayLagMap.put(slave_addr, replay_lag);
                 }
-            
+
             } catch (Exception e) {
                 log.warn("Connection Failed to server:"+this.getServerAddress());
             }
         }
-        
+
         return replayLagMap;
     }
 
