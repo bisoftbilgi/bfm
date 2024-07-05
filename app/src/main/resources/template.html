@@ -590,6 +590,7 @@
                     xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
                 },
                 success: async function (data) {
+                    await new Promise(r => setTimeout(r, 7000));
                     window.location.reload();                    
                 },
                 error: function (error) {
