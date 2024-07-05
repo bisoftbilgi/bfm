@@ -474,6 +474,7 @@
         };
 
         function set_cluster_check(){
+            document.getElementById("auto_refresh").setAttribute('checked',false);
             var active_bfm = document.getElementById("active_bfm").innerText
             document.getElementById("overlay").style.display = 'block';
             var bfmUrl = '';
@@ -508,6 +509,7 @@
         }
 
         function set_mail_notification(){
+            document.getElementById("auto_refresh").setAttribute('checked',false);
             var active_bfm = document.getElementById("active_bfm").innerText
             document.getElementById("overlay").style.display = 'block';
             var bfmUrl = '';
@@ -539,6 +541,7 @@
         }
 
         function set_watch_strategy(){
+            document.getElementById("auto_refresh").setAttribute('checked',false);
             var active_bfm = document.getElementById("active_bfm").innerText
             document.getElementById("overlay").style.display = 'block';
             var bfmUrl = 'http://' + active_bfm + '/bfm/watch-strategy/'+document.getElementById("watch_options").value;
@@ -563,6 +566,7 @@
         }
 
         function start_reinit_or_switch(){
+            document.getElementById("auto_refresh").setAttribute('checked',false);
             var active_bfm = document.getElementById("active_bfm").innerText
             document.getElementById("overlay").style.display = 'block';
             var bfmUrl = '';
