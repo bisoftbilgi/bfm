@@ -7,6 +7,7 @@ if [ ! -z $1 ] && [ $1 == "-h" ]; then
     echo "-resume cluster check resume"
     echo "-watchMode [A|M] set watch strategy  A:availability, M:manual"
     echo "-switchOver 192.168.1.22:5432 switch to selected slave"
+    echo "-reinit 192.168.1.22:5432 re-initialize selected slave with pg_rewind or pg_basebackup"
 fi
 
 if [ ! -z $1 ] && [ ! -z $2 ] && [ $1 == "-u" ]; then
