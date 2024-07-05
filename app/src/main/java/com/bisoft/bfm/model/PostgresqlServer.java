@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import com.bisoft.bfm.dto.DatabaseStatus;
 import com.bisoft.bfm.dto.PgVersion;
@@ -50,10 +51,12 @@ public class PostgresqlServer {
     }
 
     public Connection getServerConnection() throws ClassNotFoundException, SQLException {
-        if(connection == null || this.databaseStatus == DatabaseStatus.INACCESSIBLE) {
-            Class.forName("org.postgresql.Driver");
-            connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
-        }
+        Class.forName("org.postgresql.Driver");
+        connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
+        // if(connection == null || this.databaseStatus == DatabaseStatus.INACCESSIBLE) {
+            // Class.forName("org.postgresql.Driver");
+            // connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
+        // }
         return connection;
     }
 
