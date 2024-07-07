@@ -468,6 +468,15 @@ public class BfmController {
         ResourceLoader resourceLoader = new DefaultResourceLoader();
         Resource resource = resourceLoader.getResource("classpath:template.html");
         String retval = asString(resource);
+
+        Resource growl_css = resourceLoader.getResource("classpath:jquery.growl.css");
+        String growl_css_str = asString(growl_css);
+        retval = retval.replace("{{ GROWL_STYLE }}", growl_css_str);
+
+        Resource growl_js = resourceLoader.getResource("classpath:jquery.growl.js");
+        String growl_js_str = asString(growl_js);
+        retval = retval.replace("{{ GROWL_SCRIPT }}", growl_js_str);
+
         retval = retval.replace("{{ USERNAME }}", username);
         retval = retval.replace("{{ PASSWORD }}", password);
         if (this.bfmContext.isMasterBfm() == Boolean.TRUE){

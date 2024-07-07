@@ -196,6 +196,8 @@
             z-index: 2; /* Specify a stack order in case you're using a different order for other elements */
             cursor: wait; /* Add a pointer on hover */
         }
+
+        {{ GROWL_STYLE }}
     </style>  
 </head>
   <body>
@@ -264,7 +266,7 @@
                                                             <tr>
                                                                 <td>Cluster Check :</td>
                                                                 <td>
-                                                                    <input id="cb_check" type="checkbox" {{ CHECK_STATUS }} data-toggle="toggle" data-width="170" data-on="Enable" data-off="Disable" data-onstyle="success" data-offstyle="danger" onclick="set_cluster_check();">
+                                                                    <input id="cb_check" type="checkbox" {{ CHECK_STATUS }} data-toggle="toggle" data-width="170" data-on="Enable" data-off="Disable" data-onstyle="success" data-offstyle="danger" onchange="set_cluster_check();">
                                                                 </td>
                                                             </tr>
                                                             <tr>
@@ -297,7 +299,7 @@
                                                         </tr>
                                                         <tr>
                                                             <td colspan="2">
-                                                                <select id="slave_options" class="form-control" onchange="enable_slave_options();">
+                                                                <select id="slave_options" class="form-control">
                                                                     <option value="" selected>Select Slave</option>
                                                                     {{ SLAVE_OPTIONS }}
                                                                 </select>
@@ -305,10 +307,10 @@
                                                         </tr>
                                                         <tr>
                                                             <td class="text-left">
-                                                                <input id="btn_switch" type="button" class="btn btn-secondary" value="Switch Over"  onclick="start_reinit_or_switch();">
+                                                                <input id="btn_switch" type="button" class="btn btn-secondary" value="Switch Over"  onclick="start_switch();">
                                                             </td>
                                                             <td class="text-right">
-                                                                <input id="btn_reinit" type="button" class="btn btn-primary" value="Re İnitialize"  onclick="start_reinit_or_switch();">
+                                                                <input id="btn_reinit" type="button" class="btn btn-secondary" value="Re Initialize" onclick="start_reinit();">
                                                             </td>
                                                         </tr>
                                                     </table>
@@ -324,7 +326,7 @@
             </div>
         </div>
     </div>
-  
+    
     <!-- Modal -->
     <div class="modal fade" id="bfmModal" tabindex="-1" role="dialog" aria-labelledby="bfmModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
@@ -361,12 +363,7 @@
         function fnc_auto_refresh(){
             setTimeout(function () { if (document.getElementById("auto_refresh").checked == true){ window.location.reload();} }, 20000);
         }
-        window.addEventListener("load", function () {            
-            // let bfm_auto_refresh = document.cookie;
-            // if (bfm_auto_refresh.includes("bfm_auto_refresh=on")){
-            //     document.getElementById("auto_refresh").setAttribute('checked',true);
-            //     fnc_auto_refresh();
-            // } 
+        window.addEventListener("load", function () {
 
             cluster_status = document.getElementById("div_cluster_status").innerText
             if (cluster_status === "HEALTHY") {
@@ -390,13 +387,12 @@
         });
     
         function set_cluster_check(){
-            document.getElementById("auto_refresh").setAttribute('checked',false);
             var active_bfm = document.getElementById("active_bfm").innerText
             document.getElementById("overlay").style.display = 'block';
             var bfmUrl = '';
-            if (document.getElementById("cb_check").checked == true){
+            if (document.getElementById("cb_check").checked == false){
                 var bfmUrl = 'http://' + active_bfm + '/bfm/check-pause';
-            } else if (document.getElementById("cb_check").checked == false){
+            } else if (document.getElementById("cb_check").checked == true){
                 var bfmUrl = 'http://' + active_bfm + '/bfm/check-resume';
             } else {
                 var bfmUrl = '#';
@@ -425,13 +421,12 @@
         }
 
         function set_mail_notification(){
-            document.getElementById("auto_refresh").setAttribute('checked',false);
             var active_bfm = document.getElementById("active_bfm").innerText
             document.getElementById("overlay").style.display = 'block';
             var bfmUrl = '';
-            if (document.getElementById("mail_options").value == "TRUE"){
+            if (document.getElementById("cb_mail").checked == true){
                 var bfmUrl = 'http://' + active_bfm + '/bfm/mail-resume';
-            } else if (document.getElementById("mail_options").value == "FALSE"){
+            } else if (document.getElementById("cb_mail").checked == false){
                 var bfmUrl = 'http://' + active_bfm + '/bfm/mail-pause';
             } else {
                 var bfmUrl = '#';
@@ -457,10 +452,15 @@
         }
 
         function set_watch_strategy(){
-            document.getElementById("auto_refresh").setAttribute('checked',false);
             var active_bfm = document.getElementById("active_bfm").innerText
             document.getElementById("overlay").style.display = 'block';
-            var bfmUrl = 'http://' + active_bfm + '/bfm/watch-strategy/'+document.getElementById("watch_options").value;
+            if (document.getElementById("cb_watch").checked == true){
+                var bfmUrl = 'http://' + active_bfm + '/bfm/watch-strategy/A';
+            } else if (document.getElementById("cb_watch").checked == false){
+                var bfmUrl = 'http://' + active_bfm + '/bfm/watch-strategy/M';
+            } else {
+                var bfmUrl = '#'
+            }            
             
             $.ajax({
                 url: bfmUrl,
@@ -481,48 +481,76 @@
             });
         }
 
-        function start_reinit_or_switch(){
-            document.getElementById("auto_refresh").setAttribute('checked',false);
+        function start_reinit(){
             var active_bfm = document.getElementById("active_bfm").innerText
-            document.getElementById("overlay").style.display = 'block';
             var bfmUrl = '';
             var targetPg = document.getElementById("slave_options").value;
-            if (document.getElementById("ops").value == "switchOver"){
-                var bfmUrl = 'http://' + active_bfm + '/bfm/switchover/'+targetPg;
-            } else if (document.getElementById("ops").value == "reinit"){
-                var bfmUrl = 'http://' + active_bfm + '/bfm/reinit/'+targetPg;
+            if (targetPg.length < 5 ){
+                // $.growl({ title: "Growl", message: "The kitten is awake!" });
+                $.growl.error({ message: "Please Select a Slave Server for Re Initalize!" });
+                // $.growl.notice({ message: "The kitten is cute!" });
+                // $.growl.warning({ message: "The kitten is ugly!" });
             } else {
-                var bfmUrl = '#';
+                document.getElementById("overlay").style.display = 'block';
+                var bfmUrl = 'http://' + active_bfm + '/bfm/reinit/'+targetPg;            
+                $.ajax({
+                    url: bfmUrl,
+                    type: "POST",
+                    headers: {
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    crossDomain: true,                
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                    },
+                    success: async function (data) {
+                        await new Promise(r => setTimeout(r, 7000));
+                        window.location.reload();                    
+                    },
+                    error: function (error) {
+                        console.log(`Error ${error}`);
+                    }
+                });
             }
-
-            $.ajax({
-                url: bfmUrl,
-                type: "POST",
-                headers: {
-                    'Access-Control-Allow-Origin': '*'
-                },
-                crossDomain: true,                
-                beforeSend: function (xhr) {
-                    xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
-                },
-                success: async function (data) {
-                    await new Promise(r => setTimeout(r, 7000));
-                    window.location.reload();                    
-                },
-                error: function (error) {
-                    console.log(`Error ${error}`);
-                }
-            });
+            
         }
 
-        function set_auto_refresh(){
-            if (document.getElementById("auto_refresh").checked == true){
-                document.cookie = "bfm_auto_refresh=on";
-                fnc_auto_refresh();
+        function start_switch(){
+            var active_bfm = document.getElementById("active_bfm").innerText
+            
+            var bfmUrl = '';
+            var targetPg = document.getElementById("slave_options").value;
+            if (targetPg.length < 5 ){
+                // $.growl({ title: "Growl", message: "The kitten is awake!" });
+                $.growl.error({ message: "Please Select a Slave Server for Switch Over!" });
+                // $.growl.notice({ message: "The kitten is cute!" });
+                // $.growl.warning({ message: "The kitten is ugly!" });
             } else {
-                document.cookie = "bfm_auto_refresh=off";
-            }            
+                document.getElementById("overlay").style.display = 'block';
+                var bfmUrl = 'http://' + active_bfm + '/bfm/switchover/'+targetPg;
+                
+                $.ajax({
+                    url: bfmUrl,
+                    type: "POST",
+                    headers: {
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    crossDomain: true,                
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                    },
+                    success: async function (data) {
+                        await new Promise(r => setTimeout(r, 7000));
+                        window.location.reload();                    
+                    },
+                    error: function (error) {
+                        console.log(`Error ${error}`);
+                    }
+                });
+            }
         }
+
+        {{ GROWL_SCRIPT }}
     </script>  
 </body>
 </html>
