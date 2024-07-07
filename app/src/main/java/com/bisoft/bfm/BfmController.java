@@ -554,7 +554,7 @@ public class BfmController {
                 retval = retval.replace("{{ SERVER_ROWS }}", server_rows);
                 retval = retval.replace("{{ CLASS_CARD_BODY }}", "bg-warning");
                 retval = retval.replace("{{ CLASS_SERVER_ROWS }}", "text-black");
-                retval = retval.replace("{{ CHECK_STATUS }}",cs.getCheckPaused());
+                retval = retval.replace("{{ CHECK_STATUS }}",(cs.getCheckPaused().equals("TRUE") ? " " : "checked"));
                 retval = retval.replace("{{ MAIL_ENABLED }}",(cs.getMailNotifyEnabled().equals("TRUE") ? "checked" : " "));
                 retval = retval.replace("{{ ACTIVE_BFM }}", this.getActiveBfm());
                 retval = retval.replace("{{ SLAVE_OPTIONS }}", slave_options);
