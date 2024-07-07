@@ -238,7 +238,7 @@
                                     <div class="col-md-12">
                                         <div class="card bg-warning bg-gradient">
                                             <div id="div_bfm_card" class="card-body {{ CLASS_CARD_BODY }}">
-                                                <table class="table">
+                                                <table class="table" id="tbl_pglist">
                                                     <thead>
                                                         <th>Server Address</th>
                                                         <th>Server Status</th>
@@ -517,9 +517,37 @@
 
         function start_switch(){
             var active_bfm = document.getElementById("active_bfm").innerText
-            
-            var bfmUrl = '';
             var targetPg = document.getElementById("slave_options").value;
+
+            var table = document.getElementById("tbl_pglist");
+            var master_replay_lag;
+            var master_timeline_id;
+            var target_replay_lag;
+            var target_timeline_id;
+
+            for (var i = 0, row; row = table.rows[i]; i++) {
+                if (row.cells[0].innerText == targetPg){
+                    target_replay_lag = row.cells[3].innerText;
+                    target_timeline_id = row.cells[4].innerText;
+                }
+
+                if (row.cells[1].innerText == "MASTER"){
+                    master_replay_lag = row.cells[3].innerText;
+                    master_timeline_id = row.cells[4].innerText;
+                }
+            }
+ 
+            if (parseInt(master_timeline_id) != parseInt(target_timeline_id)){
+                $.growl.error({ message: "Switch Over Cancelled. <br> Timelines not equal !" });
+                return;
+            } else {
+                if (target_replay_lag != "0"){
+                    $.growl.error({ message: "Switch Over Cancelled.<br> Target replay lag is not zero(0)!" });
+                    return;
+                }
+            }            
+            
+            var bfmUrl = '';            
             if (targetPg.length < 5 ){
                 // $.growl({ title: "Growl", message: "The kitten is awake!" });
                 $.growl.error({ message: "Please Select a Slave Server for Switch Over!" });
