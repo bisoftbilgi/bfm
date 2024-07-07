@@ -49,17 +49,18 @@ public class PostgresqlServer {
         return databaseStatus;
     }
 
-    public Connection getServerConnection() throws ClassNotFoundException, SQLException {
-        if (connection != null){
-            connection.close();
-        }        
-        Class.forName("org.postgresql.Driver");
-        connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
-
-        // if(connection == null || this.databaseStatus == DatabaseStatus.INACCESSIBLE) {
-        //     Class.forName("org.postgresql.Driver");
-        //     connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
-        // }
+    public Connection getServerConnection(){ 
+        try {
+            Class.forName("org.postgresql.Driver");
+            if (connection == null || this.databaseStatus == DatabaseStatus.INACCESSIBLE) {
+                connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
+            } else {
+                connection.close();
+                connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
+            }               
+        } catch (Exception e) {
+            log.warn("Can't connect to server "+this.getServerAddress());
+        }
         return connection;
     }
 
@@ -194,19 +195,24 @@ public class PostgresqlServer {
 
     public DatabaseStatus getDatabaseStatus(){
         this.setLastCheckDateTime(LocalDateTime.now());
-        this.hasSlaveServer();
-        this.isServerMaster();
-        if (this.isMaster == null && this.hasSlave == null) {
+        if (this.getServerConnection() != null){
+            this.hasSlaveServer();
+            this.isServerMaster();
+            if (this.isMaster == null && this.hasSlave == null) {
+                this.databaseStatus = DatabaseStatus.INACCESSIBLE;
+            }else if (this.isMaster == true && this.hasSlave == true) {
+                this.databaseStatus = DatabaseStatus.MASTER;
+            }else if (this.isMaster == true && this.hasSlave == false) {
+                this.databaseStatus = DatabaseStatus.MASTER_WITH_NO_SLAVE;
+            }else if (this.isMaster == false && this.hasSlave == false) {
+                this.databaseStatus = DatabaseStatus.SLAVE;
+            }else if(this.isMaster == false && this.hasSlave == true) {
+                this.databaseStatus = DatabaseStatus.SLAVE_WITH_SLAVE;
+            }
+        } else {
             this.databaseStatus = DatabaseStatus.INACCESSIBLE;
-        }else if (this.isMaster == true && this.hasSlave == true) {
-            this.databaseStatus = DatabaseStatus.MASTER;
-        }else if (this.isMaster == true && this.hasSlave == false) {
-            this.databaseStatus = DatabaseStatus.MASTER_WITH_NO_SLAVE;
-        }else if (this.isMaster == false && this.hasSlave == false) {
-            this.databaseStatus = DatabaseStatus.SLAVE;
-        }else if(this.isMaster == false && this.hasSlave == true) {
-            this.databaseStatus = DatabaseStatus.SLAVE_WITH_SLAVE;
         }
+        
         return this.databaseStatus;
     }
 

@@ -476,7 +476,7 @@ public class BfmController {
                 retval = retval.replace("{{ SERVER_ROWS }}", "");
                 retval = retval.replace("{{ CLASS_CARD_BODY }}", "bg-primary");
                 retval = retval.replace("{{ CLASS_SERVER_ROWS }}", "text-white");
-                retval = retval.replace("{{ CHECK_PAUSED }}", "");
+                retval = retval.replace("{{ CHECK_STATUS }}", "");
                 retval = retval.replace("{{ MAIL_ENABLED }}", "");
                 retval = retval.replace("{{ ACTIVE_BFM }}", "");
                 retval = retval.replace("{{ WATCH_STRATEGY }}", "");
@@ -510,11 +510,11 @@ public class BfmController {
                 retval = retval.replace("{{ SERVER_ROWS }}", server_rows);
                 retval = retval.replace("{{ CLASS_CARD_BODY }}", "bg-primary");
                 retval = retval.replace("{{ CLASS_SERVER_ROWS }}", "text-white");
-                retval = retval.replace("{{ CHECK_PAUSED }}", (this.bfmContext.isCheckPaused() == Boolean.TRUE ? "TRUE" : "FALSE"));
-                retval = retval.replace("{{ MAIL_ENABLED }}", (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE ? "TRUE" : "FALSE"));
+                retval = retval.replace("{{ CHECK_STATUS }}", (this.bfmContext.isCheckPaused() == Boolean.TRUE ? " " : "checked"));
+                retval = retval.replace("{{ MAIL_ENABLED }}", (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE ? "checked" : " "));
                 retval = retval.replace("{{ ACTIVE_BFM }}", this.getActiveBfm());
                 retval = retval.replace("{{ SLAVE_OPTIONS }}", slave_options);
-                retval = retval.replace("{{ WATCH_STRATEGY }}", StringUtils.capitalize(this.bfmContext.getWatch_strategy()));
+                retval = retval.replace("{{ WATCH_STRATEGY }}", (this.bfmContext.getWatch_strategy().equals("availability") ? "checked" : " "));
                 return retval;    
             }
         } else {
@@ -545,11 +545,11 @@ public class BfmController {
                 retval = retval.replace("{{ SERVER_ROWS }}", server_rows);
                 retval = retval.replace("{{ CLASS_CARD_BODY }}", "bg-warning");
                 retval = retval.replace("{{ CLASS_SERVER_ROWS }}", "text-black");
-                retval = retval.replace("{{ CHECK_PAUSED }}",cs.getCheckPaused());
-                retval = retval.replace("{{ MAIL_ENABLED }}",cs.getMailNotifyEnabled());
+                retval = retval.replace("{{ CHECK_STATUS }}",cs.getCheckPaused());
+                retval = retval.replace("{{ MAIL_ENABLED }}",(cs.getMailNotifyEnabled().equals("TRUE") ? "checked" : " "));
                 retval = retval.replace("{{ ACTIVE_BFM }}", this.getActiveBfm());
                 retval = retval.replace("{{ SLAVE_OPTIONS }}", slave_options);
-                retval = retval.replace("{{ WATCH_STRATEGY }}", StringUtils.capitalize(cs.getWatchStrategy()));
+                retval = retval.replace("{{ WATCH_STRATEGY }}", (cs.getWatchStrategy().equals("availability") ? "checked" : " "));
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
