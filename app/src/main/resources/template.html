@@ -297,22 +297,18 @@
                                                         </tr>
                                                         <tr>
                                                             <td colspan="2">
-                                                                <select name="slave_options" id="slave_options" class="form-control" onchange="enable_slave_options();">
+                                                                <select id="slave_options" class="form-control" onchange="enable_slave_options();">
                                                                     <option value="" selected>Select Slave</option>
                                                                     {{ SLAVE_OPTIONS }}
                                                                 </select>
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td>
-                                                                <select name="ops" id="ops" class="form-control" disabled onchange="enable_start_btn();">
-                                                                    <option value="" selected>Select Operation</option>
-                                                                    <option value="switchOver">Switch Over</option>
-                                                                    <option value="reinit">Re Initialize</option>
-                                                                </select>
+                                                            <td class="text-left">
+                                                                <input id="btn_switch" type="button" class="btn btn-secondary" value="Switch Over"  onclick="start_reinit_or_switch();">
                                                             </td>
-                                                            <td>
-                                                                <input id="start_btn" name="start_btn" type="button" class="btn btn-primary" value="Start" disabled onclick="start_reinit_or_switch();">
+                                                            <td class="text-right">
+                                                                <input id="btn_reinit" type="button" class="btn btn-primary" value="Re İnitialize"  onclick="start_reinit_or_switch();">
                                                             </td>
                                                         </tr>
                                                     </table>
@@ -393,24 +389,6 @@
             }
         });
     
-        
-    
-        
-
-        
-    
-       
-    
-        function enable_slave_options(){
-            if (document.getElementById('slave_options').selectedIndex > 0){
-                document.getElementById('ops').removeAttribute('disabled');
-            } else {
-                document.getElementById('ops').selectedIndex = 0;
-                document.getElementById('ops').setAttribute('disabled', true);    
-            }
-            document.getElementById('start_btn').setAttribute('disabled', true);    
-        };
-
         function set_cluster_check(){
             document.getElementById("auto_refresh").setAttribute('checked',false);
             var active_bfm = document.getElementById("active_bfm").innerText
@@ -423,13 +401,6 @@
             } else {
                 var bfmUrl = '#';
             }
-            // if (document.getElementById("check_options").value == "TRUE"){
-            //     var bfmUrl = 'http://' + active_bfm + '/bfm/check-pause';
-            // } else if (document.getElementById("check_options").value == "FALSE"){
-            //     var bfmUrl = 'http://' + active_bfm + '/bfm/check-resume';
-            // } else {
-            //     var bfmUrl = '#';
-            // }
             
             $.ajax({
                 url: bfmUrl,
@@ -543,6 +514,7 @@
                 }
             });
         }
+
         function set_auto_refresh(){
             if (document.getElementById("auto_refresh").checked == true){
                 document.cookie = "bfm_auto_refresh=on";

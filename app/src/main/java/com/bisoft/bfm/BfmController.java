@@ -500,7 +500,7 @@ public class BfmController {
                     server_rows = server_rows +  "<td>"+formattedDate+"</td>";
                     server_rows = server_rows + "</tr>";
 
-                    if (pg.getDatabaseStatus().equals(DatabaseStatus.SLAVE)){
+                    if ((!pg.getDatabaseStatus().equals(DatabaseStatus.MASTER)) && (!pg.getDatabaseStatus().equals(DatabaseStatus.INACCESSIBLE))){
                         slave_options = slave_options + 
                                         "<option value=\""+pg.getServerAddress()+"\">"+pg.getServerAddress()+"</option>";
                     }
