@@ -311,10 +311,11 @@ public class BfmController {
                     try {
                         PostgresqlServer switchOverToPG = this.bfmContext.getPgList().stream()
                         .filter(s -> (s.getServerAddress().equals(targetPG) 
-                                        && s.getDatabaseStatus().equals(DatabaseStatus.SLAVE))).findFirst().get();
+                                        && (!s.getDatabaseStatus().equals(DatabaseStatus.MASTER))
+                                        && (!s.getDatabaseStatus().equals(DatabaseStatus.INACCESSIBLE)))).findFirst().get();
 
                         if (switchOverToPG == null){
-                            retval = retval + targetPG+ " Server not found in BFM Cluster or Its not SLAVE.\n";
+                            retval = retval + targetPG+ " Server not found in BFM Cluster or It's MASTER or INACCESSIBLE.\n";
                         } else {
                             if (switchOverToPG.getReplayLag().equals("0")){
                                 this.bfmContext.setCheckPaused(Boolean.TRUE);
@@ -404,10 +405,10 @@ public class BfmController {
                     try {
                         PostgresqlServer target_server = this.bfmContext.getPgList().stream()
                         .filter(s -> (s.getServerAddress().equals(targetPG) 
-                                        && (s.getDatabaseStatus().equals(DatabaseStatus.SLAVE) || s.getDatabaseStatus().equals(DatabaseStatus.INACCESSIBLE)))).findFirst().get();
+                                        && (!s.getDatabaseStatus().equals(DatabaseStatus.MASTER)))).findFirst().get();
 
                         if (target_server == null){
-                            retval = retval + targetPG+ " Server not found in BFM Cluster or Its not SLAVE.\n";
+                            retval = retval + targetPG+ " Server not found in BFM Cluster or Its MASTER.\n";
                         } else {
                             try {
                                 this.bfmContext.setCheckPaused(Boolean.TRUE);
@@ -509,7 +510,7 @@ public class BfmController {
                     server_rows = server_rows +  "<td>"+formattedDate+"</td>";
                     server_rows = server_rows + "</tr>";
 
-                    if ((!pg.getDatabaseStatus().equals(DatabaseStatus.MASTER)) && (!pg.getDatabaseStatus().equals(DatabaseStatus.INACCESSIBLE))){
+                    if (!pg.getDatabaseStatus().equals(DatabaseStatus.MASTER)) {
                         slave_options = slave_options + 
                                         "<option value=\""+pg.getServerAddress()+"\">"+pg.getServerAddress()+"</option>";
                     }
@@ -544,7 +545,7 @@ public class BfmController {
                                     +  "<td>"+pg.getTimeline()+"</td>"
                                     +  "<td>"+pg.getLastCheck()+"</td>"
                                     + "</tr>";
-                    if (pg.getDatabaseStatus().equals("SLAVE")){
+                    if (!pg.getDatabaseStatus().equals("MASTER")){
                         slave_options = slave_options + 
                                         "<option value=\""+pg.getAddress()+"\">"+pg.getAddress()+"</option>";
                     }
