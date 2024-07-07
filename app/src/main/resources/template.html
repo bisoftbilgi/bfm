@@ -256,89 +256,66 @@
                                 </div>
     
                                 <div class="row" style="margin-top:1%;">
-                                    <div class="col-md-12">
+                                    <div class="col-md-6">
                                         <div class="card bg-warning bg-gradient">
-                                            <div class="card-body bg-info">
+                                            <div class="card-body bg-info text-white">
                                                 <div class="row bg-gradient">
                                                     <table class="table text-white">
-                                                        <thead>
-                                                            <th class="text-left">Cluster Operations</th>
-                                                            <th class="text-center">Current Settings</th>
-                                                            <th class="text-center">Setting Options</th>
-                                                            <th></th>
-                                                        </thead>
-                                                        <tbody>
                                                             <tr>
-                                                                <td><label>Cluster Check Paused: </label></td>
-                                                                <td class="text-center"><label id="check_paused" name="check_paused">{{ CHECK_PAUSED }}</label></td>
-                                                                <td>                                                                
-                                                                    <select name="check_options" id="check_options" class="form-control" onchange="enable_check_btn();">
-                                                                        <option value="TRUE" selected>TRUE</option>
-                                                                        <option value="FALSE">FALSE</option>
-                                                                    </select>      
-                                                                </td>
+                                                                <td>Cluster Check :</td>
                                                                 <td>
-                                                                    <input id="check_btn" name="check_btn" type="button" class="btn btn-primary" value="Set" disabled onclick="set_cluster_check();">
-                                                                    <!-- <input id="check_btn" name="check_btn" type="button" class="btn btn-primary" value="Set" data-toggle="modal" data-target="#bfmModal" disabled> -->
+                                                                    <input id="cb_check" type="checkbox" {{ CHECK_STATUS }} data-toggle="toggle" data-width="170" data-on="Enable" data-off="Disable" data-onstyle="success" data-offstyle="danger" onclick="set_cluster_check();">
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td>Mail Notifications :</td>
+                                                                <td>
+                                                                    <input id="cb_mail" type="checkbox" {{ MAIL_ENABLED }} data-toggle="toggle" data-width="170" data-on="Enable" data-off="Disable" data-onstyle="success" data-offstyle="danger" onchange="set_mail_notification();">
                                                                 </td>
                                                             </tr>
                                                             <tr>
                                                                 <td>
-                                                                    <label>Mail Notifications Enabled: </label>
-                                                                </td>
-                                                                <td class="text-center"><label id="mail_enabled" name="mail_enabled">{{ MAIL_ENABLED }}</label></td>
-                                                                <td>
-                                                                    <select name="mail_options" id="mail_options" class="form-control" onchange="enable_mail_btn();">
-                                                                        <option value="TRUE" selected>TRUE</option>
-                                                                        <option value="FALSE">FALSE</option>
-                                                                    </select>
+                                                                    Watch Strategy :
                                                                 </td>
                                                                 <td>
-                                                                    <input id="mail_btn" name="mail_btn" type="button" class="btn btn-primary" value="Set" disabled onclick="set_mail_notification();">
+                                                                    <input id="cb_watch" type="checkbox" {{ WATCH_STRATEGY }} data-toggle="toggle" data-width="170" data-on="Availability" data-off="Manual" data-onstyle="success" data-offstyle="danger" onchange="set_watch_strategy();">
                                                                 </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <label>Watch Strategy : </label>
-                                                                </td>
-                                                                <td class="text-center"><label id="watch_strategy" name="watch_strategy">{{ WATCH_STRATEGY }}</label></td>
-                                                                <td>
-                                                                    <select name="watch_options" id="watch_options" class="form-control" onchange="enable_watch_btn();">
-                                                                        <option value="M" selected>Manual</option>
-                                                                        <option value="A">Availability</option>
-                                                                    </select>
-                                                                </td>
-                                                                <td>
-                                                                    <input id="watch_btn" name="watch_btn" type="button" class="btn btn-primary" value="Set" disabled onclick="set_watch_strategy();">
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td><label>Switch Over / Re Initialize</label></td>
-                                                                <td>
-                                                                    <select name="slave_options" id="slave_options" class="form-control" onchange="enable_slave_options();">
-                                                                        <option value="" selected>Select Slave</option>
-                                                                        {{ SLAVE_OPTIONS }}
-                                                                    </select>
-                                                                </td>
-                                                                <td>
-                                                                    <select name="ops" id="ops" class="form-control" disabled onchange="enable_start_btn();">
-                                                                        <option value="" selected>Select Operation</option>
-                                                                        <option value="switchOver">Switch Over</option>
-                                                                        <option value="reinit">Re Initialize</option>
-                                                                    </select>
-                                                                </td>
-                                                                <td>
-                                                                    <input id="start_btn" name="start_btn" type="button" class="btn btn-primary" value="Start" disabled onclick="start_reinit_or_switch();">
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>Active BFM : </td>
-                                                                <td><label id="active_bfm" name="active_bfm">{{ ACTIVE_BFM }}</label></td>
-                                                                <td class="text-right">Auto Refresh (20 sec.) :</td>
-                                                                <td><input type="checkbox" id="auto_refresh" name="auto_refresh" onchange="set_auto_refresh();"></td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>                                           
+                                                            </tr>                                                        
+                                                    </table>
+                                                    <label id="active_bfm" name="active_bfm" style="display: none;">{{ ACTIVE_BFM }}</label>                                           
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card bg-warning bg-gradient">
+                                            <div class="card-body bg-dark text-white">
+                                                <div class="row bg-gradient">
+                                                    <table class="table">
+                                                        <tr>
+                                                            <td class="text-center" colspan="2"><label>Switch Over / Re Initialize</label></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td colspan="2">
+                                                                <select name="slave_options" id="slave_options" class="form-control" onchange="enable_slave_options();">
+                                                                    <option value="" selected>Select Slave</option>
+                                                                    {{ SLAVE_OPTIONS }}
+                                                                </select>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <select name="ops" id="ops" class="form-control" disabled onchange="enable_start_btn();">
+                                                                    <option value="" selected>Select Operation</option>
+                                                                    <option value="switchOver">Switch Over</option>
+                                                                    <option value="reinit">Re Initialize</option>
+                                                                </select>
+                                                            </td>
+                                                            <td>
+                                                                <input id="start_btn" name="start_btn" type="button" class="btn btn-primary" value="Start" disabled onclick="start_reinit_or_switch();">
+                                                            </td>
+                                                        </tr>
+                                                    </table>
                                                 </div>
                                             </div>
                                         </div>
@@ -381,27 +358,20 @@
     <script src="https://code.jquery.com/jquery-3.3.1.js" integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
     <script>
-        function set_values(){
-            document.getElementById("check_options").value = document.getElementById("check_paused").innerText;
-            document.getElementById("mail_options").value = document.getElementById("mail_enabled").innerText;
-            document.getElementById("watch_options").value = (document.getElementById("watch_strategy").innerText)[0];
-
-        }
+        
         function fnc_auto_refresh(){
             setTimeout(function () { if (document.getElementById("auto_refresh").checked == true){ window.location.reload();} }, 20000);
         }
         window.addEventListener("load", function () {            
-            let bfm_auto_refresh = document.cookie;
-            if (bfm_auto_refresh.includes("bfm_auto_refresh=on")){
-                document.getElementById("auto_refresh").setAttribute('checked',true);
-                fnc_auto_refresh();
-            } 
+            // let bfm_auto_refresh = document.cookie;
+            // if (bfm_auto_refresh.includes("bfm_auto_refresh=on")){
+            //     document.getElementById("auto_refresh").setAttribute('checked',true);
+            //     fnc_auto_refresh();
+            // } 
 
-            set_values();
-            if (document.getElementById("check_paused").innerText == 'TRUE'){
-                document.getElementById("check_paused").className += "bg-danger";
-            }
             cluster_status = document.getElementById("div_cluster_status").innerText
             if (cluster_status === "HEALTHY") {
                 document.getElementById("div_cluster_cover").classList.remove("bg-warning");
@@ -423,42 +393,13 @@
             }
         });
     
-        function enable_check_btn(){
-            document.getElementById('check_btn').removeAttribute('disabled');
-            document.getElementById('mail_btn').setAttribute('disabled', true);
-            document.getElementById('start_btn').setAttribute('disabled', true);
-            document.getElementById('watch_btn').setAttribute('disabled', true);
-            document.getElementById('slave_options').selectedIndex = 0;
-            document.getElementById('ops').selectedIndex = 0;
-            document.getElementById('ops').setAttribute('disabled', true);
-        };
+        
     
-        function enable_mail_btn(){
-            document.getElementById('mail_btn').removeAttribute('disabled');
-            document.getElementById('check_btn').setAttribute('disabled', true);
-            document.getElementById('start_btn').setAttribute('disabled', true);
-            document.getElementById('watch_btn').setAttribute('disabled', true);
-            document.getElementById('slave_options').selectedIndex = 0;
-            document.getElementById('ops').selectedIndex = 0;
-            document.getElementById('ops').setAttribute('disabled', true);
-        };
+        
 
-        function enable_watch_btn(){
-            document.getElementById('watch_btn').removeAttribute('disabled');
-            document.getElementById('check_btn').setAttribute('disabled', true);
-            document.getElementById('start_btn').setAttribute('disabled', true);
-            document.getElementById('mail_btn').setAttribute('disabled', true);
-            document.getElementById('slave_options').selectedIndex = 0;
-            document.getElementById('ops').selectedIndex = 0;
-            document.getElementById('ops').setAttribute('disabled', true);
-        };
+        
     
-        function enable_start_btn(){
-            document.getElementById('start_btn').removeAttribute('disabled');
-            document.getElementById('check_btn').setAttribute('disabled', true);
-            document.getElementById('mail_btn').setAttribute('disabled', true); 
-            document.getElementById('watch_btn').setAttribute('disabled', true);
-        };
+       
     
         function enable_slave_options(){
             if (document.getElementById('slave_options').selectedIndex > 0){
@@ -467,10 +408,7 @@
                 document.getElementById('ops').selectedIndex = 0;
                 document.getElementById('ops').setAttribute('disabled', true);    
             }
-            document.getElementById('start_btn').setAttribute('disabled', true);
-            document.getElementById('check_btn').setAttribute('disabled', true);
-            document.getElementById('mail_btn').setAttribute('disabled', true);   
-            document.getElementById('watch_btn').setAttribute('disabled', true);     
+            document.getElementById('start_btn').setAttribute('disabled', true);    
         };
 
         function set_cluster_check(){
@@ -478,13 +416,20 @@
             var active_bfm = document.getElementById("active_bfm").innerText
             document.getElementById("overlay").style.display = 'block';
             var bfmUrl = '';
-            if (document.getElementById("check_options").value == "TRUE"){
+            if (document.getElementById("cb_check").checked == true){
                 var bfmUrl = 'http://' + active_bfm + '/bfm/check-pause';
-            } else if (document.getElementById("check_options").value == "FALSE"){
+            } else if (document.getElementById("cb_check").checked == false){
                 var bfmUrl = 'http://' + active_bfm + '/bfm/check-resume';
             } else {
                 var bfmUrl = '#';
             }
+            // if (document.getElementById("check_options").value == "TRUE"){
+            //     var bfmUrl = 'http://' + active_bfm + '/bfm/check-pause';
+            // } else if (document.getElementById("check_options").value == "FALSE"){
+            //     var bfmUrl = 'http://' + active_bfm + '/bfm/check-resume';
+            // } else {
+            //     var bfmUrl = '#';
+            // }
             
             $.ajax({
                 url: bfmUrl,
