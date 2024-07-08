@@ -502,7 +502,7 @@ public class BfmController {
                     }
                     server_rows = server_rows + "<tr>";
                     server_rows = server_rows +  "<td>"+pg.getServerAddress()+"</td>";
-                    server_rows = server_rows +  "<td>"+pg.getDatabaseStatus()+"</td>";
+                    server_rows = server_rows +  "<td>"+pg.getStatus()+"</td>";
                     server_rows = server_rows +  "<td>"+pg.getWalLogPosition()+"</td>";
                     server_rows = server_rows +  "<td>"+(pg.getReplayLag() == null ? "0" : pg.getReplayLag())+"</td>";
                     server_rows = server_rows +  "<td>"+pg.getTimeLineId()+"</td>";
