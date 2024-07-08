@@ -495,11 +495,14 @@ public class BfmController {
                 String server_rows = "";
                 String slave_options = "";
                 for(PostgresqlServer pg : this.bfmContext.getPgList()){
-                    try {
-                        pg.getWalPosition();    
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    if (pg.getWalLogPosition() == null){
+                        try {
+                            pg.getWalPosition();    
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
+                    
                     server_rows = server_rows + "<tr>";
                     server_rows = server_rows +  "<td>"+pg.getServerAddress()+"</td>";
                     server_rows = server_rows +  "<td>"+pg.getStatus()+"</td>";
