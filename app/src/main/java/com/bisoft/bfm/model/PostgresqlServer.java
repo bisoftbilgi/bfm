@@ -210,9 +210,13 @@ public class PostgresqlServer {
                 this.databaseStatus = DatabaseStatus.SLAVE_WITH_SLAVE;
             }
         } else {
-            this.databaseStatus = DatabaseStatus.INACCESSIBLE;
+            log.warn("Cant connect to "+ this.getServerAddress());
+            this.setDatabaseStatus(DatabaseStatus.INACCESSIBLE);
         }
-        
+        if (this.databaseStatus == null){
+            log.warn("Connection Timeout to "+ this.getServerAddress());
+            this.setDatabaseStatus(DatabaseStatus.TIMEOUT);
+        }
         return this.databaseStatus;
     }
 
