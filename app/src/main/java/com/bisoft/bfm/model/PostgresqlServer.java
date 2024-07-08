@@ -211,11 +211,12 @@ public class PostgresqlServer {
             }
         } else {
             log.warn("Cant connect to "+ this.getServerAddress());
-            this.setDatabaseStatus(DatabaseStatus.INACCESSIBLE);
+            this.databaseStatus = DatabaseStatus.INACCESSIBLE;
         }
+        
         if (this.databaseStatus == null){
             log.warn("Connection Timeout to "+ this.getServerAddress());
-            this.setDatabaseStatus(DatabaseStatus.TIMEOUT);
+            this.databaseStatus = DatabaseStatus.TIMEOUT;
         }
         return this.databaseStatus;
     }
