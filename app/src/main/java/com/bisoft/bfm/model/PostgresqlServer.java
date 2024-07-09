@@ -195,29 +195,34 @@ public class PostgresqlServer {
 
     public DatabaseStatus getDatabaseStatus(){
         this.setLastCheckDateTime(LocalDateTime.now());
-        if (this.getServerConnection() != null){
-            this.hasSlaveServer();
-            this.isServerMaster();
-            if (this.isMaster == null && this.hasSlave == null) {
+        try {
+            if (this.getServerConnection() != null){
+                this.hasSlaveServer();
+                this.isServerMaster();
+                if (this.isMaster == null && this.hasSlave == null) {
+                    this.databaseStatus = DatabaseStatus.INACCESSIBLE;
+                }else if (this.isMaster == true && this.hasSlave == true) {
+                    this.databaseStatus = DatabaseStatus.MASTER;
+                }else if (this.isMaster == true && this.hasSlave == false) {
+                    this.databaseStatus = DatabaseStatus.MASTER_WITH_NO_SLAVE;
+                }else if (this.isMaster == false && this.hasSlave == false) {
+                    this.databaseStatus = DatabaseStatus.SLAVE;
+                }else if(this.isMaster == false && this.hasSlave == true) {
+                    this.databaseStatus = DatabaseStatus.SLAVE_WITH_SLAVE;
+                }
+            } else {
+                log.warn("Cant connect to "+ this.getServerAddress());
                 this.databaseStatus = DatabaseStatus.INACCESSIBLE;
-            }else if (this.isMaster == true && this.hasSlave == true) {
-                this.databaseStatus = DatabaseStatus.MASTER;
-            }else if (this.isMaster == true && this.hasSlave == false) {
-                this.databaseStatus = DatabaseStatus.MASTER_WITH_NO_SLAVE;
-            }else if (this.isMaster == false && this.hasSlave == false) {
-                this.databaseStatus = DatabaseStatus.SLAVE;
-            }else if(this.isMaster == false && this.hasSlave == true) {
-                this.databaseStatus = DatabaseStatus.SLAVE_WITH_SLAVE;
             }
-        } else {
-            log.warn("Cant connect to "+ this.getServerAddress());
-            this.databaseStatus = DatabaseStatus.INACCESSIBLE;
-        }
-        
-        if (this.databaseStatus == null){
-            log.warn("Connection Timeout to "+ this.getServerAddress());
+    
+            if (this.databaseStatus == null){
+                log.warn("Connection Timeout to "+ this.getServerAddress());
+                this.databaseStatus = DatabaseStatus.TIMEOUT;
+            }
+        } catch (Exception e) {
             this.databaseStatus = DatabaseStatus.TIMEOUT;
         }
+        
         return this.databaseStatus;
     }
 
