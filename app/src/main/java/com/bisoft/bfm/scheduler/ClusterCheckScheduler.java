@@ -143,17 +143,8 @@ public class ClusterCheckScheduler {
                             master = this.bfmContext.getPgList().stream()
                                 .filter(server -> server.getStatus() == DatabaseStatus.MASTER).findFirst().get();
                         } else {
-                            log.warn("All server looks like DOWN. trying to start servers..");
-                            this.bfmContext.getPgList().stream().forEach(pg -> {
-                                try {
-                                    String start_result = minipgAccessUtil.startPg(pg);    
-                                    log.info("Start server "+ pg.getServerAddress() + " result is "+ start_result);
-                                    return;
-                                } catch (Exception e) {
-                                    log.warn("Error occurred on start pg "+ pg.getServerAddress());
-                                }
-                                
-                            });
+                            log.warn("There is No Master Server in Cluster..Wait to promote and recheck...");
+                            return;
                         }
                     }
     
@@ -704,12 +695,15 @@ public class ClusterCheckScheduler {
             .forEach(server ->
                     {
                         // log.info("server: "+ server.getServerAddress()+" status :"+ server.getDatabaseStatus()+ " hasMaster:"+ server.getHasMasterServer());
-                        remainingFailCount--;
-                        if (server.getHasMasterServer() == Boolean.FALSE){
-
-                            log.info("Slave Server "+ server.getServerAddress()+" has NO MASTER. Replication could be down...");
-                            if (remainingFailCount <= 0){
-
+                        if ((server.getHasMasterServer() == Boolean.FALSE) || (server.getDatabaseStatus().equals(DatabaseStatus.SLAVE_WITH_SLAVE) )) {
+                            if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){    
+                                mailService.sendMail("Slave Server "+server.getServerAddress()+" Out Of CLuster",
+                                "Slave server :"+ server.getServerAddress()+" has NO / WRONG MASTER.");
+                            }
+                            
+                            log.info("Slave Server "+ server.getServerAddress()+" replication has not stable. Replication fix starting...");
+                            if (server.getRewindStarted().equals(Boolean.FALSE)){
+                                server.setRewindStarted(Boolean.TRUE);
                                 if (this.bfmContext.getWatch_strategy() == "manual"){
                                     log.info("BFM is in"+ this.bfmContext.getWatch_strategy()+". Please manual respond to incident..");
                                     if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
@@ -728,26 +722,14 @@ public class ClusterCheckScheduler {
                                         e.printStackTrace();
                                     }
                                     if (! rewind_result.equals("OK")){
-                                        log.info("MiniPG rewind was FAILED. rewind_result:"+rewind_result);
-                                        if (basebackup_slave_join == true){
-                                            log.info("Rejoin to cluster Wtih pg_basebackup started..");            
-                                            String rejoin_result = rejoinCluster(master, server);
-                                            log.info("Slave server :"+server.getServerAddress()+" reJoin result is:"+rejoin_result);
-                                            if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
-        
-                                                mailService.sendMail("Slave Server "+server.getServerAddress()+" Out Of CLuster",
-                                                "Slave server :"+ server.getServerAddress()+" has NO MASTER."
-                                                + "\nCluster basebackup slave join is "+ basebackup_slave_join+". Slave server rejoin process completed."
-                                                + "\nCluster Master Server is:"+ master.getServerAddress());
-                                            }
-            
-                                        }
+                                        log.info("slave pg_rewind FAILED. rewind_result:"+rewind_result);
+                                        log.info("Rejoin to cluster Wtih pg_basebackup started..");            
+                                        String rejoin_result = rejoinCluster(master, server);
+                                        log.info("Slave server :"+server.getServerAddress()+" reJoin result is:"+rejoin_result);
                                     }                                   
         
                                 }
-
-                            } else {
-                                log.info("remainingFailCount:"+remainingFailCount+ ". Ignoring slave operations...");
+                                server.setRewindStarted(Boolean.FALSE);
                             }
                              
                         }
