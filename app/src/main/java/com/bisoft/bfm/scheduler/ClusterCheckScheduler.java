@@ -290,7 +290,47 @@ public class ClusterCheckScheduler {
             // log.info("Cluster has a master node");
             this.bfmContext.setClusterStatus(ClusterStatus.HEALTHY);
             healthy();
-            checkLastWalPositions();            
+            checkLastWalPositions();  
+        }else if (masterCount > 1){
+            this.bfmContext.setClusterStatus(ClusterStatus.WARNING);
+            PostgresqlServer leaderMaster = findLeaderMaster();
+            this.bfmContext.getPgList().stream()
+                            .filter(s -> (s.getServerAddress() != leaderMaster.getServerAddress()))
+                            .forEach(pg ->
+                                    {
+                                        try {
+                                            if (this.bfmContext.getWatch_strategy().equals("availability")){
+                                                    if (pg.getRewindStarted() == Boolean.FALSE){
+                                                        pg.setRewindStarted(Boolean.TRUE);
+                                                        String rewind_result = minipgAccessUtil.rewind(pg, leaderMaster);
+                                                        if (! rewind_result.equals("OK")){
+                                                            log.info("pg_rewind was FAILED. Slave Target:",pg.getServerAddress());
+                                                            if (basebackup_slave_join == true){
+                                                                String rejoin_result = minipgAccessUtil.rebaseUp(pg,leaderMaster);
+                                                                log.info("pg_basebackup join cluster result is:"+rejoin_result);
+                                                            } else {
+                                                                log.info("pg_basebackup join is set to FALSE. passing for slave server:",pg.getServerAddress());
+                                                            }
+                                                            pg.setRewindStarted(Boolean.FALSE);        
+                                                        }
+                                                    } else {
+                                                        log.info("Rejoin processing...Passing.");
+                                                    }
+
+                                            } else {
+                                                log.info("Rewind or ReBaseUp ignoring..BFM watch strategy is:"+this.bfmContext.getWatch_strategy());
+                                                if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
+                                                    mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                                                    "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
+                                                    + "\nWatch Strategy is MANUAL. SLAVE JOIN (Rewind or Rebase) ignoring. Please manual respond to failure...Selected Master Server : " 
+                                                    + leaderMaster.getServerAddress());
+                                                }    
+                                            }
+                                        } catch (Exception e) {
+                                            log.error(String.format("Unable to rewind %s", pg.getServerAddress()));
+                                        }
+                                    });
+
         }else if (masterCount ==  1L && masterWithNoslaveCount > 0){
             log.warn("Cluster has a master but, there is one or more master_with_no_slave server in cluster.");
             this.bfmContext.getPgList().stream().filter(s -> (s.getDatabaseStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)))
@@ -313,8 +353,8 @@ public class ClusterCheckScheduler {
                                                     }
                                                 });
 
-        }else if(clusterCount == 2 && masterCount == 0 && masterWithNoslaveCount==1){
-            log.warn("Cluster has a master with no slave (cluster size is 2), not healthy but ingoring failover");
+        }else if(clusterCount > 1 && masterCount == 0 && masterWithNoslaveCount==1){
+            log.warn("Cluster has a master with no slave, Slave check starting..");
             warning();
             checkSlaves();
             if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE && this.isWarningMailSended == Boolean.FALSE){
@@ -325,8 +365,8 @@ public class ClusterCheckScheduler {
             }        
             checkLastWalPositions();
     
-        }else if(clusterCount == 2 && masterCount == 0 && masterWithNoslaveCount>1){
-            log.error("Cluster has more than one master with no slave (cluster size is 2), not healthy but ingoring failover");
+        }else if(clusterCount > 1 && masterCount == 0 && masterWithNoslaveCount>1){
+            log.error("Cluster has more than one master with no slave, not healthy but ingoring failover");
             warning();
             PostgresqlServer leaderPg = this.findLeader();
             for(PostgresqlServer pg : this.bfmContext.getPgList()){
@@ -441,6 +481,7 @@ public class ClusterCheckScheduler {
             out.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
+            log.warn("bfm_status.json write error...");
         }
     }
 
@@ -463,6 +504,29 @@ public class ClusterCheckScheduler {
 
         log.info("leader is "+ leader.getServerAddress());
         return leader;
+    }
+
+    public PostgresqlServer findLeaderMaster(){
+        this.bfmContext.getPgList().stream()
+        .filter(server -> server.getStatus().equals(DatabaseStatus.SLAVE))
+        .forEach( s -> {
+            try{
+                s.checkTimeLineId();
+                s.getWalPosition();
+            }
+            catch(Exception e){
+                s.setWalLogPosition(null);
+            }
+        } );
+
+        PostgresqlServer leaderMaster = this.bfmContext.getPgList().stream()
+            .filter(server -> (server.getStatus().equals(DatabaseStatus.MASTER) || server.getStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE) ))
+            .sorted(Comparator.<PostgresqlServer, Integer>comparing(server -> server.getTimeLineId() , Comparator.reverseOrder())
+            .thenComparing(server -> server.getWalLogPosition(), Comparator.reverseOrder()))
+            .findFirst().get();            
+        
+        log.info("leader Master is "+ leaderMaster.getServerAddress());
+        return leaderMaster;
     }
 
     public PostgresqlServer findLeaderSlave(){
@@ -635,13 +699,20 @@ public class ClusterCheckScheduler {
             minipgAccessUtil.vipUp(newMaster);
             bfmContext.getPgList().stream().
                     filter(server -> !server.getServerAddress().equals(newMaster.getServerAddress()))
-                    .forEach(
-                            server -> {
-                                try {
-                                    minipgAccessUtil.rewind(server,newMaster);
-                                } catch (Exception e) {
-                                    log.error(String.format("Unable to rewind server : %s",server.getServerAddress()));
-                                }
+                    .forEach(pg -> {
+                                        try {
+                                            String rewind_result = minipgAccessUtil.rewind(pg, newMaster);
+                                            if (! rewind_result.equals("OK")){
+                                                log.info("pg_rewind was FAILED. rewind_result:" + rewind_result);
+                                                if (basebackup_slave_join == true){
+                                                    log.info("Rejoin to cluster Wtih pg_basebackup started..");            
+                                                    String rejoin_result = minipgAccessUtil.rebaseUp(pg, newMaster);
+                                                    log.info("Server "+ pg.getServerAddress()+ " rejoin result :"+rejoin_result);
+                                                }
+                                            }     
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
                             }
                     );
         }catch (Exception e){
@@ -718,18 +789,17 @@ public class ClusterCheckScheduler {
                                     PostgresqlServer master = this.bfmContext.getPgList().stream()
                                     .filter(s -> s.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE || s.getStatus() == DatabaseStatus.MASTER ).findFirst().get();
 
-                                    String rewind_result = "??";
                                     try {
-                                        rewind_result = minipgAccessUtil.rewind(server, master);
+                                        String rewind_result = minipgAccessUtil.rewind(server, master);
+                                        if (! rewind_result.equals("OK")){
+                                            log.info("slave pg_rewind FAILED. rewind_result:"+rewind_result);
+                                            log.info("Rejoin to cluster Wtih pg_basebackup started..");            
+                                            String rejoin_result = minipgAccessUtil.rebaseUp(server, master);
+                                            log.info("Slave server :"+server.getServerAddress()+" reJoin result is:"+rejoin_result);
+                                        }                            
                                     } catch (Exception e) {
-                                        e.printStackTrace();
-                                    }
-                                    if (! rewind_result.equals("OK")){
-                                        log.info("slave pg_rewind FAILED. rewind_result:"+rewind_result);
-                                        log.info("Rejoin to cluster Wtih pg_basebackup started..");            
-                                        String rejoin_result = rejoinCluster(master, server);
-                                        log.info("Slave server :"+server.getServerAddress()+" reJoin result is:"+rejoin_result);
-                                    }                                   
+                                        log.warn("Slave Server "+ server.getServerAddress()+ " rewind / rejoin failed...");
+                                    }                                         
         
                                 }
                                 server.setRewindStarted(Boolean.FALSE);
