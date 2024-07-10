@@ -74,7 +74,8 @@ public class PostgresqlServer {
             }
         }catch (Exception e){
             // log.error(e.getMessage());
-            log.error("Unable get master status of "+this.getServerAddress());
+            // log.error("Unable get master status of "+this.getServerAddress());
+            this.databaseStatus = DatabaseStatus.INACCESSIBLE;
         }
         this.isMaster = is_in_recovery;
         return is_in_recovery;
@@ -93,7 +94,8 @@ public class PostgresqlServer {
             return hasSlave;
         }catch (Exception e){
             // log.error(e.getMessage());
-            log.error("Unable to get replication status of "+this.getServerAddress());
+            // log.error("Unable to get replication status of "+this.getServerAddress());
+            this.databaseStatus = DatabaseStatus.INACCESSIBLE;
         }
         this.hasSlave = hasSlave;
         return hasSlave;
@@ -126,7 +128,7 @@ public class PostgresqlServer {
                 String wal_pos = rs.getString("wal_pos");
                 this.setWalLogPosition(wal_pos);
             } catch (Exception e) {
-                log.warn("Connection Failed to server:"+this.getServerAddress());
+                // log.warn("Connection Failed to server:"+this.getServerAddress());
                 this.databaseStatus = DatabaseStatus.INACCESSIBLE;
             }
         }
@@ -146,7 +148,7 @@ public class PostgresqlServer {
             this.setTimeLineId(Integer.parseInt(timeline_id));
             // log.info(this.getServerAddress() + " timeline_id: "+ this.getTimeLineId());
         } catch (Exception e) {
-            log.warn("Connection Failed to server:"+this.getServerAddress());
+            // log.warn("Connection Failed to server:"+this.getServerAddress());
             this.databaseStatus = DatabaseStatus.INACCESSIBLE;
         }
     }
@@ -167,7 +169,8 @@ public class PostgresqlServer {
                 }
 
             } catch (Exception e) {
-                log.warn("Connection Failed to server:"+this.getServerAddress());
+                // log.warn("Connection Failed to server:"+this.getServerAddress());
+                this.databaseStatus = DatabaseStatus.INACCESSIBLE;
             }
         }
 
@@ -186,7 +189,7 @@ public class PostgresqlServer {
                 retval = Double.parseDouble(diff_size);
             }
         } catch (Exception e) {
-            log.warn("Connection Failed to server:"+this.getServerAddress());
+            // log.warn("Connection Failed to server:"+this.getServerAddress());
             this.databaseStatus = DatabaseStatus.INACCESSIBLE;
         }
 
@@ -211,12 +214,12 @@ public class PostgresqlServer {
                     this.databaseStatus = DatabaseStatus.SLAVE_WITH_SLAVE;
                 }
             } else {
-                log.warn("Cant connect to "+ this.getServerAddress());
+                // log.warn("Cant connect to "+ this.getServerAddress());
                 this.databaseStatus = DatabaseStatus.INACCESSIBLE;
             }
     
             if (this.databaseStatus == null){
-                log.warn("Connection Timeout to "+ this.getServerAddress());
+                // log.warn("Connection Timeout to "+ this.getServerAddress());
                 this.databaseStatus = DatabaseStatus.TIMEOUT;
             }
         } catch (Exception e) {
@@ -254,8 +257,9 @@ public class PostgresqlServer {
             }
             return hasMaster;
         }catch (Exception e){
-            log.error(e.getMessage());
-            log.error("Unable to get replication status of "+this.getServerAddress());
+            // log.error(e.getMessage());
+            // log.error("Unable to get replication status of "+this.getServerAddress());
+            this.databaseStatus = DatabaseStatus.INACCESSIBLE;
         }
         return hasMaster;
     }
