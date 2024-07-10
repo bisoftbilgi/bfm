@@ -470,6 +470,7 @@ public class ClusterCheckScheduler {
         .filter(server -> server.getStatus().equals(DatabaseStatus.SLAVE))
         .forEach( s -> {
             try{
+                s.checkTimeLineId();
                 s.getWalPosition();
             }
             catch(Exception e){
@@ -479,9 +480,11 @@ public class ClusterCheckScheduler {
 
         PostgresqlServer leaderSlave = this.bfmContext.getPgList().stream()
             .filter(server -> server.getStatus().equals(DatabaseStatus.SLAVE))
-            .sorted(Comparator.<PostgresqlServer, String>comparing(server-> server.getWalLogPosition(), Comparator.reverseOrder()))
-            .findFirst().get();
-
+            .sorted(Comparator.<PostgresqlServer, Integer>comparing(server -> server.getTimeLineId() , Comparator.reverseOrder())
+            .thenComparing(server -> server.getWalLogPosition(), Comparator.reverseOrder()))
+            .findFirst().get();            
+        
+        log.info("leader Slave is "+ leaderSlave.getServerAddress());
         return leaderSlave;
     }
 
