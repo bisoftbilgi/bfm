@@ -508,7 +508,7 @@ public class ClusterCheckScheduler {
 
     public PostgresqlServer findLeaderMaster(){
         this.bfmContext.getPgList().stream()
-        .filter(server -> server.getStatus().equals(DatabaseStatus.SLAVE))
+        .filter(server -> (!server.getStatus().equals(DatabaseStatus.INACCESSIBLE)))
         .forEach( s -> {
             try{
                 s.checkTimeLineId();
@@ -516,6 +516,7 @@ public class ClusterCheckScheduler {
             }
             catch(Exception e){
                 s.setWalLogPosition(null);
+                s.setTimeLineId(-1);
             }
         } );
 
@@ -539,6 +540,7 @@ public class ClusterCheckScheduler {
             }
             catch(Exception e){
                 s.setWalLogPosition(null);
+                s.setTimeLineId(-1);
             }
         } );
 
