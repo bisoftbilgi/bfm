@@ -123,11 +123,13 @@ public class BfmAccessUtil {
                 String result = (EntityUtils.toString(response1.getEntity()));
                 return result;
             }catch (Exception e){
+                // log.warn("pair is active error"+e.getMessage());
                 return "Unreachable";
             }
 
 
         } catch (IOException e) {
+            // log.warn("pair is active error"+e.getMessage());
             return "Unreachable";
         }
 
