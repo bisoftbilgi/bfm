@@ -384,6 +384,7 @@ public class MinipgAccessUtil {
                 return result;
             }catch (Exception e){
                 log.error("Rewind failed for "+postgresqlServer.getServerAddress());
+                log.info("minipg call error :"+e.getMessage());
             }
 
 

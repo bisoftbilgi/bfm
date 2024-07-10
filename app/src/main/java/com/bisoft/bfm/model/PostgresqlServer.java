@@ -37,6 +37,8 @@ public class PostgresqlServer {
     private int priority;
     private String walLogPosition;
     private int timeLineId;
+    @Builder.Default
+    private int ignoreCountDivergentTimeLine = 4;
     private int sizeBehindMaster;
     private LocalDateTime lastCheckDateTime;
     private String replayLag;
