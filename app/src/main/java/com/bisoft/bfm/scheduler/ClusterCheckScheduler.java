@@ -70,6 +70,7 @@ public class ClusterCheckScheduler {
     public String ex_master_behavior;
 
     int remainingFailCount = (timeoutIgnoranceCount == 0) ? 3 : timeoutIgnoranceCount;
+    int timelineWaitCount = (timeoutIgnoranceCount == 0) ? 3 : timeoutIgnoranceCount;
 
     String leaderSlaveLastWalPos = "";
 
@@ -135,6 +136,7 @@ public class ClusterCheckScheduler {
                             .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE || server.getStatus() == DatabaseStatus.MASTER ).findFirst().get();                    
                         } catch (Exception e) {
                             log.warn("No Master server found in cluster...");
+                            return;
                         }
                     }else{
                         // Else there should be a master server
@@ -144,7 +146,7 @@ public class ClusterCheckScheduler {
                             master = this.bfmContext.getPgList().stream()
                                 .filter(server -> server.getStatus() == DatabaseStatus.MASTER).findFirst().get();
                         } else {
-                            log.warn("There is No Master Server in Cluster..Wait to promote and recheck...");
+                            log.warn("There is No Master Server in Cluster..");
                             return;
                         }
                     }
@@ -164,10 +166,9 @@ public class ClusterCheckScheduler {
                                                             server.setRewindStarted(Boolean.TRUE);
                                                             String rewind_result = minipgAccessUtil.rewind(server, selectedMaster);
                                                             if (! rewind_result.equals("OK")){
-                                                                log.info("MiniPG rewind was FAILED. Slave Target:",server.getServerAddress());
+                                                                log.info("MiniPG rewind was FAILED. Slave Target: "+server.getServerAddress());
                                                                 if (basebackup_slave_join == true){
-                                                                    String rejoin_result = rejoinCluster(selectedMaster, server);
-                                                                    log.info("pg_basebackup join cluster result is:"+rejoin_result);
+                                                                    String rejoin_result = minipgAccessUtil.rebaseUp(server, selectedMaster);
                                                                 } else {
                                                                     log.info("pg_basebackup join is set to FALSE. passing for slave server:",server.getServerAddress());
                                                                 }
@@ -361,7 +362,7 @@ public class ClusterCheckScheduler {
                                                 });
 
         }else if(clusterCount > 1 && masterCount == 0 && masterWithNoslaveCount==1){
-            log.warn("Cluster has a master with no slave, Slave check starting..");
+            log.warn("Cluster has a master with no slave..");
             warning();
             checkSlaves();
             if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE && this.isWarningMailSended == Boolean.FALSE){
@@ -395,7 +396,8 @@ public class ClusterCheckScheduler {
                                 log.info("MiniPG rewind was FAILED. rewind_result:" + rewind_result);
                                 if (basebackup_slave_join == true){
                                     log.info("Rejoin to cluster Wtih pg_basebackup started..");            
-                                    rejoinCluster(leaderPg, pg);
+                                    String rejoin_result = minipgAccessUtil.rebaseUp(pg, leaderPg);
+                                    log.info("rejoin server "+ pg.getServerAddress()+ " result :"+rejoin_result);
                                     if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
                                         mailService.sendMail("Slave Server "+pg.getServerAddress()+" Out Of CLuster",
                                         "Slave server :"+ pg.getServerAddress()+" has NO MASTER."
@@ -713,11 +715,11 @@ public class ClusterCheckScheduler {
                                         try {
                                             String rewind_result = minipgAccessUtil.rewind(pg, newMaster);
                                             if (! rewind_result.equals("OK")){
-                                                log.info("pg_rewind was FAILED. rewind_result:" + rewind_result);
+                                                log.info("MiniPG rewind was FAILED.");
                                                 if (basebackup_slave_join == true){
-                                                    log.info("Rejoin to cluster Wtih pg_basebackup started..");            
+                                                    log.info("Server "+ pg.getServerAddress()+" Rejoin to cluster with pg_basebackup started..");            
                                                     String rejoin_result = minipgAccessUtil.rebaseUp(pg, newMaster);
-                                                    log.info("Server "+ pg.getServerAddress()+ " rejoin result :"+rejoin_result);
+                                                    // log.info("Server "+ pg.getServerAddress()+ " rejoin result :"+rejoin_result);
                                                 }
                                             }     
                                         } catch (Exception e) {
@@ -760,19 +762,6 @@ public class ClusterCheckScheduler {
         
     }
 
-    public String rejoinCluster(PostgresqlServer masterServer, PostgresqlServer targetSlave){
-        log.info("Joining to Cluster with pg_basebackup to MASTER:",masterServer);
-        //try to rejoin with pg_basebackup method 
-        String rebase_result;
-        try {
-            rebase_result = minipgAccessUtil.rebaseUp(targetSlave, masterServer);
-            return rebase_result;    
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
     public void checkSlaves(){
             this.bfmContext.getPgList().stream()
             .filter(s -> (s.getStatus() == DatabaseStatus.SLAVE))
@@ -805,7 +794,6 @@ public class ClusterCheckScheduler {
                                             log.info("slave pg_rewind FAILED. rewind_result:"+rewind_result);
                                             log.info("Rejoin to cluster Wtih pg_basebackup started..");            
                                             String rejoin_result = minipgAccessUtil.rebaseUp(server, master);
-                                            log.info("Slave server :"+server.getServerAddress()+" reJoin result is:"+rejoin_result);
                                         }                            
                                     } catch (Exception e) {
                                         log.warn("Slave Server "+ server.getServerAddress()+ " rewind / rejoin failed...");
@@ -838,21 +826,17 @@ public class ClusterCheckScheduler {
                     try {
                         pg.checkTimeLineId();
                         if (pg.getTimeLineId() != this.bfmContext.getMasterServer().getTimeLineId()){
-                            if (pg.getIgnoreCountDivergentTimeLine() == 0){
-                                String stop_result = minipgAccessUtil.stopPg(pg);
-                                log.warn("Server restarting for timeline syncronize. stop result:"+stop_result);    
-                            } else {
-                                pg.setIgnoreCountDivergentTimeLine(pg.getIgnoreCountDivergentTimeLine()-1);
-                                log.warn("Server "+pg.getServerAddress()+" Timeline is Diverged. Timeline Fix Ignorance Count:"+pg.getIgnoreCountDivergentTimeLine());
+                            timelineWaitCount--;
+                            if (timelineWaitCount == 0 ){
+                                String checkpoint_result = minipgAccessUtil.checkpoint(this.bfmContext.getMasterServer());
+                                timelineWaitCount = (timeoutIgnoranceCount == 0) ? 3 : timeoutIgnoranceCount;
+                                log.info("Master Server Checkpoint executed for timeline divergence. result:"+checkpoint_result);
                             }
-                        }  else {
-                            pg.setIgnoreCountDivergentTimeLine(4);
                         }                     
                     } catch (Exception e) {
                         log.warn(e.getMessage());
                     }
                 });
-                log.info("Timeline Check Finished..");
             
         }catch(Exception e){
             log.error(e.getMessage());
