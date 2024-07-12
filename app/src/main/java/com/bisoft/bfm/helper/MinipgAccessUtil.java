@@ -169,7 +169,7 @@ public class MinipgAccessUtil {
             HttpGet httpGet = new HttpGet(minipgUrl+"/minipg/vip-up");
 
             try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
-                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                // log.info(response1.getCode() + " " + response1.getReasonPhrase());
                 HttpEntity entity1 = (HttpEntity) response1.getEntity();
                 // do something useful with the response body
                 // and ensure it is fully consumed
@@ -222,7 +222,7 @@ public class MinipgAccessUtil {
             httpGet.setConfig(requestConfig);
 
             try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
-                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                // log.info(response1.getCode() + " " + response1.getReasonPhrase());
                 HttpEntity entity1 = (HttpEntity) response1.getEntity();
                 // do something useful with the response body
                 // and ensure it is fully consumed
@@ -264,7 +264,7 @@ public class MinipgAccessUtil {
             HttpGet httpGet = new HttpGet(minipgUrl+"/minipg/checkpoint");
 
             try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
-                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                // log.info(response1.getCode() + " " + response1.getReasonPhrase());
                 HttpEntity entity1 = (HttpEntity) response1.getEntity();
                 // do something useful with the response body
                 // and ensure it is fully consumed
@@ -320,7 +320,7 @@ public class MinipgAccessUtil {
             request.setEntity(entity);
 
             try (CloseableHttpResponse response1 = httpclient.execute(request)) {
-                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                // log.info(response1.getCode() + " " + response1.getReasonPhrase());
                 HttpEntity entity1 = (HttpEntity) response1.getEntity();
                 // do something useful with the response body
                 // and ensure it is fully consumed
@@ -376,7 +376,7 @@ public class MinipgAccessUtil {
             request.setEntity(entity);
 
             try (CloseableHttpResponse response1 = httpclient.execute(request)) {
-                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                // log.info(response1.getCode() + " " + response1.getReasonPhrase());
                 HttpEntity entity1 = (HttpEntity) response1.getEntity();
                 // do something useful with the response body
                 // and ensure it is fully consumed
@@ -397,7 +397,7 @@ public class MinipgAccessUtil {
     }
 
     public String rebaseUp(PostgresqlServer slaveCandidateServer,PostgresqlServer masterServer) throws Exception {
-        log.info("Trying to Rejoin Slave server "+slaveCandidateServer.getServerAddress()+" to cluster with master "+masterServer.getServerAddress()+" with pg_basebackup.");
+        // log.info("Trying to Rejoin Slave server "+slaveCandidateServer.getServerAddress()+" to cluster with master "+masterServer.getServerAddress()+" with pg_basebackup.");
         final String serverAddress = slaveCandidateServer.getServerAddress().split(":")[0];
         final String serverPort = slaveCandidateServer.getServerAddress().split(":")[1];
         String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
@@ -431,7 +431,7 @@ public class MinipgAccessUtil {
             request.setEntity(entity);
 
             try (CloseableHttpResponse response1 = httpclient.execute(request)) {
-                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                // log.info(response1.getCode() + " " + response1.getReasonPhrase());
                 HttpEntity entity1 = (HttpEntity) response1.getEntity();
                 // do something useful with the response body
                 // and ensure it is fully consumed

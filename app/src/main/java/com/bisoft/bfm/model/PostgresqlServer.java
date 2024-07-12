@@ -37,8 +37,6 @@ public class PostgresqlServer {
     private int priority;
     private String walLogPosition;
     private int timeLineId;
-    @Builder.Default
-    private int ignoreCountDivergentTimeLine = 4;
     private int sizeBehindMaster;
     private LocalDateTime lastCheckDateTime;
     private String replayLag;
@@ -61,7 +59,8 @@ public class PostgresqlServer {
                 connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
             }               
         } catch (Exception e) {
-            log.warn("Can't connect to server "+this.getServerAddress());
+            // log.warn("Can't connect to server "+this.getServerAddress());
+            this.databaseStatus = DatabaseStatus.INACCESSIBLE;
         }
         return connection;
     }
