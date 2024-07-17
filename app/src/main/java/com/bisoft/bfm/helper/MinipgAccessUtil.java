@@ -342,6 +342,12 @@ public class MinipgAccessUtil {
     public String rewind(PostgresqlServer postgresqlServer,PostgresqlServer newMaster) throws Exception {
         //log.info("username : "+username+", password : "+password);
         log.info("rewind sent to "+postgresqlServer.getServerAddress()+" for master "+newMaster.getServerAddress());
+        // String targetMiniPGstatus = minipgStatus(postgresqlServer);
+        // log.info(postgresqlServer.getServerAddress() + " minipg status :"+ targetMiniPGstatus);
+
+        // String masterMiniPGstatus = minipgStatus(newMaster);
+        // log.info(newMaster.getServerAddress() + " minipg status :"+ masterMiniPGstatus);
+
         final String serverAddress = postgresqlServer.getServerAddress().split(":")[0];
         final String serverPort = postgresqlServer.getServerAddress().split(":")[1];
         String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
@@ -647,6 +653,60 @@ public class MinipgAccessUtil {
         }
 
         return "OK";
+
+    }
+
+
+    public String minipgStatus(PostgresqlServer postgresqlServer) throws Exception{
+        //log.info("username : "+username+", password : "+password);
+        log.info("MiniPg status request sent to "+postgresqlServer.getServerAddress());
+        final String serverAddress = postgresqlServer.getServerAddress().split(":")[0];
+        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+        credsProvider.setCredentials(
+                new AuthScope(serverAddress, port),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                NoopHostnameVerifier.INSTANCE);
+
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(scsf)
+                .build();
+
+        try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credsProvider)
+                .build()) {
+
+            HttpGet httpGet = new HttpGet(minipgUrl+"/minipg/status");
+
+            //timeout if server is shutdown
+            RequestConfig requestConfig = RequestConfig.custom()
+                    .setConnectTimeout(Timeout.of(5, TimeUnit.SECONDS))
+                    .setConnectionRequestTimeout(Timeout.of(5, TimeUnit.SECONDS))
+                    .build();
+
+            httpGet.setConfig(requestConfig);
+
+            try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
+                // log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                HttpEntity entity1 = (HttpEntity) response1.getEntity();
+                // do something useful with the response body
+                // and ensure it is fully consumed
+                String result = (EntityUtils.toString(response1.getEntity()));
+                return result;
+            }catch (Exception e){
+                log.error("Unable get vip from server "+postgresqlServer.getServerAddress());
+            }
+
+
+        } catch (IOException e) {
+            log.error("Unable get vip from server "+postgresqlServer.getServerAddress());
+        }
+
+        return null;
 
     }
 
