@@ -188,7 +188,7 @@ public class ClusterCheckScheduler {
                             });
 
                 } else {
-                    log.error("Unable to find master server for cluster");
+                    return;
                 }
             }
         }
