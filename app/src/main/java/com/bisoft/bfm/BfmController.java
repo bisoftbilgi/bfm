@@ -337,9 +337,7 @@ public class BfmController {
                                 log.info("Slave Promote Result :"+ result);
 
                                 minipgAccessUtil.vipUp(switchOverToPG);
-                                result = minipgAccessUtil.postSwitchOver(old_master, switchOverToPG);
-                                log.info("Ex-Master Rejoin Result :"+ result);
-
+                                
                                 this.bfmContext.getPgList().stream().filter(s -> (!s.getServerAddress().equals(switchOverToPG.getServerAddress()) &&
                                                                                     !s.getServerAddress().equals(old_master.getServerAddress())))
                                                                     .forEach(pg -> {
@@ -356,7 +354,10 @@ public class BfmController {
                                                                             log.warn(pg.getServerAddress() + " Rejoin FAILED. error :"+e);
                                                                         }
                                                                     });
-
+                                                                    
+                                result = minipgAccessUtil.postSwitchOver(old_master, switchOverToPG);
+                                log.info("Ex-Master Rejoin Result :"+ result);
+                                    
                                 this.bfmContext.setCheckPaused(Boolean.FALSE);
                                 int checkCount = 3;
                                 while (((this.bfmContext.getClusterStatus() != ClusterStatus.HEALTHY) || 

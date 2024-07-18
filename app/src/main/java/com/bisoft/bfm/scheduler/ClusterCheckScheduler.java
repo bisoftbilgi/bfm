@@ -121,8 +121,13 @@ public class ClusterCheckScheduler {
             log.info("Cluster Check Paused...");
         } else {
             if (this.bfmContext.isMasterBfm()) {
+                Long masterCount = this.bfmContext.getPgList().stream()
+                            .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE
+                                    || server.getStatus() == DatabaseStatus.MASTER)
+                            .count();
+                if (masterCount > 0){
 
-                try {
+                    log.info("INACCESSIBLE server check started...");
                     PostgresqlServer master = this.bfmContext.getPgList().stream()
                             .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE
                                     || server.getStatus() == DatabaseStatus.MASTER)
@@ -181,7 +186,8 @@ public class ClusterCheckScheduler {
                                     log.error(String.format("Unable to rewind %s", server.getServerAddress()));
                                 }
                             });
-                } catch (Exception ex) {
+
+                } else {
                     log.error("Unable to find master server for cluster");
                 }
             }
