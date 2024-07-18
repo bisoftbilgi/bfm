@@ -529,7 +529,7 @@ public class MinipgAccessUtil {
             // request.setHeader("Content-type", "application/json");
 
             try (CloseableHttpResponse response1 = httpclient.execute(request)) {
-                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                // log.info(response1.getCode() + " " + response1.getReasonPhrase());
                 HttpEntity entity1 = (HttpEntity) response1.getEntity();
                 // do something useful with the response body
                 // and ensure it is fully consumed
