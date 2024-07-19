@@ -89,7 +89,8 @@ public class MinipgAccessUtil {
         serverUrl = scheme+"://{HOST}:"+String.valueOf(port);
         if(isEncrypted) {
             //  log.info(symmetricEncryptionUtil.decrypt(tlsSecret).replace("=",""));
-            password = (symmetricEncryptionUtil.decrypt(password).replace("=", ""));
+            // password = (symmetricEncryptionUtil.decrypt(password).replace("=", ""));
+            password = (symmetricEncryptionUtil.decrypt(password));
         }
         SSLContext sslContext = SSLContext.getInstance("TLS");
         var trustManager = new X509TrustManager() {

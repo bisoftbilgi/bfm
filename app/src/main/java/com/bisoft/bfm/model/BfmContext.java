@@ -63,7 +63,8 @@ public class BfmContext {
         pgList = new ArrayList<>();
         if(isEncrypted) {
             //  log.info(symmetricEncryptionUtil.decrypt(tlsSecret).replace("=",""));
-            pgPassword = (symmetricEncryptionUtil.decrypt(pgPassword).replace("=", ""));
+            // pgPassword = (symmetricEncryptionUtil.decrypt(pgPassword).replace("=", ""));
+            pgPassword = (symmetricEncryptionUtil.decrypt(pgPassword));
         }
         Arrays.stream(pgServerList.split(",")).forEach( server -> {
             String serverAdress =server;

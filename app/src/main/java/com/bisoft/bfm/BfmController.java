@@ -23,7 +23,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.FileCopyUtils;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,6 +32,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.bisoft.bfm.dto.ClusterStatus;
 import com.bisoft.bfm.dto.DatabaseStatus;
 import com.bisoft.bfm.helper.MinipgAccessUtil;
+import com.bisoft.bfm.helper.SymmetricEncryptionUtil;
 import com.bisoft.bfm.model.BfmContext;
 import com.bisoft.bfm.model.ContextServer;
 import com.bisoft.bfm.model.ContextStatus;
@@ -53,6 +53,7 @@ public class BfmController {
 
     private final BfmContext bfmContext;
     private  final MinipgAccessUtil minipgAccessUtil;
+    private final SymmetricEncryptionUtil symmetricEncryptionUtil;
 
     @Value("${watcher.cluster-pair:no-pair}")
     private String bfmPair;
@@ -75,6 +76,12 @@ public class BfmController {
             return "Active";
         }
         return "Passive";
+    }
+
+    @RequestMapping(path = "/encrypt/{clearStr}",method = RequestMethod.POST)
+    public @ResponseBody String encryptString(@PathVariable(value = "clearStr") String clearStr){
+
+        return symmetricEncryptionUtil.encrypt(clearStr) +"\n";
     }
 
     @RequestMapping(path = "/last-saved-stat",method = RequestMethod.GET)
