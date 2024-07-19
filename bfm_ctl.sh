@@ -8,6 +8,7 @@ if [ ! -z $1 ] && [ $1 == "-h" ]; then
     echo "-watchMode [A|M] set watch strategy  A:availability, M:manual"
     echo "-switchOver 192.168.1.22:5432 switch to selected slave"
     echo "-reinit 192.168.1.22:5432 re-initialize selected slave with pg_rewind or pg_basebackup"
+    echo "-encrypt clearString  encrpyt the clear string for use encrypted bfm password function"
 fi
 
 if [ ! -z $1 ] && [ ! -z $2 ] && [ $1 == "-u" ]; then
@@ -48,6 +49,11 @@ if [ ! -z $1 ]  && [ ! -z $2 ] && [ $1 == "-watchMode" ]; then
     export clsStrategy=$2
 fi
 
+if [ ! -z $1 ]  && [ ! -z $2 ] && [ $1 == "-encrypt" ]; then
+    export clsCommand="encrypt"
+    export clearStr=$2
+fi
+
 if [ ! -z $2 ] && [ ! -z $3 ] && [ $2 == "-u" ]; then
     export clsUser=$3
 fi
@@ -84,6 +90,11 @@ fi
 if [ ! -z $2 ]  && [ ! -z $3 ] && [ $2 == "-watchMode" ]; then
     export clsCommand="strategy"
     export clsStrategy=$3
+fi
+
+if [ ! -z $2 ]  && [ ! -z $3 ] && [ $2 == "-encrypt" ]; then
+    export clsCommand="encrypt"
+    export clearStr=$3
 fi
 
 if [ ! -z $3 ] && [ ! -z $4 ] &&[ $3 == "-u" ]; then
@@ -129,6 +140,11 @@ if [ ! -z $3 ]  && [ ! -z $4 ] && [ $3 == "-watchMode" ]; then
     export clsStrategy=$4
 fi
 
+if [ ! -z $3 ]  && [ ! -z $4 ] && [ $3 == "-encrypt" ]; then
+    export clsCommand="encrypt"
+    export clearStr=$4
+fi
+
 if [ ! -z $4 ] && [ $4 == "-status" ]; then
     export clsCommand="status"
 fi
@@ -162,6 +178,11 @@ fi
 if [ ! -z $4 ]  && [ ! -z $5 ] && [ $4 == "-watchMode" ]; then
     export clsCommand="strategy"
     export clsStrategy=$5
+fi
+
+if [ ! -z $4 ]  && [ ! -z $5 ] && [ $4 == "-encrypt" ]; then
+    export clsCommand="encrypt"
+    export clearStr=$5
 fi
 
 if [ ! -z $5 ] && [ $5 == "-status" ]; then
@@ -199,6 +220,11 @@ if [ ! -z $5 ]  && [ ! -z $6 ] && [ $5 == "-watchMode" ]; then
     export clsStrategy=$6
 fi
 
+if [ ! -z $5 ]  && [ ! -z $6 ] && [ $5 == "-encrypt" ]; then
+    export clsCommand="encrypt"
+    export clearStr=$6
+fi
+
 if [ -z $clsUser ] || [ -z $clsPwd ]; then
     echo "user or password NOT set. "
 else
@@ -219,7 +245,9 @@ else
     elif [ ! -z $clsCommand ] && [ $clsCommand == "switchOver" ]; then
         curl -X POST  http://$active_bfm/bfm/switchover/$targetSlave -u $clsUser:$clsPwd
     elif [ ! -z $clsCommand ] && [ $clsCommand == "reinit" ]; then
-        curl -X POST  http://$active_bfm/bfm/reinit/$targetSlave -u $clsUser:$clsPwd        
+        curl -X POST  http://$active_bfm/bfm/reinit/$targetSlave -u $clsUser:$clsPwd     
+    elif [ ! -z $clsCommand ] && [ $clsCommand == "encrypt" ]; then
+        curl -X POST  http://$active_bfm/bfm/encrypt/$clearStr -u $clsUser:$clsPwd          
     else
         echo "command not found..."$clsCommand
     fi
