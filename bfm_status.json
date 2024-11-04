@@ -1,0 +1,24 @@
+{
+  "clusterStatus": "HEALTHY",
+  "checkPaused": "FALSE",
+  "mailNotifyEnabled": "FALSE",
+  "watchStrategy": "availability",
+  "clusterServers": [
+    {
+      "address": "167.172.99.9:5432",
+      "databaseStatus": "SLAVE",
+      "lastCheck": "2024-11-04 16:33:28",
+      "lastWalPos": "0/97000438",
+      "replayLag": "0",
+      "timeline": 33
+    },
+    {
+      "address": "157.230.108.70:5432",
+      "databaseStatus": "MASTER",
+      "lastCheck": "2024-11-04 16:33:28",
+      "lastWalPos": "0/97000438",
+      "replayLag": "0",
+      "timeline": 33
+    }
+  ]
+}

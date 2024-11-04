@@ -1,0 +1,10 @@
+/etc/bfm/bfmwatcher/bfm.log{
+weekly
+size 10M
+rotate 1
+missingok
+notifempty
+copytruncate
+}
+
+

@@ -71,6 +71,7 @@ public class ClusterCheckScheduler {
 
     int remainingFailCount = (timeoutIgnoranceCount == 0) ? 3 : timeoutIgnoranceCount;
     int timelineWaitCount = (timeoutIgnoranceCount == 0) ? 3 : timeoutIgnoranceCount;
+    int unavailableFailCount = remainingFailCount;
 
     String leaderSlaveLastWalPos = "";
 
@@ -126,8 +127,6 @@ public class ClusterCheckScheduler {
                                     || server.getStatus() == DatabaseStatus.MASTER)
                             .count();
                 if (masterCount > 0){
-
-                    log.info("INACCESSIBLE server check started...");
                     PostgresqlServer master = this.bfmContext.getPgList().stream()
                             .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE
                                     || server.getStatus() == DatabaseStatus.MASTER)
@@ -138,6 +137,12 @@ public class ClusterCheckScheduler {
                                     && server != this.bfmContext.getSplitBrainMaster())
                             .forEach(server -> {
                                 try {
+                                    // if (unavailableFailCount > 0){
+                                    //     unavailableFailCount -= 1;
+                                    //     log.warn("remain Fail Count : " + unavailableFailCount);
+                                    //     return;
+                                    // }
+
                                     if (this.bfmContext.getWatch_strategy().equals("availability")) {
                                         if (master != null) {
                                             if (server.getRewindStarted() == Boolean.FALSE) {
@@ -163,6 +168,7 @@ public class ClusterCheckScheduler {
                                                         }
                                                     }
                                                     server.setRewindStarted(Boolean.FALSE);
+                                                    unavailableFailCount = remainingFailCount;
                                                 }
                                             } else {
                                                 log.info("Rejoin processing...Passing.");
@@ -244,14 +250,9 @@ public class ClusterCheckScheduler {
                 }
             });
 
-            if (bfmContext.getMasterServer() == null){
-                PostgresqlServer master = this.selectNewMaster();
-                bfmContext.setMasterServer(master);
-            }
-
             isClusterHealthy();
 
-            log.info(String.format("Cluster Status is %s \n",this.bfmContext.getClusterStatus()));
+            log.info(String.format("Cluster Status is %s ",this.bfmContext.getClusterStatus()));
             this.bfmContext.setLastCheckLog(this.bfmContext.getLastCheckLog() +
                                             String.format("Cluster Status is %s ",this.bfmContext.getClusterStatus())+ "\n");
         }
@@ -277,9 +278,10 @@ public class ClusterCheckScheduler {
 
         long clusterCount = this.bfmContext.getPgList().size();
 
-        if (clusterCount == (this.bfmContext.getPgList().stream().filter(s -> (s.getDatabaseStatus().equals(DatabaseStatus.INACCESSIBLE))).count())){
+        if (clusterCount == (this.bfmContext.getPgList().stream().filter(s -> (s.getStatus().equals(DatabaseStatus.INACCESSIBLE))).count())){
             log.warn("All Members INACCESSIBLE. Cluster Check Passing");
             this.bfmContext.setMasterBfm(Boolean.FALSE);
+            this.bfmContext.setClusterStatus(ClusterStatus.IGNORING);
             return;
         }
 
@@ -305,7 +307,7 @@ public class ClusterCheckScheduler {
                                                         pg.setRewindStarted(Boolean.TRUE);
                                                         String rewind_result = minipgAccessUtil.rewind(pg, leaderMaster);
                                                         if (! rewind_result.equals("OK")){
-                                                            log.info("pg_rewind was FAILED. Slave Target:",pg.getServerAddress());
+                                                            log.info("pg_rewind was FAILED. Slave Target:" + pg.getServerAddress());
                                                             if (basebackup_slave_join == true){
                                                                 String rejoin_result = minipgAccessUtil.rebaseUp(pg,leaderMaster);
                                                                 log.info("pg_basebackup join cluster result is:"+rejoin_result);
@@ -334,16 +336,18 @@ public class ClusterCheckScheduler {
 
         }else if (masterCount ==  1L && masterWithNoslaveCount > 0){
             log.warn("Cluster has a master but, there is one or more master_with_no_slave server in cluster.");
-            this.bfmContext.getPgList().stream().filter(s -> (s.getDatabaseStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)))
+            this.bfmContext.getPgList().stream().filter(s -> (s.getStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)))
                                                 .forEach(server -> {
                                                     if (server.getRewindStarted() == Boolean.FALSE){
                                                         server.setRewindStarted(Boolean.TRUE);
                                                         try {
                                                             String rewind_result = minipgAccessUtil.rewind(server, this.bfmContext.getMasterServer());
                                                             if (! rewind_result.equals("OK")){
-                                                                log.info("pg_rewind was FAILED. Slave Target:",server.getServerAddress());
-                                                                String rejoin_result = minipgAccessUtil.rebaseUp(server, this.bfmContext.getMasterServer());
-                                                                log.info("pg_basebackup join cluster result is:"+rejoin_result);
+                                                                log.info("On ClusterCheck pg_rewind was FAILED. Slave Target:" + server.getServerAddress());
+                                                                if (basebackup_slave_join == true){
+                                                                    String rejoin_result = minipgAccessUtil.rebaseUp(server, this.bfmContext.getMasterServer());
+                                                                    log.info("pg_basebackup join cluster result is:"+rejoin_result);
+                                                                }
                                                             }
                                                         } catch (Exception e) {
                                                             log.warn("Error on Rejoin Master_With_No_slave server:"+ server.getServerAddress());
@@ -361,7 +365,9 @@ public class ClusterCheckScheduler {
             if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE && this.isWarningMailSended == Boolean.FALSE){
                 mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
                     "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
-                    + "\nMaster (With No Slave) Server:"+ this.bfmContext.getMasterServer().getServerAddress());
+                    + "\nMaster (With No Slave) Server:"+ this.bfmContext.getPgList().stream()
+                                                        .filter(s -> s.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE)
+                                                        .findFirst().get());
                 this.isWarningMailSended = Boolean.TRUE;
             }        
             checkLastWalPositions();
@@ -416,8 +422,18 @@ public class ClusterCheckScheduler {
             }
             this.bfmContext.setMasterServer(leaderPg);
             checkLastWalPositions();
-        }
-        else{
+        }else if(clusterCount == 1 && masterCount == 0 && masterWithNoslaveCount>0){
+            log.error("Cluster has only one master with no slave, single mode on going..");
+            this.bfmContext.setMasterServer(this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE))
+                                            .findFirst().get());
+            warning();
+            if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
+                mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                    "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus()
+                    +"\nCluster has only one MASTER server. Master is :"+this.bfmContext.getMasterServer().getServerAddress()  
+                    );
+            } 
+        }else{
             log.error("Cluster has no master");
             this.bfmContext.setClusterStatus(ClusterStatus.NOT_HEALTHY);
             this.nothealthy();
@@ -434,57 +450,63 @@ public class ClusterCheckScheduler {
                         slaveServerAddresses = slaveServerAddresses + pg.getServerAddress();
                     }
                 }
-
-                mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
+                    mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
                     "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
                     + "\nCluster has NO Master Server. Slave Server Adddresses : "+ slaveServerAddresses);
+                }
             }        
 
         }
     }
 
     public void checkLastWalPositions(){
-        try {
-            this.bfmContext.getMasterServer().getWalPosition(); 
-        } catch (Exception e) {
-            log.info("Gel Wal position error.");
-            e.printStackTrace();            
-        }
-        this.bfmContext.setMasterServerLastWalPos(this.bfmContext.getMasterServer().getWalLogPosition());
+        if (this.bfmContext.getMasterServer() != null){
 
-        // Gson gson = new Gson();
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        List<ContextServer> contextServerList = new ArrayList<ContextServer>();
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-        this.bfmContext.getPgList().stream()
-        .forEach(s -> {
             try {
-                s.getWalPosition();    
-                s.checkTimeLineId();
+                this.bfmContext.getMasterServer().getWalPosition(); 
             } catch (Exception e) {
-                e.printStackTrace();
+                log.info("Gel Wal position error.");
+                e.printStackTrace();            
             }
-            String formattedDate = s.getLastCheckDateTime().format(dateFormatter);
-            ContextServer server = new ContextServer(s.getServerAddress(), s.getDatabaseStatus().toString(), 
-            formattedDate, s.getWalLogPosition() ,(s.getReplayLag() == null ? "0" : s.getReplayLag() ), s.getTimeLineId());
-            contextServerList.add(server);
-        });
-        ContextStatus cs = new ContextStatus(this.bfmContext.getClusterStatus().toString(), 
-                                                (this.bfmContext.isCheckPaused() == Boolean.TRUE ? "TRUE" : "FALSE"), 
-                                                (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE ? "TRUE" : "FALSE"),
-                                                this.bfmContext.getWatch_strategy(),
-                                                contextServerList);
-        String json_str = gson.toJson(cs);
-        PrintWriter out;
-        try {
-            out = new PrintWriter("./bfm_status.json");
-            out.println(json_str);
-            out.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            log.warn("bfm_status.json write error...");
+            this.bfmContext.setMasterServerLastWalPos(this.bfmContext.getMasterServer().getWalLogPosition());
+    
+            // Gson gson = new Gson();
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            List<ContextServer> contextServerList = new ArrayList<ContextServer>();
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    
+            this.bfmContext.getPgList().stream()
+            .forEach(s -> {
+                try {
+                    s.getWalPosition();    
+                    s.checkTimeLineId();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                String formattedDate = s.getLastCheckDateTime().format(dateFormatter);
+                ContextServer server = new ContextServer(s.getServerAddress(), s.getStatus().toString(), 
+                formattedDate, s.getWalLogPosition() ,(s.getReplayLag() == null ? "0" : s.getReplayLag() ), s.getTimeLineId());
+                contextServerList.add(server);
+            });
+            ContextStatus cs = new ContextStatus(this.bfmContext.getClusterStatus().toString(), 
+                                                    (this.bfmContext.isCheckPaused() == Boolean.TRUE ? "TRUE" : "FALSE"), 
+                                                    (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE ? "TRUE" : "FALSE"),
+                                                    this.bfmContext.getWatch_strategy(),
+                                                    contextServerList);
+            String json_str = gson.toJson(cs);
+            PrintWriter out;
+            try {
+                out = new PrintWriter("./bfm_status.json");
+                out.println(json_str);
+                out.close();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                log.warn("bfm_status.json write error...");
+            }
+
         }
+        
     }
 
     public PostgresqlServer findLeader(){
@@ -712,7 +734,7 @@ public class ClusterCheckScheduler {
                                                 if (basebackup_slave_join == true){
                                                     log.info("Server "+ pg.getServerAddress()+" Rejoin to cluster with pg_basebackup started..");            
                                                     String rejoin_result = minipgAccessUtil.rebaseUp(pg, newMaster);
-                                                    // log.info("Server "+ pg.getServerAddress()+ " rejoin result :"+rejoin_result);
+                                                    log.info("Server "+ pg.getServerAddress()+ " rejoin result :"+rejoin_result);
                                                 }
                                             }     
                                         } catch (Exception e) {
@@ -732,7 +754,8 @@ public class ClusterCheckScheduler {
     }
 
     public PostgresqlServer selectNewMaster() {
-        if(this.bfmContext.getPgList().size() == 2 &&
+
+        if(this.bfmContext.getPgList().size() == 2 && 
         this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0).filter(server -> server.getStatus() == DatabaseStatus.SLAVE).count() == 0){
             return this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0)
                     .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE)
@@ -785,8 +808,11 @@ public class ClusterCheckScheduler {
                                         String rewind_result = minipgAccessUtil.rewind(server, master);
                                         if (! rewind_result.equals("OK")){
                                             log.info("slave pg_rewind FAILED. rewind_result:"+rewind_result);
-                                            log.info("Rejoin to cluster Wtih pg_basebackup started..");            
-                                            String rejoin_result = minipgAccessUtil.rebaseUp(server, master);
+                                            if (basebackup_slave_join == true){
+                                                log.info("Rejoin to cluster Wtih pg_basebackup started..");            
+                                                String rejoin_result = minipgAccessUtil.rebaseUp(server, master);
+                                                log.info("Rejoin to result is : "+rejoin_result);            
+                                            }
                                         }                            
                                     } catch (Exception e) {
                                         log.warn("Slave Server "+ server.getServerAddress()+ " rewind / rejoin failed...");
@@ -802,19 +828,33 @@ public class ClusterCheckScheduler {
     }
     public void checkReplayLag(){
         PostgresqlServer masterServer = this.bfmContext.getMasterServer();
-        Map<String,String> replayLagMap = masterServer.getReplayLagMap();
-        this.bfmContext.getPgList().stream()
-        .filter(s -> s.getDatabaseStatus().equals(DatabaseStatus.SLAVE))
-        .forEach(slave -> {
-            slave.setReplayLag(replayLagMap.get(slave.getServerAddress().split(":")[0]));
-        }); 
+        if (masterServer != null){
+            Map<String,ArrayList<String>> replayLagMap = masterServer.getReplayLagMap();
+            this.bfmContext.getPgList().stream()
+            .filter(s -> s.getStatus().equals(DatabaseStatus.SLAVE))
+            .forEach(slave -> {
+                if ((replayLagMap.get(slave.getServerAddress().split(":")[0])) != null){
+                    if ((replayLagMap.get(slave.getServerAddress().split(":")[0]).get(0)) != null){
+                        slave.setReplayLag(replayLagMap.get(slave.getServerAddress().split(":")[0]).get(0));
+                    }
+                    if ((replayLagMap.get(slave.getServerAddress().split(":")[0]).get(1)) != null){
+                        slave.setApplication_name(replayLagMap.get(slave.getServerAddress().split(":")[0]).get(1));
+                    }
+                    if ((replayLagMap.get(slave.getServerAddress().split(":")[0]).get(2)) != null){
+                        slave.setSyncState(replayLagMap.get(slave.getServerAddress().split(":")[0]).get(2));
+                    }
+                } 
+                
+            }); 
+        }
     }
 
     public void checkTimelines(){
-        try {
+        if (this.bfmContext.getMasterServer() != null){
+            try {
                 this.bfmContext.getPgList().stream()
                 .filter(s -> (!s.getServerAddress().equals(this.bfmContext.getMasterServer().getServerAddress()) && 
-                                !s.getDatabaseStatus().equals(DatabaseStatus.INACCESSIBLE)))
+                                !s.getStatus().equals(DatabaseStatus.INACCESSIBLE)))
                 .forEach(pg -> {
                     try {
                         pg.checkTimeLineId();
@@ -822,6 +862,7 @@ public class ClusterCheckScheduler {
                             timelineWaitCount--;
                             if (timelineWaitCount == 0 ){
                                 String checkpoint_result = minipgAccessUtil.checkpoint(this.bfmContext.getMasterServer());
+                                checkpoint_result = minipgAccessUtil.checkpoint(pg);
                                 timelineWaitCount = (timeoutIgnoranceCount == 0) ? 3 : timeoutIgnoranceCount;
                                 log.info("Master Server Checkpoint executed for timeline divergence. result:"+checkpoint_result);
                             }
@@ -834,7 +875,44 @@ public class ClusterCheckScheduler {
         }catch(Exception e){
             log.error(e.getMessage());
         }
+        }        
+    }
+
+    @Scheduled(fixedDelay = 13000)
+    public void checkMasterVIPNetwork(){
+        if (this.bfmContext.isCheckPaused() == Boolean.FALSE &&
+            this.bfmContext.isMasterBfm() == Boolean.TRUE &&
+            (this.bfmContext.getPgList().stream().filter(pg -> pg.getStatus() == DatabaseStatus.MASTER).count()) > 0){
+            try {
+                String result = minipgAccessUtil.checkMasterVIPNetwork(this.bfmContext.getMasterServer());
+                log.info("VIP Network Check result:"+ result);
+            } catch (Exception e) {
+                log.error("Error on Master Server VIP-Network check:", e);
+            }        
+        }
+    }
+
+    @Scheduled(fixedDelay = 6000)
+    public void checkSlavesApplicationNames(){
+        if (this.bfmContext.isCheckPaused() == Boolean.FALSE &&
+            this.bfmContext.isMasterBfm() == Boolean.TRUE &&
+            (this.bfmContext.getPgList().stream().filter(pg -> pg.getStatus() == DatabaseStatus.SLAVE).count()) > 0){
+
+                this.bfmContext.getPgList().stream()
+                .filter(pg -> pg.getStatus() == DatabaseStatus.SLAVE)
+                .forEach(slv -> {
+                        if (slv.getApplication_name() == null || slv.getApplication_name() == " " || slv.getApplication_name().equals("walreceiver")){
+                            try {
+                                String ipAddr = slv.getServerAddress().split(":")[0];
+                                String newAppName = ipAddr.replace(".", "_");
+                                minipgAccessUtil.setApplicationName(slv, "BFM_"+ newAppName);
+                            } catch (Exception e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            }
+                        }
+                });
+            }
     }
 
 }
-
