@@ -6,13 +6,13 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.6.2</version>
+		<version>3.3.4</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	
 	</parent>
 	<groupId>com.bisoft</groupId>
 	<artifactId>bfm</artifactId>
-	<version>2.2.1</version>
+	<version>3.0.0</version>
 	<packaging>pom</packaging>
 	
 	<name>bfm</name>
@@ -28,6 +28,7 @@
 	<modules>
 		<module>app</module>
 		<module>rpm</module>
+		<!-- <module>deb</module> -->
 	</modules>
 
 </project>

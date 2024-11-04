@@ -1,21 +1,24 @@
 package com.bisoft.bfm;
-
 import com.bisoft.bfm.helper.SymmetricEncryptionUtil;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
-public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+public class WebSecurityConfig {
 
     private final SymmetricEncryptionUtil symmetricEncryptionUtil;
 
@@ -28,31 +31,38 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Value("${bfm.user-crypted:false}")
     public boolean isEncrypted;
 
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        if(isEncrypted) {
-            //  log.info(symmetricEncryptionUtil.decrypt(tlsSecret).replace("=",""));
-            password = (symmetricEncryptionUtil.decrypt(password).replace("=", ""));
-        }
-
-        auth.inMemoryAuthentication()
-                .withUser(username)
-                .password(passwordEncoder().encode(password))
-                .roles("USER").authorities("ROLE_USER");
-    }
-
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http
-                .csrf().disable()
-                .authorizeRequests()
-                .anyRequest().authenticated()
-                .and()
-                .httpBasic();
-    }
-
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
+		http
+		.authorizeHttpRequests(authorize -> authorize
+			.anyRequest().authenticated()
+		)
+		.csrf(csrf -> csrf.disable())
+		.formLogin(Customizer.withDefaults())
+		.httpBasic(Customizer.withDefaults());
+		
+	return http.build();
+	}
+
+	@Bean
+	public BCryptPasswordEncoder passwordEncoder() {
+	 return new BCryptPasswordEncoder();
+	}
+
+	@Bean
+	public UserDetailsService userDetailsService() {
+		if(isEncrypted){
+            // password = symmetricEncryptionUtil.decrypt(password).replace("=","");
+            password = symmetricEncryptionUtil.decrypt(password);
+        }
+		UserDetails user =
+			 User.withUsername(username)
+				.password(passwordEncoder().encode(password))
+				.roles("USER")
+				.build();
+
+		return new InMemoryUserDetailsManager(user);
+	}
+
 }

@@ -5,11 +5,11 @@
 	<parent>
 		<groupId>com.bisoft</groupId>
 		<artifactId>bfm</artifactId>
-		<version>2.2.1</version>
+		<version>3.0.0</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
-	<artifactId>bfm-package</artifactId>
+	<artifactId>bfm-rpm-package</artifactId>
 	<packaging>rpm</packaging>
 
 	<name>BFM - RPM Package</name>
@@ -32,12 +32,12 @@
 				<configuration>
 					<group>${project.groupId}</group>
 					<mappings>
-                                                <mapping>
-                                                        <directory>/etc/bfm</directory>
-                                                        <filemode>755</filemode>
-                                                        <username>postgres</username>
+						<mapping>
+							<directory>/etc/bfm</directory>
+							<filemode>755</filemode>
+							<username>postgres</username>
 							<groupname>postgres</groupname>
-                                                </mapping>
+						</mapping>
 						<mapping>
 							<directory>/etc/bfm/bfmwatcher</directory>
 							<filemode>755</filemode>
@@ -50,10 +50,10 @@
 								</includes>
 							</dependency>
 							<sources>
-                                                                <source>
-                                                                        <location>src/main/resources/settings</location>
-                                                                </source>
-                                                        </sources>
+								<source>
+									<location>src/main/resources/settings</location>
+								</source>
+							</sources>
 						</mapping>
 						<mapping>
 							<directory>/etc/systemd/system</directory>
@@ -69,10 +69,10 @@
 						<mapping>
 							<directory>/etc/logrotate.d</directory>
 							<sources>
-                                                                <source>
-                                                                        <location>src/main/resources/bfmlog</location>
-                                                                </source>
-                                                        </sources>
+								<source>
+									<location>src/main/resources/bfmlog</location>
+								</source>
+							</sources>
 						</mapping>
 					</mappings>
 					<postinstallScriptlet>

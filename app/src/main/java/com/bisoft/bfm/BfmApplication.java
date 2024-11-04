@@ -1,6 +1,5 @@
 package com.bisoft.bfm;
 
-import com.bisoft.bfm.model.BfmContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -10,7 +9,7 @@ import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
-import java.util.ArrayList;
+import com.bisoft.bfm.model.BfmContext;
 
 @SpringBootApplication
 @EnableScheduling
