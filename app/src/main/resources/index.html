@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/fa/css/font-awesome.min.css">
+
+    <title>BFM Cluster Overview</title>
+    <link rel="icon" type="image/x-icon"
+        href="/images/icon_BFM.ico">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/overlay.css">
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="d-flex justify-content-end">
+            <img class="bg-elephant" src="/images/bg-elephant-active.png" alt="bg-elephant-active">
+        </div>               
+        <div class="d-flex justify-content-left">
+            <img class="left-logo" src="/images/bfm-logo-active.png" alt="bfm-logo-active">
+        </div>
+        <h3>Welcome!</h3>        
+        <h1>Cluster Overview</h1>
+        <div class="state-div">
+            <i class="fa fa-circle" style="color: #7CB039;"></i>
+            <label id="lbl_state" style="font-size: 15pt;">
+                Active
+            </label>            
+        </div>
+        <div class="refresh-wrap">
+            <div>
+                &nbsp;
+            </div>
+            <div class="cls-table text-left">
+                <label style="margin-top: 1px; font-size: 11pt;">Auto - Refresh : </label>
+                <label class="switch-sm" style="margin-top: 1px;">
+                    <input id="cb_refresh" type="checkbox">
+                    <span class="slider-sm round"></span>
+                </label>
+            </div>
+        </div>
+        <div class="cls-wrap">
+            <div>
+                &nbsp;
+            </div>
+            <div class="cls-table text-left" id="div_cluster_cover">
+                <label style="margin-left: 2%; font-size: 15pt;" id="label_cluster_status">Cluster Status : </label>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <div style="margin-bottom: -36px;">
+                &nbsp;
+            </div>
+            <div id="div_cluster_rows">
+            </div>
+            <div style="margin-top: -25px;">
+                &nbsp;
+            </div>
+        </div>
+
+
+        <div class="container-fluid" style="margin:-6% 0 0 2.3%">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="toggle-wrap">
+                        <div style="margin-bottom: -4%;">
+                            &nbsp;
+                        </div>
+                        <div style="width: 93%;margin-left: 3%;">
+                            <table class="table table-borderless toggle-table">
+                                <tr>
+                                    <td class="align-middle">Cluster Check</td>
+                                    <td>
+                                        <label class="switch">
+                                            <input id="cb_check" type="checkbox" {{ CHECK_STATUS }} onchange="set_cluster_check();">
+                                            <span class="slider" id="round"></span>
+                                        </label>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="align-middle">Mail Notifications</td>
+                                    <td>
+                                        <label class="switch">
+                                            <input id="cb_mail" type="checkbox" {{ MAIL_ENABLED }} onchange="set_mail_notification();">
+                                            <span class="slider" id="round"></span>
+                                        </label>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="align-middle">Watch Strategy</td>
+                                    <td>
+                                        <label class="switch">
+                                            <input id="cb_watch" type="checkbox" {{ WATCH_STRATEGY }} onchange="set_watch_strategy();">
+                                            <span class="slider round"></span>
+                                        </label>                                           
+                                    </td>
+                                </tr>
+                            </table> 
+                        </div>
+                        <div style="margin-top: -2.5%;">
+                            &nbsp;
+                        </div>
+                    </div> 
+                </div>            
+                <div class="col-md-4" style="margin-left: -4%;">
+                    <div class="sore-wrap">
+                        <div style="margin-bottom: -4%">
+                            &nbsp;
+                        </div>
+                        <div style="width: 93%;margin-left: 3%;">
+                            <table class="table table-borderless sore-table">
+                                <tr>
+                                    <td class="align-middle text-center" colspan="2">
+                                        <label style="font-size: 15pt;">Switch Over/ Re-Initialize</label>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="align-middle" colspan="2">
+                                        <select id="slave_options" onclick="document.getElementById('cb_refresh').checked = false;">
+                                            <option value="" selected>Select Slave</option>
+                                            {{ SLAVE_OPTIONS }}
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            
+                                        <button type="button" class="btn btn-bfm" onclick="ask_switch_confirm();">
+                                            <i class="fa fa-random"></i>
+                                            Switch Over
+                                        </button>
+                                        
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-bfm" onclick="ask_reinit();">
+                                            <i class="fa fa-refresh"></i>
+                                            Re-Initialize
+                                        </button>
+                                    </td>
+                                </tr>
+                            </table> 
+                        </div>
+                        <div style="margin-top: -2.5%;">
+                            &nbsp;
+                        </div>
+                    </div> 
+                </div>
+                <div class="col-md-4" style="margin-left: -4%;">
+                    <div class="sore-wrap">
+                        <div style="margin-bottom: -4%">
+                            &nbsp;
+                        </div>
+                        <div class="align-middle text-center sore-table" style="width: 100%;margin-left: 3%;">
+                            <label id="lbl_log" style="font-size: 15pt;">Cluster Check Logs</label>
+                            <textarea id="txt_log" rows="9" class="form-control" style="margin-left:1%; width:98%; font-size: 8pt">logs loading...</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <label id="axbu" name="axbu" style="display: none;">{{ USERNAME }}</label>
+        <label id="axbp" name="axbp" style="display: none;">{{ PASSWORD }}</label>
+        <label id="active_bfm" name="active_bfm" style="display: none;">{{ ACTIVE_BFM }}</label>  
+    </div>
+    <div id="overlay" class="overlay" style="display: none;">
+        <!-- <div class="loading-spinner lg" style="background-color: #FFF;"></div> -->
+         <img src="/images/loading.gif" style="width:150px; margin: 18% 0 0 45%">
+    </div>
+    <!-- Modal -->
+    <div class="modal fade" id="priorityModal" data-backdrop="static" tabindex="-1" aria-labelledby="priorityModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="priorityModalTitle">Failover Priority</h5>
+            <!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button> -->
+            </div>
+            <div class="modal-body">
+                <div class="container">
+                    <div class="row">
+                        Server Address : 
+                        <input type="text" id="prioServerAddress" readonly>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        Auto Failover / Priority : 
+                        <select id="select_priority">
+                            <option value="">Select a Priority</option>
+                            <option value="0">Disabled</option>
+                            <option value="1">Enable - Priority : 1</option>
+                            <option value="2">Enable - Priority : 2</option>                                
+                            <option value="3">Enable - Priority : 3</option>                                
+                            <option value="4">Enable - Priority : 4</option>                                
+                            <option value="5">Enable - Priority : 5</option>                                
+                        </select>
+                    </div>
+
+                </div>
+            </div>
+            <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="savePriority()">Save</button>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="confirmModal" data-backdrop="static" tabindex="-1" aria-labelledby="priorityModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="confirmModalTitle">Confirmation</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group" id="div_confirm_msg">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="btn_confirm_ok">OK</button>
+            </div>
+        </div>
+        </div>
+    </div>
+    <div class="modal fade" id="reinitModal" data-backdrop="static" tabindex="-1" aria-labelledby="reinitModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="confirmModalTitle">Confirmation</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group" id="div_reinit_msg">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="btn_confirm_ok">Okey</button>
+            </div>
+        </div>
+        </div>
+    </div>
+
+
+    <script src="/js/jquery-3.3.1.js"></script>
+    <script src="/js/popper.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <link href="/css/bootstrap4-toggle.min.css" rel="stylesheet">
+    <script src="/js/bootstrap4-toggle.min.js"></script>
+
+    <link href="/css/jquery.growl.css" rel="stylesheet">
+    <script src="/js/jquery.growl.js"></script>
+    <script>
+        window.addEventListener("load", function () {
+
+            var clusterCheckStatus = document.getElementById("cb_check").checked;
+
+            if (clusterCheckStatus) {
+                
+                document.getElementById("cb_mail").disabled = false;
+                document.getElementById("cb_watch").disabled = false;
+                document.getElementById("slave_options").disabled = false;
+                document.querySelector(".btn-bfm[onclick='ask_switch_confirm();']").disabled = false;
+                document.querySelector(".btn-bfm[onclick='ask_reinit();']").disabled = false;
+            } else {
+            
+                document.getElementById("cb_mail").disabled = true;
+                document.getElementById("cb_watch").disabled = true;
+                document.getElementById("slave_options").disabled = true;
+                document.querySelector(".btn-bfm[onclick='ask_switch_confirm();']").disabled = true;
+                document.querySelector(".btn-bfm[onclick='ask_reinit();']").disabled = true;
+            }
+        });
+    
+        function set_cluster_check(){
+            var isChecked = document.getElementById("cb_check").checked;
+
+            document.getElementById("cb_mail").disabled = !isChecked;
+            document.getElementById("cb_watch").disabled = !isChecked;
+            document.getElementById("slave_options").disabled = !isChecked;
+            document.querySelector(".btn-bfm[onclick='ask_switch_confirm();']").disabled = !isChecked;
+            document.querySelector(".btn-bfm[onclick='ask_reinit();']").disabled = !isChecked;
+
+            var active_bfm = document.getElementById("active_bfm").innerText
+            document.getElementById("overlay").style.display = 'block';
+            var bfmUrl = '';
+            if (document.getElementById("cb_check").checked == false){
+                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/check-pause';
+            } else if (document.getElementById("cb_check").checked == true){
+                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/check-resume';
+            } else {
+                var bfmUrl = '#';
+            }
+            
+            $.ajax({
+                url: bfmUrl,
+                type: "GET",
+                headers: {
+                    'Access-Control-Allow-Origin': '*'
+                },
+                crossDomain: true,
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                },
+                success: async function (data) {
+                    window.location.reload();
+                },
+                error: function (error) {
+                    console.log(`Error ${error}`);
+                }
+            });
+        }
+
+        function set_mail_notification(){
+            var active_bfm = document.getElementById("active_bfm").innerText
+            document.getElementById("overlay").style.display = 'block';
+            var bfmUrl = '';
+            if (document.getElementById("cb_mail").checked == true){
+                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/mail-resume';
+            } else if (document.getElementById("cb_mail").checked == false){
+                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/mail-pause';
+            } else {
+                var bfmUrl = '#';
+            }
+            
+            $.ajax({
+                url: bfmUrl,
+                type: "GET",
+                headers: {
+                    'Access-Control-Allow-Origin': '*'
+                },
+                crossDomain: true,                
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                },
+                success: function (data) {
+                    window.location.reload();
+                },
+                error: function (error) {
+                    console.log(`Error ${error}`);
+                }
+            });
+        }
+
+        function set_watch_strategy(){
+            var active_bfm = document.getElementById("active_bfm").innerText
+            document.getElementById("overlay").style.display = 'block';
+            if (document.getElementById("cb_watch").checked == true){
+                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/watch-strategy/A';
+            } else if (document.getElementById("cb_watch").checked == false){
+                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/watch-strategy/M';
+            } else {
+                var bfmUrl = '#'
+            }            
+            
+            $.ajax({
+                url: bfmUrl,
+                type: "POST",
+                headers: {
+                    'Access-Control-Allow-Origin': '*'
+                },
+                crossDomain: true,                
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                },
+                success: function (data) {
+                    window.location.reload();
+                },
+                error: function (error) {
+                    console.log(`Error ${error}`);
+                }
+            });
+        }
+        function ask_reinit(){
+            document.getElementById('cb_refresh').checked = false;
+            let targetPg = document.getElementById("slave_options").value;
+            document.getElementById('div_confirm_msg').innerHTML = 'Are you sure to Re Initialize Server ' + targetPg+ ' ?';
+            document.getElementById('btn_confirm_ok').setAttribute( "onClick", "start_reinit();" );
+            $('#confirmModal').modal('show');
+        }
+        function start_reinit(){
+            $('#confirmModal').modal('hide');
+            var active_bfm = document.getElementById("active_bfm").innerText
+            var bfmUrl = '';
+            var targetPg = document.getElementById("slave_options").value;
+            if (targetPg.length < 5 ){
+                // $.growl({ title: "Growl", message: "The kitten is awake!" });
+                $.growl.error({ message: "Please Select a Slave Server for Re Initalize!" });
+                // $.growl.notice({ message: "The kitten is cute!" });
+                // $.growl.warning({ message: "The kitten is ugly!" });
+            } else {
+                document.getElementById("overlay").style.display = 'block';
+                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/reinit/'+targetPg;            
+                $.ajax({
+                    url: bfmUrl,
+                    type: "POST",
+                    headers: {
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    crossDomain: true,                
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                    },
+                    success: async function (data) {
+                        await new Promise(r => setTimeout(r, 7000));
+                        getRows(true);
+                        document.getElementById("overlay").style.display = 'none';                   
+                    },
+                    error: function (error) {
+                        console.log(`Error ${error}`);
+                    }
+                });
+            }
+            
+        }
+
+        function ask_switch_confirm(){
+
+            document.getElementById('cb_refresh').checked = false;
+            
+            let targetPg = document.getElementById("slave_options").value;
+            let table = document.getElementById("tbl_pglist");
+            let master_replay_lag;
+            let master_timeline_id;
+            let target_replay_lag;
+            let target_timeline_id;
+            let target_failover_priority;
+            let target_sync_state;
+
+            for (var i = 0, row; row = table.rows[i]; i++) {
+                if (row.cells[0].innerText == targetPg){
+                    target_replay_lag = row.cells[4].innerText;
+                    target_timeline_id = row.cells[5].innerText;
+                    target_failover_priority = parseInt((document.getElementById('ah_'+targetPg).getAttribute('title')).split(":")[1]);
+                    target_sync_state = row.cells[8].innerText;
+                }
+
+                if (row.cells[1].innerText == "MASTER"){
+                    master_replay_lag = row.cells[4].innerText;
+                    master_timeline_id = row.cells[5].innerText;
+                }
+            }
+ 
+            if (target_sync_state == "async"){
+                $.growl.error({ message: "Switch Over Cancelled. <br> Selected Slave is async !" });
+                return;
+            }
+
+            if (target_failover_priority == 0){
+                $.growl.error({ message: "Switch Over Cancelled. <br> Failover Disabled Slave !" });
+                return;
+            }
+            
+            if (parseInt(master_timeline_id) != parseInt(target_timeline_id)){
+                $.growl.error({ message: "Switch Over Cancelled. <br> Timelines not equal !" });
+                return;
+            } 
+
+            if (target_replay_lag != "0"){
+                $.growl.error({ message: "Switch Over Cancelled.<br> Target replay lag is not zero(0)!" });
+                return;
+            }
+
+            document.getElementById('div_confirm_msg').innerHTML = 'Are you sure to Switchover to ' + targetPg+ ' ?';
+            document.getElementById('btn_confirm_ok').setAttribute( "onClick", "start_switch();" );
+            $('#confirmModal').modal('show');
+        }
+
+        function start_switch(){
+            $('#confirmModal').modal('hide');
+            const active_bfm = document.getElementById("active_bfm").innerText
+            let targetPg = document.getElementById("slave_options").value;
+            var bfmUrl = '';            
+            if (targetPg.length < 5 ){
+                // $.growl({ title: "Growl", message: "The kitten is awake!" });
+                $.growl.error({ message: "Please Select a Slave Server for Switch Over!" });
+                // $.growl.notice({ message: "The kitten is cute!" });
+                // $.growl.warning({ message: "The kitten is ugly!" });
+            } else {
+                document.getElementById("overlay").style.display = 'block';
+                //var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/switchover/'+targetPg;
+                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/switchover/'+targetPg;
+                console.log(bfmUrl);
+                $.ajax({
+                    url: bfmUrl,
+                    type: "POST",
+                    headers: {
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    crossDomain: true,                
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                    },
+                    success: async function (data) {
+                        await new Promise(r => setTimeout(r, 7000));
+                        document.getElementById("overlay").style.display = 'none';
+                        window.location.reload();                  
+                    },
+                    error: function (error) {
+                        console.log(`Error ${error}`);
+                    }
+                });
+            }
+        }
+    </script>
+    <script>
+        (function () {
+            function getLogs() {
+                const focusedElement = document.activeElement;
+                var active_bfm = document.getElementById("active_bfm").innerText;
+                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getLogs';
+
+                $.ajax({
+                        url: bfmUrl,
+                        context: document.body
+                        }).done(function(data) {
+                            if ((data != null || data != undefined) && (data.length > 0))
+                            {                        
+                                let memo = document.getElementById("txt_log")
+                                memo.disabled = false
+                                memo.value  += data
+                                //memo.focus();
+                                memo.scrollTop = memo.scrollHeight;
+                                memo.disabled = true
+                                
+                            };
+                        });
+                focusedElement.focus();
+            }                   
+            setInterval(getLogs, 5000);
+        })();        
+    </script>
+    <script>
+        (function () {
+            function getStatus(runOnce) {
+                var active_bfm = document.getElementById("active_bfm").innerText;
+                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getClsStatus';
+
+                if (document.getElementById('cb_refresh').checked == true || runOnce == true){
+                    $.ajax({
+                        url: bfmUrl,
+                        context: document.body
+                        }).done(function(data) {
+                            if ((data != null || data != undefined) && (data.length > 0))
+                            {   
+                                document.getElementById("label_cluster_status").innerText  = 'Cluster Status : ' + data
+                                if (data === "Healthy") {
+                                    document.getElementById("div_cluster_cover").classList.remove("cls-table-warning");
+                                    document.getElementById("div_cluster_cover").classList.remove("cls-table-danger");
+                                    document.getElementById("div_cluster_cover").classList.remove("bg-dark");
+                                    
+                                } else if (data === "Warning") {
+                                    document.getElementById("div_cluster_cover").classList.remove("cls-table-danger");
+                                    document.getElementById("div_cluster_cover").classList.remove("bg-dark");
+                                    document.getElementById("div_cluster_cover").classList.add("cls-table-warning");
+                                } else if (data === "Not_healty") {
+                                    document.getElementById("div_cluster_cover").classList.remove("cls-table-warning");
+                                    document.getElementById("div_cluster_cover").classList.remove("bg-dark");
+                                    document.getElementById("div_cluster_cover").classList.add("cls-table-danger");
+                                } else {
+                                    document.getElementById("div_cluster_cover").classList.remove("cls-table-danger");
+                                    document.getElementById("div_cluster_cover").classList.remove("cls-table-warning");
+                                    document.getElementById("div_cluster_cover").classList.add("bg-dark");
+                                    console.log(data);
+                                }
+                            };
+                            
+                        });
+                    }
+            }
+            getStatus(true);
+            setInterval(getStatus, 5000);
+        })(); 
+    </script> 
+    <script>
+        function getSlaveRows(){
+            
+            var active_bfm = document.getElementById("active_bfm").innerText;
+            var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getSlvRows';
+            $.ajax({
+            url: bfmUrl,
+            context: document.body
+            }).done(function(data) {
+                if ((data != null || data != undefined) && (data.length > 0))
+                {
+                    document.getElementById("slave_options").innerHTML=data;
+                }
+            })
+        };
+
+        function getRows(runOnce) {
+                var active_bfm = document.getElementById("active_bfm").innerText;
+                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getClsRows';
+                if (document.getElementById('cb_refresh').checked == true || runOnce == true){
+                    $.ajax({
+                    url: bfmUrl,
+                    context: document.body
+                    }).done(function(data) {
+                        if ((data != null || data != undefined) && (data.length > 0))
+                        {
+                            strTable = '<table id="tbl_pglist" class="table table-borderless">'
+                            strTable += '<thead style="padding-bottom: 20px;">'
+                            strTable += '<th>Server Address</th>'
+                            strTable += '<th>Server Status</th>'
+                            strTable += '<th>Auto Failover Mode</th>'
+                            strTable += '<th>Last Wal Position</th>'
+                            strTable += '<th>Replay Lag</th>'
+                            strTable += '<th>Timeline ID</th>'
+                            strTable += '<th>Last Check Timestamp</th>'
+                            strTable += '<th>Application Name</th>'
+                            strTable += '<th colspan="2">Sync State</th>'
+                            strTable += '</thead>'
+                            strTable += '<tbody>'               
+                            strTable += data
+                            strTable += '</tbody>'
+                            strTable += '</table> '
+                            document.getElementById("div_cluster_rows").innerHTML  = strTable
+                        };
+                        
+                    });
+                    getSlaveRows();  
+                } 
+                             
+            }
+
+        (function () {
+            getRows(true);            
+            setInterval(getRows, 5000);
+            
+        })();
+    </script>
+    <script>
+        function setSyncAsync(slave_appname){
+            //document.getElementById('cb_refresh').removeAttribute('checked');
+            document.getElementById('cb_refresh').checked = false;
+            document.getElementById("overlay").style.display = 'block';
+            var active_bfm = document.getElementById("active_bfm").innerText;
+            let bfmUrl = window.location.protocol +'//' + active_bfm ;
+            if (document.getElementById('cb_sync_'+slave_appname).checked == true){
+                bfmUrl += '/bfm/setsync/' + slave_appname;
+            } else {
+                bfmUrl += '/bfm/setasync/' + slave_appname;
+            }
+            $.ajax({
+                    url: bfmUrl,
+                    type: "POST",
+                    headers: {
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    crossDomain: true,                
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                    },
+                    success: async function (data) {
+                        await new Promise(r => setTimeout(r, 7000));
+                        getRows(true);
+                        document.getElementById("overlay").style.display = 'none';
+                        //window.location.reload();                    
+                    },
+                    error: function (error) {
+                        console.log(`Error ${error}`);
+                    }
+                });
+            
+        }
+    </script>
+
+    <script>
+        $("#priorityModal").on("hide.bs.modal", function () {
+            getRows(true);
+        });
+
+        function setPriority(serverAddress,currPriority,e){
+            //document.getElementById('cb_refresh').removeAttribute('checked');
+            document.getElementById('cb_refresh').checked = false;
+            if (e.checked == true){
+                $("#select_priority").val(currPriority).change();
+                $('#prioServerAddress').val(serverAddress);
+                $('#priorityModal').modal('show');        
+            } else {
+                savePriority(serverAddress,0);
+            }
+        }
+
+        function savePriority(serverAddress,newPriority){
+            if (serverAddress == null){
+                serverAddress = $('#prioServerAddress').val();
+            }
+
+            if (newPriority == null){
+                newPriority = $("#select_priority").val();
+            }
+
+            document.getElementById("overlay").style.display = 'block';
+            const active_bfm = document.getElementById("active_bfm").innerText;
+            let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/setpriority/'+serverAddress+'/'+newPriority;
+            $.ajax({
+                    url: bfmUrl,
+                    type: "POST",
+                    headers: {
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    crossDomain: true,                
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                    },
+                    success: async function (data) {
+                        await new Promise(r => setTimeout(r, 7000));
+                        getRows(true);
+                        document.getElementById("overlay").style.display = 'none';
+                    },
+                    error: function (error) {
+                        console.log(`Error ${error}`);
+                    }
+                });            
+            $('#priorityModal').modal('hide');
+        }
+    </script>
+</body>
+</html>

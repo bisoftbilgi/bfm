@@ -1,0 +1,76 @@
+.loading-spinner.xs {
+    font-size: 1em;
+    }
+    .loading-spinner.sm {
+    font-size: 2em;
+    }
+    .loading-spinner.md {
+    font-size: 4em;
+    }
+    .loading-spinner.lg {
+    font-size: 8em;
+    }
+    .loading-spinner.xl {
+    font-size: 16em;
+    }
+    .loading-spinner {
+    --color1: red;
+    --color2: green;
+    --color3: blue;
+    box-shadow: inset -0.25em -0.25em 0.5em -0.25em var(--color3), 0 0 0.03em 0.015em white, 0 0 0.075em 0.0375em black;
+    margin: 0.1em;
+    filter: contrast(5);
+    }
+    .loading-spinner,
+    .loading-spinner:after,
+    .loading-spinner:before{
+    --duration: 3s;
+    width: 1em;
+    height: 1em;
+    border-radius: 0.5em;
+    margin-top: 25%;
+    margin-left: 55%;    
+    position: relative;
+    animation: loading-spinner var(--duration) infinite linear;
+    transform: translateZ(0);
+    display: inline-block;
+    overflow: hidden;
+    }
+    .loading-spinner:after,
+    .loading-spinner:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    }
+    .loading-spinner:before {
+    animation-duration: var(--duration);
+    box-shadow: inset -0.25em -0.25em 0.5em -0.25em var(--color1);
+    }
+    .loading-spinner:after {
+    animation-duration: calc(2 * var(--duration));
+    box-shadow: inset -0.25em -0.25em 0.5em -0.25em var(--color2);
+    }
+    @keyframes loading-spinner {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+    }
+    #overlay {
+        position: fixed; /* Sit on top of the page content */
+        display: none; /* Hidden by default */
+        width: 100%; /* Full width (cover the whole page) */
+        height: 100%; /* Full height (cover the whole page) */
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0,0,0,0.5); /* Black background with opacity */
+        z-index: 2; /* Specify a stack order in case you're using a different order for other elements */
+        cursor: wait; /* Add a pointer on hover */
+    }

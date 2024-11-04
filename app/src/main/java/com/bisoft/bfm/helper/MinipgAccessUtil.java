@@ -1,21 +1,28 @@
 package com.bisoft.bfm.helper;
 
-import com.bisoft.bfm.dto.CheckPointDTO;
-import com.bisoft.bfm.dto.PromoteDTO;
-import com.bisoft.bfm.dto.RewindDTO;
-import com.bisoft.bfm.model.PostgresqlServer;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.net.ProxySelector;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
+import java.time.Duration;
+import java.util.Base64;
+import java.util.concurrent.TimeUnit;
+
+import jakarta.annotation.PostConstruct;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.config.RequestConfig;
-import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
@@ -24,41 +31,26 @@ import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuil
 import org.apache.hc.client5.http.io.HttpClientConnectionManager;
 import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
-import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
 import org.apache.hc.client5.http.ssl.TrustSelfSignedStrategy;
 import org.apache.hc.core5.http.HttpEntity;
-import org.apache.hc.core5.http.NameValuePair;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
-import org.apache.hc.core5.http.message.BasicNameValuePair;
-import org.apache.hc.core5.http.ssl.TLS;
 import org.apache.hc.core5.ssl.SSLContexts;
-import org.apache.hc.core5.ssl.TrustStrategy;
 import org.apache.hc.core5.util.Timeout;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
+import com.bisoft.bfm.dto.PromoteDTO;
+import com.bisoft.bfm.dto.ReBaseUpDTO;
+import com.bisoft.bfm.dto.RewindDTO;
+import com.bisoft.bfm.model.PostgresqlServer;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 
-import java.io.IOException;
-import java.io.StringBufferInputStream;
-import java.net.ProxySelector;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
-import java.security.SecureRandom;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
@@ -97,7 +89,8 @@ public class MinipgAccessUtil {
         serverUrl = scheme+"://{HOST}:"+String.valueOf(port);
         if(isEncrypted) {
             //  log.info(symmetricEncryptionUtil.decrypt(tlsSecret).replace("=",""));
-            password = (symmetricEncryptionUtil.decrypt(password).replace("=", ""));
+            // password = (symmetricEncryptionUtil.decrypt(password).replace("=", ""));
+            password = (symmetricEncryptionUtil.decrypt(password));
         }
         SSLContext sslContext = SSLContext.getInstance("TLS");
         var trustManager = new X509TrustManager() {
@@ -177,7 +170,7 @@ public class MinipgAccessUtil {
             HttpGet httpGet = new HttpGet(minipgUrl+"/minipg/vip-up");
 
             try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
-                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                // log.info(response1.getCode() + " " + response1.getReasonPhrase());
                 HttpEntity entity1 = (HttpEntity) response1.getEntity();
                 // do something useful with the response body
                 // and ensure it is fully consumed
@@ -230,7 +223,7 @@ public class MinipgAccessUtil {
             httpGet.setConfig(requestConfig);
 
             try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
-                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                // log.info(response1.getCode() + " " + response1.getReasonPhrase());
                 HttpEntity entity1 = (HttpEntity) response1.getEntity();
                 // do something useful with the response body
                 // and ensure it is fully consumed
@@ -272,7 +265,7 @@ public class MinipgAccessUtil {
             HttpGet httpGet = new HttpGet(minipgUrl+"/minipg/checkpoint");
 
             try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
-                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                // log.info(response1.getCode() + " " + response1.getReasonPhrase());
                 HttpEntity entity1 = (HttpEntity) response1.getEntity();
                 // do something useful with the response body
                 // and ensure it is fully consumed
@@ -328,7 +321,7 @@ public class MinipgAccessUtil {
             request.setEntity(entity);
 
             try (CloseableHttpResponse response1 = httpclient.execute(request)) {
-                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                // log.info(response1.getCode() + " " + response1.getReasonPhrase());
                 HttpEntity entity1 = (HttpEntity) response1.getEntity();
                 // do something useful with the response body
                 // and ensure it is fully consumed
@@ -350,6 +343,12 @@ public class MinipgAccessUtil {
     public String rewind(PostgresqlServer postgresqlServer,PostgresqlServer newMaster) throws Exception {
         //log.info("username : "+username+", password : "+password);
         log.info("rewind sent to "+postgresqlServer.getServerAddress()+" for master "+newMaster.getServerAddress());
+        // String targetMiniPGstatus = minipgStatus(postgresqlServer);
+        // log.info(postgresqlServer.getServerAddress() + " minipg status :"+ targetMiniPGstatus);
+
+        // String masterMiniPGstatus = minipgStatus(newMaster);
+        // log.info(newMaster.getServerAddress() + " minipg status :"+ masterMiniPGstatus);
+
         final String serverAddress = postgresqlServer.getServerAddress().split(":")[0];
         final String serverPort = postgresqlServer.getServerAddress().split(":")[1];
         String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
@@ -384,7 +383,7 @@ public class MinipgAccessUtil {
             request.setEntity(entity);
 
             try (CloseableHttpResponse response1 = httpclient.execute(request)) {
-                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                // log.info(response1.getCode() + " " + response1.getReasonPhrase());
                 HttpEntity entity1 = (HttpEntity) response1.getEntity();
                 // do something useful with the response body
                 // and ensure it is fully consumed
@@ -392,6 +391,7 @@ public class MinipgAccessUtil {
                 return result;
             }catch (Exception e){
                 log.error("Rewind failed for "+postgresqlServer.getServerAddress());
+                log.info("minipg call error :"+e.getMessage());
             }
 
 
@@ -401,5 +401,498 @@ public class MinipgAccessUtil {
 
         return "OK";
 
+    }
+
+    public String rebaseUp(PostgresqlServer slaveCandidateServer,PostgresqlServer masterServer) throws Exception {
+        // log.info("Trying to Rejoin Slave server "+slaveCandidateServer.getServerAddress()+" to cluster with master "+masterServer.getServerAddress()+" with pg_basebackup.");
+        final String serverAddress = slaveCandidateServer.getServerAddress().split(":")[0];
+        final String serverPort = slaveCandidateServer.getServerAddress().split(":")[1];
+        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                NoopHostnameVerifier.INSTANCE);
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(scsf)
+                .build();
+
+        ReBaseUpDTO rebaseDTO = ReBaseUpDTO.builder().masterIp(masterServer.getServerAddress().split(":")[0]).masterPort(masterServer.getServerAddress().split(":")[1]).repUser(masterServer.getUsername()).repPassword(masterServer.getPassword()).build();
+        ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
+        String json = ow.writeValueAsString(rebaseDTO);
+
+        credsProvider.setCredentials(
+                new AuthScope(serverAddress, port),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+
+        try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credsProvider)
+                .build()) {
+
+            HttpPost request = new HttpPost(minipgUrl+"/minipg/rebaseUp");
+            request.setHeader("Accept", "application/json");
+            request.setHeader("Content-type", "application/json");
+
+            final StringEntity entity = new StringEntity(json);
+            request.setEntity(entity);
+
+            try (CloseableHttpResponse response1 = httpclient.execute(request)) {
+                // log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                HttpEntity entity1 = (HttpEntity) response1.getEntity();
+                // do something useful with the response body
+                // and ensure it is fully consumed
+                String result = (EntityUtils.toString(response1.getEntity()));
+                return result;
+            }catch (Exception e){
+                log.error("Rejoin with pg_basebackup failed for "+ slaveCandidateServer.getServerAddress());
+            }
+
+
+        } catch (IOException e) {
+            log.error("Rejoin with pg_basebackup failed for "+slaveCandidateServer.getServerAddress()+" is unreacable");
+        }
+        
+        return "OK";
+    }
+
+    public String stopPg(PostgresqlServer pgServer) throws Exception {
+        final String serverAddress = pgServer.getServerAddress().split(":")[0];
+        final String serverPort = pgServer.getServerAddress().split(":")[1];
+        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                NoopHostnameVerifier.INSTANCE);
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(scsf)
+                .build();
+
+        credsProvider.setCredentials(
+                new AuthScope(serverAddress, port),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+
+        try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credsProvider)
+                .build()) {
+
+            HttpGet request = new HttpGet(minipgUrl+"/minipg/stop");
+            // request.setHeader("Accept", "application/json");
+            // request.setHeader("Content-type", "application/json");
+
+            try (CloseableHttpResponse response1 = httpclient.execute(request)) {
+                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                HttpEntity entity1 = (HttpEntity) response1.getEntity();
+                // do something useful with the response body
+                // and ensure it is fully consumed
+                String result = (EntityUtils.toString(response1.getEntity()));
+                return result;
+            }catch (Exception e){
+                log.error("Error on Stop DB:"+pgServer.getServerAddress());
+                // log.error(e.getMessage);
+            }
+
+
+        } catch (IOException e) {
+            log.error("Error on stop db. Server: "+pgServer.getServerAddress()+" is unreacable");
+        }
+        
+        return "OK";
+    }
+
+    public String startPg(PostgresqlServer pgServer) throws Exception {
+        String result = "";
+        final String serverAddress = pgServer.getServerAddress().split(":")[0];
+        final String serverPort = pgServer.getServerAddress().split(":")[1];
+        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                NoopHostnameVerifier.INSTANCE);
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(scsf)
+                .build();
+
+        credsProvider.setCredentials(
+                new AuthScope(serverAddress, port),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+
+        try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credsProvider)
+                .build()) {
+
+            HttpGet request = new HttpGet(minipgUrl+"/minipg/start");
+            // request.setHeader("Accept", "application/json");
+            // request.setHeader("Content-type", "application/json");
+
+            try (CloseableHttpResponse response1 = httpclient.execute(request)) {
+                // log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                HttpEntity entity1 = (HttpEntity) response1.getEntity();
+                // do something useful with the response body
+                // and ensure it is fully consumed
+                result = (EntityUtils.toString(response1.getEntity()));
+            }catch (Exception e){
+                log.error("Error on Start DB:"+pgServer.getServerAddress());
+                // log.error(e.getMessage);
+            }
+
+
+        } catch (IOException e) {
+            log.error("Error on start db. Server: "+pgServer.getServerAddress()+" is unreacable");
+        }
+        
+        if (result.contains("done") && result.contains("server started")){
+            return "OK";
+        } else {
+            return result;
+        }        
+    }
+
+    public String postSwitchOver(PostgresqlServer old_master, PostgresqlServer new_master)throws Exception {
+        //log.info("username : "+username+", password : "+password);
+        log.info("Post switchOver starting for server :"+old_master.getServerAddress());
+        final String serverAddress = old_master.getServerAddress().split(":")[0];
+        final String serverPort = old_master.getServerAddress().split(":")[1];
+        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                NoopHostnameVerifier.INSTANCE);
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(scsf)
+                .build();
+
+        PromoteDTO promoteDTO = PromoteDTO.builder()
+                                .masterIp(new_master.getServerAddress().split(":")[0])
+                                .port(new_master.getServerAddress().split(":")[1])
+                                .user(new_master.getUsername())
+                                .password(new_master.getPassword()).build();
+
+        ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
+        String json = ow.writeValueAsString(promoteDTO);
+
+        credsProvider.setCredentials(
+                new AuthScope(serverAddress, port),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+
+        try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credsProvider)
+                .build()) {
+
+            HttpPost request = new HttpPost(minipgUrl+"/minipg/post-so");
+            request.setHeader("Accept", "application/json");
+            request.setHeader("Content-type", "application/json");
+
+            final StringEntity entity = new StringEntity(json);
+            request.setEntity(entity);
+
+            try (CloseableHttpResponse response1 = httpclient.execute(request)) {
+                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                HttpEntity entity1 = (HttpEntity) response1.getEntity();
+                // do something useful with the response body
+                // and ensure it is fully consumed
+                String result = (EntityUtils.toString(response1.getEntity()));
+                return result;
+            }catch (Exception e){
+                log.error("Unable get post switch over from server "+old_master.getServerAddress());
+            }
+        } catch (IOException e) {
+            log.error("Unable get post switch over from server "+old_master.getServerAddress());
+        }
+        return "OK";
+    }
+
+    public String prepareForSwitchOver(PostgresqlServer old_master) throws Exception{
+        final String serverAddress = old_master.getServerAddress().split(":")[0];
+        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+        credsProvider.setCredentials(
+                new AuthScope(serverAddress, port),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                NoopHostnameVerifier.INSTANCE);
+
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(scsf)
+                .build();
+
+        try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credsProvider)
+                .build()) {
+
+            HttpGet httpGet = new HttpGet(minipgUrl+"/minipg/pre-so");
+
+            //timeout if server is shutdown
+            RequestConfig requestConfig = RequestConfig.custom()
+                    .setConnectTimeout(Timeout.of(5, TimeUnit.SECONDS))
+                    .setConnectionRequestTimeout(Timeout.of(5, TimeUnit.SECONDS))
+                    .build();
+
+            httpGet.setConfig(requestConfig);
+
+            try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
+                log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                HttpEntity entity1 = (HttpEntity) response1.getEntity();
+                // do something useful with the response body
+                // and ensure it is fully consumed
+                String result = (EntityUtils.toString(response1.getEntity()));
+                return result;
+            }catch (Exception e){
+                log.error("Prepare for SwitchOver failed for "+old_master.getServerAddress());
+            }
+        } catch (IOException e) {
+            log.error("Promote failed "+old_master.getServerAddress()+" is unreacable");
+        }
+
+        return "OK";
+
+    }
+
+    public String checkMasterVIPNetwork(PostgresqlServer master) throws Exception{
+        final String serverAddress = master.getServerAddress().split(":")[0];
+        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+        credsProvider.setCredentials(
+                new AuthScope(serverAddress, port),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                NoopHostnameVerifier.INSTANCE);
+
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(scsf)
+                .build();
+
+        try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credsProvider)
+                .build()) {
+
+            HttpGet httpGet = new HttpGet(minipgUrl+"/minipg/checkvip");
+
+            //timeout if server is shutdown
+            RequestConfig requestConfig = RequestConfig.custom()
+                    .setConnectTimeout(Timeout.of(5, TimeUnit.SECONDS))
+                    .setConnectionRequestTimeout(Timeout.of(5, TimeUnit.SECONDS))
+                    .build();
+
+            httpGet.setConfig(requestConfig);
+
+            try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
+                // log.info(response1.getCode() + " " + response1);
+                HttpEntity entity1 = (HttpEntity) response1.getEntity();
+                // do something useful with the response body
+                // and ensure it is fully consumed
+                String result = (EntityUtils.toString(response1.getEntity()));
+                // log.info("VIP Check Result:"+ result);
+                return result;
+            }catch (Exception e){
+                log.error("Error on accessing MiniPg on "+master.getServerAddress());
+            }
+        } catch (IOException e) {
+            log.error("Minig request failed on"+master.getServerAddress()+" is unreacable");
+        }
+
+        return "OK";
+
+    }
+
+    public String minipgStatus(PostgresqlServer postgresqlServer) throws Exception{
+        //log.info("username : "+username+", password : "+password);
+        log.info("MiniPg status request sent to "+postgresqlServer.getServerAddress());
+        final String serverAddress = postgresqlServer.getServerAddress().split(":")[0];
+        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+        credsProvider.setCredentials(
+                new AuthScope(serverAddress, port),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                NoopHostnameVerifier.INSTANCE);
+
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(scsf)
+                .build();
+
+        try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credsProvider)
+                .build()) {
+
+            HttpGet httpGet = new HttpGet(minipgUrl+"/minipg/status");
+
+            //timeout if server is shutdown
+            RequestConfig requestConfig = RequestConfig.custom()
+                    .setConnectTimeout(Timeout.of(5, TimeUnit.SECONDS))
+                    .setConnectionRequestTimeout(Timeout.of(5, TimeUnit.SECONDS))
+                    .build();
+
+            httpGet.setConfig(requestConfig);
+
+            try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
+                // log.info(response1.getCode() + " " + response1.getReasonPhrase());
+                HttpEntity entity1 = (HttpEntity) response1.getEntity();
+                // do something useful with the response body
+                // and ensure it is fully consumed
+                String result = (EntityUtils.toString(response1.getEntity()));
+                return result;
+            }catch (Exception e){
+                log.error("Unable get vip from server "+postgresqlServer.getServerAddress());
+            }
+
+
+        } catch (IOException e) {
+            log.error("Unable get vip from server "+postgresqlServer.getServerAddress());
+        }
+
+        return null;
+
+    }
+
+
+    public String setApplicationName(PostgresqlServer targetSlave, String strApplicationName)throws Exception {
+        log.info("Setting application_name for server :"+targetSlave.getServerAddress());
+        final String serverAddress = targetSlave.getServerAddress().split(":")[0];
+        final String serverPort = targetSlave.getServerAddress().split(":")[1];
+        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                NoopHostnameVerifier.INSTANCE);
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(scsf)
+                .build();
+
+        credsProvider.setCredentials(
+                new AuthScope(serverAddress, port),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+
+        try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credsProvider)
+                .build()) {
+            
+            HttpPost request = new HttpPost(minipgUrl+"/minipg/setappname");
+            request.setHeader("Accept", "application/json");
+            request.setHeader("Content-type", "application/json");
+
+            final StringEntity entity = new StringEntity(strApplicationName);
+            request.setEntity(entity);
+
+            try (CloseableHttpResponse response1 = httpclient.execute(request)) {
+                HttpEntity entity1 = (HttpEntity) response1.getEntity();
+                // do something useful with the response body
+                // and ensure it is fully consumed
+                String result = (EntityUtils.toString(response1.getEntity()));
+                return result;
+            }catch (Exception e){
+                log.error("Unable post set-application-name to server "+targetSlave.getServerAddress());
+            }
+        } catch (IOException e) {
+            log.error("Unable post set-application-name to server "+targetSlave.getServerAddress());
+        }
+        return "OK";
+    }
+
+    public String setReplicationToSync(PostgresqlServer master_server, String targetAppName)throws Exception {
+        log.info("Setting sync replication for application_name :" + targetAppName+" on master :" + master_server.getServerAddress());
+        final String serverAddress = master_server.getServerAddress().split(":")[0];
+        final String serverPort = master_server.getServerAddress().split(":")[1];
+        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                NoopHostnameVerifier.INSTANCE);
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(scsf)
+                .build();
+
+        credsProvider.setCredentials(
+                new AuthScope(serverAddress, port),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+
+        try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credsProvider)
+                .build()) {
+            
+            HttpPost request = new HttpPost(minipgUrl+"/minipg/setsync");
+            request.setHeader("Accept", "application/json");
+            request.setHeader("Content-type", "application/json");
+
+            final StringEntity entity = new StringEntity(targetAppName);
+            request.setEntity(entity);
+
+            try (CloseableHttpResponse response1 = httpclient.execute(request)) {
+                HttpEntity entity1 = (HttpEntity) response1.getEntity();
+                // do something useful with the response body
+                // and ensure it is fully consumed
+                String result = (EntityUtils.toString(response1.getEntity()));
+                return result;
+            }catch (Exception e){
+                log.error("Unable post set-sync-replication to server "+master_server.getServerAddress());
+            }
+        } catch (IOException e) {
+            log.error("Unable post set-sync-replication to server "+master_server.getServerAddress());
+        }
+        return "OK";
+    }
+
+    public String setReplicationToAsync(PostgresqlServer master_server, String targetAppName)throws Exception {
+        log.info("Setting Async replication on master :" + master_server.getServerAddress());
+        final String serverAddress = master_server.getServerAddress().split(":")[0];
+        final String serverPort = master_server.getServerAddress().split(":")[1];
+        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                NoopHostnameVerifier.INSTANCE);
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(scsf)
+                .build();
+
+        credsProvider.setCredentials(
+                new AuthScope(serverAddress, port),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+
+        try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credsProvider)
+                .build()) {
+            
+            HttpPost request = new HttpPost(minipgUrl+"/minipg/setasync");
+            request.setHeader("Accept", "application/json");
+            request.setHeader("Content-type", "application/json");
+
+            final StringEntity entity = new StringEntity(targetAppName);
+            request.setEntity(entity);
+
+            try (CloseableHttpResponse response1 = httpclient.execute(request)) {
+                HttpEntity entity1 = (HttpEntity) response1.getEntity();
+                // do something useful with the response body
+                // and ensure it is fully consumed
+                String result = (EntityUtils.toString(response1.getEntity()));
+                return result;
+            }catch (Exception e){
+                log.error("Unable get set-async-replication to server "+master_server.getServerAddress());
+            }
+        } catch (IOException e) {
+            log.error("Unable get set-async-replication to server "+master_server.getServerAddress());
+        }
+        return "OK";
     }
 }
