@@ -1,4 +1,5 @@
 package com.bisoft.bfm;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -10,12 +11,18 @@ import java.io.UncheckedIOException;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.DefaultResourceLoader;
@@ -64,6 +71,12 @@ public class BfmController {
     @Value("${server.pgpassword:postgres}")
     private String password;
 
+    @Value("${watcher.cluster-port:9994}")
+    private String cluster_port;
+
+    @Value("${bfm.basebackup-slave-join:false}")
+    public boolean basebackup_slave_join;
+
     @RequestMapping(path = "/status",method = RequestMethod.GET)
     public @ResponseBody
     List<PostgresqlServer> status(){
@@ -97,7 +110,6 @@ public class BfmController {
             }
             myReader.close();
             } catch (FileNotFoundException e) {
-            System.out.println("An error occurred.");
             e.printStackTrace();
             }
             return retval;
@@ -123,7 +135,7 @@ public class BfmController {
             }
 
             String bfmIpStr = this.bfmContext.getPgList().stream().filter(s -> (serverIPAddress.contains(s.getServerAddress().split(":")[0]))).findFirst().get().getServerAddress();
-            return (bfmIpStr.replace("5432","9994"));
+            return ((bfmIpStr.split(":")[0])+":"+cluster_port);
         }
         return bfmPair;
     }
@@ -177,6 +189,7 @@ public class BfmController {
         if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
            
             retval = retval + "\nCluster Status : "+this.bfmContext.getClusterStatus();
+            retval = retval + "\nCluster Check : "+(this.bfmContext.isCheckPaused() == Boolean.TRUE ? "Paused" : "Processing");
             retval = retval + "\nWatch Strategy : "+this.bfmContext.getWatch_strategy();
             retval = retval + "\n\n"+ 
                                 String.format("%-25s", "Server Address :") + 
@@ -232,6 +245,8 @@ public class BfmController {
                 ContextStatus cs = gson.fromJson(reader, ContextStatus.class);
 
                 retval = retval + "\nCluster Status : "+cs.getClusterStatus();
+                retval = retval + "\nCluster Check : "+(cs.getCheckPaused() == "TRUE" ? "Paused" : "Processing");
+                retval = retval + "\nWatch Strategy : "+cs.getWatchStrategy();
                 retval = retval + "\n"+ 
                                     String.format("%-25s", "Server Address :") + 
                                     "\t" + 
@@ -318,8 +333,8 @@ public class BfmController {
                     try {
                         PostgresqlServer switchOverToPG = this.bfmContext.getPgList().stream()
                         .filter(s -> (s.getServerAddress().equals(targetPG) 
-                                        && (!s.getDatabaseStatus().equals(DatabaseStatus.MASTER))
-                                        && (!s.getDatabaseStatus().equals(DatabaseStatus.INACCESSIBLE)))).findFirst().get();
+                                        && (!s.getStatus().equals(DatabaseStatus.MASTER))
+                                        && (!s.getStatus().equals(DatabaseStatus.INACCESSIBLE)))).findFirst().get();
 
                         if (switchOverToPG == null){
                             retval = retval + targetPG+ " Server not found in BFM Cluster or It's MASTER or INACCESSIBLE.\n";
@@ -344,17 +359,22 @@ public class BfmController {
                                 log.info("Slave Promote Result :"+ result);
 
                                 minipgAccessUtil.vipUp(switchOverToPG);
+                                switchOverToPG.setApplication_name("");
+                                switchOverToPG.setSyncState("");                    
                                 
-                                this.bfmContext.getPgList().stream().filter(s -> (!s.getServerAddress().equals(switchOverToPG.getServerAddress()) &&
-                                                                                    !s.getServerAddress().equals(old_master.getServerAddress())))
+                                this.bfmContext.getPgList().stream().filter(s -> (!s.getServerAddress().equals(switchOverToPG.getServerAddress())))
                                                                     .forEach(pg -> {
                                                                         try {
                                                                             pg.setRewindStarted(Boolean.TRUE);
                                                                             String rewind_result = minipgAccessUtil.rewind(pg, switchOverToPG);
                                                                             if (! rewind_result.equals("OK")){
-                                                                                log.info("pg_rewind was FAILED. Slave Target:",pg.getServerAddress());
-                                                                                String rejoin_result = minipgAccessUtil.rebaseUp(pg, switchOverToPG);
-                                                                                log.info("pg_basebackup join cluster result is:"+rejoin_result);
+                                                                                log.info("on SwitchOver pg_rewind was FAILED. Response is : "+rewind_result+" Slave Target:" + pg.getServerAddress());
+                                                                                if (basebackup_slave_join == Boolean.TRUE){
+                                                                                    String rejoin_result = minipgAccessUtil.rebaseUp(pg, switchOverToPG);
+                                                                                    log.info("pg_basebackup join cluster result is:"+rejoin_result);
+                                                                                } else {
+                                                                                    log.warn("basebackup rejoin disabled. Please check server manually:"+ pg.getServerAddress());
+                                                                                }
                                                                             }
                                                                             pg.setRewindStarted(Boolean.FALSE);                                                                            
                                                                         } catch (Exception e) {
@@ -363,13 +383,13 @@ public class BfmController {
                                                                     });
                                                                     
                                 result = minipgAccessUtil.postSwitchOver(old_master, switchOverToPG);
-                                log.info("Ex-Master Rejoin Result :"+ result);
+                                log.info("Ex-Master R/W Set Result :"+ result);
                                     
                                 this.bfmContext.setCheckPaused(Boolean.FALSE);
                                 int checkCount = 3;
                                 while (((this.bfmContext.getClusterStatus() != ClusterStatus.HEALTHY) || 
                                                                     (this.bfmContext.getPgList().stream()
-                                                                    .filter(s -> (s.getDatabaseStatus().equals(DatabaseStatus.INACCESSIBLE))).count()) > 0) 
+                                                                    .filter(s -> (s.getStatus().equals(DatabaseStatus.INACCESSIBLE))).count()) > 0) 
                                         && (checkCount > 0)){
                                     TimeUnit.SECONDS.sleep(5);
                                     checkCount--;
@@ -576,5 +596,228 @@ public class BfmController {
             }
             return retval; 
         }
+    }
+
+    @RequestMapping(path = "/index.html",method = RequestMethod.GET)
+    public @ResponseBody String webRoot(){
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        ResourceLoader resourceLoader = new DefaultResourceLoader();
+        String retval = " ";
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            Resource resource = resourceLoader.getResource("classpath:index.html");
+            retval = asString(resource);
+    
+            retval = retval.replace("{{ USERNAME }}", username);
+            retval = retval.replace("{{ PASSWORD }}", password);
+    
+            if (this.bfmContext.getClusterStatus() == null){
+                retval = retval.replace("{{ CHECK_STATUS }}", "");
+                retval = retval.replace("{{ MAIL_ENABLED }}", "");
+                retval = retval.replace("{{ WATCH_STRATEGY }}", "");
+                retval = retval.replace("{{ ACTIVE_BFM }}", "");                
+                return retval;        
+            } else {
+                String server_rows = "";
+                String slave_options = "";
+                for(PostgresqlServer pg : this.bfmContext.getPgList()){
+                    if (pg.getWalLogPosition() == null){
+                        try {
+                            pg.getWalPosition();    
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    
+                    server_rows = server_rows + "<tr>";
+                    server_rows = server_rows +  "<td>"+pg.getServerAddress()+"</td>";
+                    server_rows = server_rows +  "<td>"+pg.getStatus()+"</td>";
+                    server_rows = server_rows +  "<td>"+pg.getWalLogPosition()+"</td>";
+                    server_rows = server_rows +  "<td>"+(pg.getReplayLag() == null ? "0" : pg.getReplayLag())+"</td>";
+                    server_rows = server_rows +  "<td>"+pg.getTimeLineId()+"</td>";
+                    String formattedDate = pg.getLastCheckDateTime().format(dateFormatter);
+                    server_rows = server_rows +  "<td>"+formattedDate+"</td>";
+                    server_rows = server_rows + "</tr>";
+
+                    if (!pg.getDatabaseStatus().equals(DatabaseStatus.MASTER)) {
+                        slave_options = slave_options + 
+                                        "<option value=\""+pg.getServerAddress()+"\">"+pg.getServerAddress()+"</option>";
+                    }
+                }
+                retval = retval.replace("{{ ACTIVE_BFM }}", this.getActiveBfm());
+                retval = retval.replace("{{ SLAVE_OPTIONS }}", slave_options);
+                retval = retval.replace("{{ CHECK_STATUS }}", (this.bfmContext.isCheckPaused() == Boolean.TRUE ? " " : "checked"));
+                retval = retval.replace("{{ MAIL_ENABLED }}", (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE ? "checked" : " "));
+                retval = retval.replace("{{ WATCH_STRATEGY }}", (this.bfmContext.getWatch_strategy().equals("availability") ? "checked" : " "));
+                return retval;    
+            }
+        } else {
+            Resource resource = resourceLoader.getResource("classpath:index-passive-forward.html");
+            retval = asString(resource);
+            retval = retval.replace("{{ ACTIVE_BFM }}", this.getActiveBfm());
+        }
+        return retval;
+    }
+    
+    public static String[] getLastNLinesFromFile(String filePath, int numLines) throws IOException {
+        try (Stream<String> stream = Files.lines(Paths.get(filePath))) {
+            AtomicInteger offset = new AtomicInteger();
+            String[] lines = new String[numLines];
+            stream.forEach(line -> {
+                lines[offset.getAndIncrement() % numLines] = line;
+            });
+            List<String> list = IntStream.range(offset.get() < numLines ? 0 : offset.get() - numLines, offset.get())
+                    .mapToObj(idx -> lines[idx % numLines]).collect(Collectors.toList());
+            return list.toArray(new String[0]);
+        }
+    }
+
+    @RequestMapping(path = "/getLogs",method = RequestMethod.GET)
+    public @ResponseBody String getLogs(){
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            
+            try {
+                return String.join("\n", getLastNLinesFromFile("log/app.log",10));
+            } catch (IOException e) {
+                e.printStackTrace();
+                return "BFM Cluster Manager.";
+            }
+        } else {
+            return "BFM Cluster Manager.";
+        }
+    }
+
+    @RequestMapping(path = "/getClsStatus",method = RequestMethod.GET)
+    public @ResponseBody String getClsStatus(){
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            String clsState = "";
+            if (this.bfmContext.getClusterStatus() != null){
+                clsState = (this.bfmContext.getClusterStatus().toString()).substring(0,1).toUpperCase() + (this.bfmContext.getClusterStatus().toString()).substring(1).toLowerCase();
+            }
+            
+            return clsState;
+            
+        } else {
+            return "Requesting";
+        }
+    }
+
+    @RequestMapping(path = "/getClsRows",method = RequestMethod.GET)
+    public @ResponseBody String getClsRows(){
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){            
+            String server_rows = "";
+            for(PostgresqlServer pg : this.bfmContext.getPgList()){
+                if (pg.getWalLogPosition() == null){
+                    try {
+                        pg.getWalPosition();    
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                
+                server_rows = server_rows + "<tr>";
+                server_rows = server_rows +  "<td>"+pg.getServerAddress()+"</td>";
+                server_rows = server_rows +  "<td>"+pg.getStatus()+"</td>";
+                if (pg.getStatus() == DatabaseStatus.SLAVE){
+                    server_rows = server_rows +  "<td>";
+                    server_rows = server_rows +  "<a href=\"#\" id=\"ah_"+pg.getServerAddress()+"\" class=\"tooltip-test\" title=\"Priority:"+pg.getPriority()+"\">";                    
+                    server_rows = server_rows +  "<label class=\"switch-sm\">";
+                    server_rows = server_rows +  "<input id=\"cb_priority_"+ pg.getServerAddress() +"\" type=\"checkbox\" "+(pg.getPriority() > 0 ? "checked" : "" ) + " onchange=\"setPriority('"+ pg.getServerAddress() +"', '"+pg.getPriority()+"',this);\">";
+                    server_rows = server_rows +  "<span class=\"slider-sm round\"></span>";
+                    server_rows = server_rows +  "</label>";
+                    server_rows = server_rows +  "</a>";    
+                    server_rows = server_rows +  "</td>";    
+                } else {
+                    server_rows = server_rows +  "<td></td>";
+                }
+                server_rows = server_rows +  "<td>"+pg.getWalLogPosition()+"</td>";
+                server_rows = server_rows +  "<td>"+(pg.getReplayLag() == null ? "0" : pg.getReplayLag())+"</td>";
+                server_rows = server_rows +  "<td>"+pg.getTimeLineId()+"</td>";
+                String formattedDate = pg.getLastCheckDateTime().format(dateFormatter);
+                server_rows = server_rows +  "<td>"+formattedDate+"</td>";
+                server_rows = server_rows +  "<td>"+(pg.getApplication_name() == null ? "" : pg.getApplication_name()) +"</td>";
+                server_rows = server_rows +  "<td>"+(pg.getSyncState() == null ? "" : pg.getSyncState())+"</td>";
+                if (pg.getStatus() == DatabaseStatus.SLAVE){
+                    server_rows = server_rows +  "<td>";
+                    server_rows = server_rows +  "<label class=\"switch-sm\">";
+                    server_rows = server_rows +  "<input id=\"cb_sync_"+(pg.getApplication_name() == null ? "" : pg.getApplication_name()) +"\" type=\"checkbox\" "+ (pg.getSyncState() == null ? "async" : (pg.getSyncState()).equals("sync") ? "checked" : ((pg.getSyncState()).equals("potential") ? "checked" : "")) + " onchange=\"setSyncAsync('"+ (pg.getApplication_name() == null ? "" : pg.getApplication_name()) +"');\">";
+                    server_rows = server_rows +  "<span class=\"slider-sm round\"></span>";
+                    server_rows = server_rows +  "</label>";                                           
+                    server_rows = server_rows +  "</td>";
+                }
+                
+                server_rows = server_rows + "</tr>";
+            }
+            return server_rows;
+            
+        } else {
+            return "Requesting";
+        }
+    }
+
+    @RequestMapping(path = "/getSlvRows",method = RequestMethod.GET)
+    public @ResponseBody String getSlaveRows(){
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){            
+            String slave_rows = "<option value=\"\" selected>Select Slave</option>";
+            for(PostgresqlServer pg : this.bfmContext.getPgList()){
+                if (pg.getStatus() == DatabaseStatus.SLAVE){                    
+                    slave_rows += "<option value=\""+pg.getServerAddress()+"\">"+pg.getServerAddress()+"</option>";
+                } 
+            }
+            return slave_rows;
+            
+        } else {
+            return "Requesting";
+        }
+    }
+
+    @RequestMapping(path = "/setsync/{target}",method = RequestMethod.POST)
+    public @ResponseBody String setSync(@PathVariable(value = "target") String targetAppName){
+        String retval ="";       
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            PostgresqlServer master_server = this.bfmContext.getPgList().stream()
+            .filter(server -> server.getStatus() == DatabaseStatus.MASTER ).findFirst().get();                    
+            try {
+                String sync_result = minipgAccessUtil.setReplicationToSync(master_server, targetAppName);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+
+        }
+        return retval;
+    }    
+
+    @RequestMapping(path = "/setasync/{target}",method = RequestMethod.POST)
+    public @ResponseBody String setAsync(@PathVariable(value = "target") String targetAppName){
+        String retval ="";       
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            PostgresqlServer master_server = this.bfmContext.getPgList().stream()
+            .filter(server -> server.getStatus() == DatabaseStatus.MASTER ).findFirst().get();                    
+            try {
+                String async_result = minipgAccessUtil.setReplicationToAsync(master_server, targetAppName);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+
+        }
+        return retval;
+    }
+    
+    @RequestMapping(path = "/setpriority/{target}/{priority}",method = RequestMethod.POST)
+    public @ResponseBody String setPriority(@PathVariable(value = "target") String targetPg, @PathVariable(value = "priority") Integer priority){
+        String retval ="";       
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            this.bfmContext.getPgList().stream()
+            .filter(s -> s.getServerAddress().equals(targetPg))
+            .forEach(pg -> {
+                pg.setPriority(priority);
+            });
+            retval = "OK";
+        } else {
+            retval = "PAS";
+        }
+        return retval;
     }
 }

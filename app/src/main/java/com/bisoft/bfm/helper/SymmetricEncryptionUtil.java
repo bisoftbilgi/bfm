@@ -91,7 +91,7 @@ public class SymmetricEncryptionUtil {
 
             // Prepare your key/password
             final SecretKey secretKey = generateSecretKey(iv, approvalSecretKey);
-            System.out.println("Approval Key:" + approvalSecretKey);
+            //System.out.println("Approval Key:" + approvalSecretKey);
 
             final Cipher           cipher        = Cipher.getInstance("AES/GCM/NoPadding");
             final GCMParameterSpec parameterSpec = new GCMParameterSpec(KEY_LENGTH, iv);
