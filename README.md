@@ -12,4 +12,4 @@ It has many advantages over diferrent failover managers.
 
 4. Self - HA  : You can prefer to use 2 seperate BFM instances to manage the PostgreSQL cluster. If one BFM is down the other will take control.
 
-5. WEB UI : You can manage and monitor your PostgreSQL-Cluster with modern web iterface, also you can use command line tool (bfm_ctl).
+5. WEB UI : You can manage and monitor your PostgreSQL-Cluster with modern web interface, also you can use command line tool (bfm_ctl).
