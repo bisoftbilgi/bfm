@@ -925,14 +925,35 @@
                             xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
                         },
                         success: async function (data) {
-                            e.setAttribute("aria-disabled","true");
-                            e.classList.add("pe-none");
-                            e.classList.add("btn-dark");
+                            // e.setAttribute("aria-disabled","true");
+                            // e.classList.add("pe-none");
+                            // e.classList.add("btn-dark");
                         },
                         error: function (error) {
                             console.log(`Error ${error}`);
                         }
-                    });            
+                    });
+                    
+                    bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/findProblemTables/'+targetPG+'/'+targetDB;
+                    $.ajax({
+                            url: bfmUrl,
+                            type: "POST",
+                            headers: {
+                                'Access-Control-Allow-Origin': '*'
+                            },
+                            crossDomain: true,                
+                            beforeSend: function (xhr) {
+                                xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                            },
+                            success: async function (data) {
+                                $('#tbl_tables').DataTable().clear().rows.add(JSON.parse(data)).draw();                                        
+                            },
+                            error: function (error) {
+                                console.log(`Error ${error}`);
+                            }
+                        });                                
+
+
             }
 
     </script>
