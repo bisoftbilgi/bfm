@@ -494,3 +494,11 @@ select>option{
 .btn-bfm:hover{
     background-image: linear-gradient(275.76deg,#BADC58 98.56%, #94C11F 44.33%);
 }
+
+
+.btn-group-xs > .btn, .btn-xs {
+  padding: 1px 5px;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 3px;
+}

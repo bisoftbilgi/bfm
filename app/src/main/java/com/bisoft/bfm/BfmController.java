@@ -16,7 +16,9 @@ import java.nio.file.Paths;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -631,6 +633,21 @@ public class BfmController {
                     server_rows = server_rows + "<tr>";
                     server_rows = server_rows +  "<td>"+pg.getServerAddress()+"</td>";
                     server_rows = server_rows +  "<td>"+pg.getStatus()+"</td>";
+
+                    String minipg_status = "";
+                    try {
+                        minipg_status = this.minipgAccessUtil.minipgStatus(pg);
+                        if (minipg_status.equals("OK")){
+                            minipg_status = "<i class=\"fa fa-circle\" style=\"color: #7CB039;\"></i>";
+                        } else{
+                            minipg_status = "<i class=\"fa fa-circle\" style=\"color: #E83D0F;\"></i>";    
+                        }
+                    } catch (Exception e) {
+                        minipg_status = "<i class=\"fa fa-circle\" style=\"color: #E83D0F;\"></i>";
+                    }
+                    server_rows = server_rows +  "<td style=\"text-align: center; vertical-align: middle;\">"+minipg_status+"</td>";
+
+                    server_rows = server_rows +  "<td>"+minipg_status+"</td>";
                     server_rows = server_rows +  "<td>"+pg.getWalLogPosition()+"</td>";
                     server_rows = server_rows +  "<td>"+(pg.getReplayLag() == null ? "0" : pg.getReplayLag())+"</td>";
                     server_rows = server_rows +  "<td>"+pg.getTimeLineId()+"</td>";
@@ -717,9 +734,29 @@ public class BfmController {
                 
                 server_rows = server_rows + "<tr>";
                 server_rows = server_rows +  "<td>"+pg.getServerAddress()+"</td>";
-                server_rows = server_rows +  "<td>"+pg.getStatus()+"</td>";
+                if (pg.getStatus() == DatabaseStatus.SUBSCRIBER){
+                    server_rows = server_rows +  "<td>"+pg.getStatus()+"<button class=\"btn btn-xs btn-success\" style=\"margin-left:3px\" onclick=\"showSubscriptionInfo('"+pg.getServerAddress()+"');\">?</button></td>";
+                } else if (pg.getStatus() == DatabaseStatus.MASTER){
+                    server_rows = server_rows +  "<td>"+pg.getStatus()+"<a class=\"btn btn-xs tooltip-test\" data-bs-toggle=\"modal\" data-bs-target=\"#modalLR\" title=\"Manage Logical Replication\" href=\"#\" onclick=\"manage_LR('"+pg.getServerAddress()+"');\" role=\"button\"><img src=\"/images/lr01.png\" width=\"20\" alt=\"lr\"></a></td>";
+                } else {
+                    server_rows = server_rows +  "<td>"+pg.getStatus()+"</td>";
+                }
+                                
+                String minipg_status = "";
+                try {
+                    minipg_status = this.minipgAccessUtil.minipgStatus(pg);
+                    if (minipg_status.equals("OK")){
+                        minipg_status = "<i class=\"fa fa-circle\" style=\"color: #7CB039;\"></i>";
+                    } else{
+                        minipg_status = "<i class=\"fa fa-circle\" style=\"color: #E83D0F;\"></i>";    
+                    }
+                } catch (Exception e) {
+                    minipg_status = "<i class=\"fa fa-circle\" style=\"color: #E83D0F;\"></i>";
+                }
+                server_rows = server_rows +  "<td style=\"text-align: center; vertical-align: middle;\">"+minipg_status+"</td>";
+
                 if (pg.getStatus() == DatabaseStatus.SLAVE){
-                    server_rows = server_rows +  "<td>";
+                    server_rows = server_rows +  "<td style=\"text-align: center; vertical-align: middle;\">";
                     server_rows = server_rows +  "<a href=\"#\" id=\"ah_"+pg.getServerAddress()+"\" class=\"tooltip-test\" title=\"Priority:"+pg.getPriority()+"\">";                    
                     server_rows = server_rows +  "<label class=\"switch-sm\">";
                     server_rows = server_rows +  "<input id=\"cb_priority_"+ pg.getServerAddress() +"\" type=\"checkbox\" "+(pg.getPriority() > 0 ? "checked" : "" ) + " onchange=\"setPriority('"+ pg.getServerAddress() +"', '"+pg.getPriority()+"',this);\">";
@@ -766,6 +803,50 @@ public class BfmController {
             }
             return slave_rows;
             
+        } else {
+            return "Requesting";
+        }
+    }
+
+    @RequestMapping(path = "/getSubscriptionInfo/{target}",method = RequestMethod.POST)
+    public @ResponseBody String getSubscriptionInfo(@PathVariable(value = "target") String targetPg){
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){ 
+            PostgresqlServer pg = this.bfmContext.getPgList().stream().filter(s -> s.getServerAddress().equals(targetPg)).findFirst().get();           
+            if (pg != null && pg.getStatus().equals(DatabaseStatus.SUBSCRIBER)){
+                Map<String,ArrayList<String>> subscriptionMap = pg.getSubscriberInfoMap();
+
+                ArrayList<String> pgSubscription = subscriptionMap.get(pg.getServerAddress());           
+                                
+                String sub_rows = "<table class=\"table table-striped table-hover\"><tr><td>Subscriber : </td><td>"+pg.getServerAddress()+"</td></tr>";
+                int col_num = 0;
+                for(String data : pgSubscription){
+
+                    if (col_num == 0){
+                        sub_rows += "<tr><td>datname</td><td>"+data+"</td></tr>";
+                    } else if (col_num == 1){
+                        sub_rows += "<tr><td>subname</td><td>"+data+"</td></tr>";
+                    } else if (col_num == 2){
+                        sub_rows += "<tr><td>subowner</td><td>"+data+"</td></tr>";
+                    } else if (col_num == 3){
+                        sub_rows += "<tr><td>subenabled</td><td>"+data+"</td></tr>";
+                    } else if (col_num == 4){
+                        sub_rows += "<tr><td>subconninfo</td><td>"+data+"</td></tr>";
+                    } else if (col_num == 5){
+                        sub_rows += "<tr><td>subslotname</td><td>"+data+"</td></tr>";
+                    }  else if (col_num == 6){
+                        sub_rows += "<tr><td>subpublications</td><td>"+data+"</td></tr>";
+                    } else {
+                        sub_rows += "<tr><td></td><td>"+data+"</td></tr>";
+                    }
+
+                    col_num += 1;
+                    
+                }
+                sub_rows += "</table>";
+                return sub_rows;
+            } else {
+                return "Cant Find Subscriber";    
+            }            
         } else {
             return "Requesting";
         }
@@ -819,5 +900,30 @@ public class BfmController {
             retval = "PAS";
         }
         return retval;
+    }
+
+    @RequestMapping(path = "/getDatabases/{target}",method = RequestMethod.POST)
+    public @ResponseBody String getDatabases(@PathVariable(value = "target") String targetPg){
+        String retval ="<option selected>Select Database</option>";       
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            PostgresqlServer pg = this.bfmContext.getPgList().stream()
+                                    .filter(s -> s.getServerAddress().equals(targetPg)).findFirst().get();
+            Map<Integer,String> db_list = pg.getDatabases();
+            for(var entry : db_list.entrySet()){
+                retval += "<option value=\""+entry.getKey()+"\">"+entry.getValue()+"</option>";
+            }
+        } 
+        return retval;
+    }
+
+    @RequestMapping(path = "/findProblemTables/{targetPG}/{targetDB}",method = RequestMethod.POST)
+    public @ResponseBody String findProblemTables(@PathVariable(value = "targetPG") String targetPG, @PathVariable(value = "targetDB") String targetDB){
+        String problem_table_json = "";
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            PostgresqlServer pg = this.bfmContext.getPgList().stream()
+                                    .filter(s -> s.getServerAddress().equals(targetPG)).findFirst().get();
+            problem_table_json = pg.findProblemTablesOnPublication(targetDB);
+        }
+        return problem_table_json;
     }
 }

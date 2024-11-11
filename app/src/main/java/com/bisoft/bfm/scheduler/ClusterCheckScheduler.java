@@ -264,7 +264,13 @@ public class ClusterCheckScheduler {
         if (status.equals(DatabaseStatus.MASTER)){
             this.bfmContext.setMasterServer(postgresqlServer);
         }
-        
+
+        if (this.bfmContext.getMasterServer() != null){
+            if (postgresqlServer.getVersionNum() > this.bfmContext.getMasterServer().getVersionNum()){
+                postgresqlServer.setDatabaseStatus(DatabaseStatus.SUBSCRIBER_CANDIDATE);
+            } 
+        }
+
         log.info(String.format("Status of %s is %s",postgresqlServer.getServerAddress(),status));
         this.bfmContext.setLastCheckLog(this.bfmContext.getLastCheckLog() +
                                         String.format("Status of %s is %s",postgresqlServer.getServerAddress(),status)+"\n");
@@ -854,7 +860,9 @@ public class ClusterCheckScheduler {
             try {
                 this.bfmContext.getPgList().stream()
                 .filter(s -> (!s.getServerAddress().equals(this.bfmContext.getMasterServer().getServerAddress()) && 
-                                !s.getStatus().equals(DatabaseStatus.INACCESSIBLE)))
+                                !s.getStatus().equals(DatabaseStatus.INACCESSIBLE) && 
+                                !s.getStatus().equals(DatabaseStatus.SUBSCRIBER) && 
+                                !s.getStatus().equals(DatabaseStatus.SUBSCRIBER_CANDIDATE)))
                 .forEach(pg -> {
                     try {
                         pg.checkTimeLineId();

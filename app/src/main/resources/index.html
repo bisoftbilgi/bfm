@@ -6,9 +6,28 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
+    <script src="/js/jquery-3.7.1.js"></script>
+    <script src="/js/popper.min.js"></script>
+    <script src="/bootstrap/js/bootstrap.min.js"></script>
+
+    <link href="/css/jquery.growl.css" rel="stylesheet">
+    <script src="/js/jquery.growl.js"></script>
+
     <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="/fa/css/font-awesome.min.css">
+
+    <!-- Bootstrap-Tables -->
+    <link rel="stylesheet" href="/bootstrap-tables/bootstrap-table.min.css">
+    <script src="/bootstrap-tables/bootstrap-table.min.js"></script>
+    <script src="/bootstrap-tables/bootstrap-table-locale-all.min.js"></script>
+    <script src="/bootstrap-tables/extensions/export/bootstrap-table-export.min.js"></script>
+    <script src="/bootstrap-tables/export/tableExport.min.js"></script>
+
+    <!-- Datatables (JS)-->
+    <link rel="stylesheet" href="/datatables/datatables.min.css">
+    <script src="/datatables/datatables.min.js"></script>
+
 
     <title>BFM Cluster Overview</title>
     <link rel="icon" type="image/x-icon"
@@ -212,14 +231,12 @@
         </div>
     </div>
 
-    <div class="modal fade" id="confirmModal" data-backdrop="static" tabindex="-1" aria-labelledby="priorityModalLabel" aria-hidden="true">
+    <div class="modal fade" id="confirmModal" data-bs-keyboard="false" tabindex="-1" aria-labelledby="reinitModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-            <h5 class="modal-title" id="confirmModalTitle">Confirmation</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
+                <h1 class="modal-title fs-5">Confirmation</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form>
@@ -228,48 +245,89 @@
                 </form>
             </div>
             <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             <button type="button" class="btn btn-primary" id="btn_confirm_ok">OK</button>
             </div>
         </div>
         </div>
     </div>
-    <div class="modal fade" id="reinitModal" data-backdrop="static" tabindex="-1" aria-labelledby="reinitModalLabel" aria-hidden="true">
+    <div class="modal fade" id="reinitModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="reinitModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-            <h5 class="modal-title" id="confirmModalTitle">Confirmation</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5">Confirmation</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group" id="div_reinit_msg"></div>
+                </div>
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btn_confirm_ok">OK</button>
+                </div>
             </div>
-            <div class="modal-body">
-                <form>
-                    <div class="form-group" id="div_reinit_msg">
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" id="btn_confirm_ok">Okey</button>
-            </div>
-        </div>
         </div>
     </div>
 
+    <div class="modal fade" id="subscriptionModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="subscriptionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5">Subscriber Info</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group" id="div_sub_msg"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <script src="/js/jquery-3.3.1.js"></script>
-    <script src="/js/popper.min.js"></script>
-    <script src="/js/bootstrap.min.js"></script>
-    <link href="/css/bootstrap4-toggle.min.css" rel="stylesheet">
-    <script src="/js/bootstrap4-toggle.min.js"></script>
+    <div class="modal fade" id="modalLR" data-bs-backdrop="static" 
+            data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalLRLabel" aria-hidden="true">
+        <!-- <div class="modal-dialog modal-fullscreen"> -->
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5">Manage Logical Replication</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-md-4">Selected Server</div>
+                            <div class="col-md-8">
+                                <input class="input-group input-group-md mb-3" type="text" id="txt_lr_selected_server" value="" disabled>
+                            </div>
+                        </div>
+                        <div class="row">
+                          <div class="col-md-4">Database</div>
+                          <div class="col-md-8">
+                            <select class="form-select form-select-sm mb-3" id="select_LRDB" onchange="findTables();">
+                                <option selected>Select Database</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div class="row">
+                            <table class="table table-striped" id="tbl_tables">
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Understood</button>    
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <link href="/css/jquery.growl.css" rel="stylesheet">
-    <script src="/js/jquery.growl.js"></script>
     <script>
         window.addEventListener("load", function () {
-
-            var clusterCheckStatus = document.getElementById("cb_check").checked;
+           var clusterCheckStatus = document.getElementById("cb_check").checked;
 
             if (clusterCheckStatus) {
                 
@@ -617,7 +675,8 @@
                             strTable = '<table id="tbl_pglist" class="table table-borderless">'
                             strTable += '<thead style="padding-bottom: 20px;">'
                             strTable += '<th>Server Address</th>'
-                            strTable += '<th>Server Status</th>'
+                            strTable += '<th>DB Role</th>'
+                            strTable += '<th>MiniPG Status</th>'
                             strTable += '<th>Auto Failover Mode</th>'
                             strTable += '<th>Last Wal Position</th>'
                             strTable += '<th>Replay Lag</th>'
@@ -732,5 +791,100 @@
             $('#priorityModal').modal('hide');
         }
     </script>
+    <script>
+        function showSubscriptionInfo(target){
+            const active_bfm = document.getElementById("active_bfm").innerText;
+            let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getSubscriptionInfo/'+target;
+            $.ajax({
+                    url: bfmUrl,
+                    type: "POST",
+                    headers: {
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    crossDomain: true,                
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                    },
+                    success: async function (data) {
+                        document.getElementById('div_sub_msg').innerHTML = data;
+                        $('#subscriptionModal').modal('show');
+                    },
+                    error: function (error) {
+                        console.log(`Error ${error}`);
+                    }
+                });            
+        }
+    </script>
+    <script>
+        function manage_LR(target){
+            const active_bfm = document.getElementById("active_bfm").innerText;
+            let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getDatabases/'+target;
+            $.ajax({
+                    url: bfmUrl,
+                    type: "POST",
+                    headers: {
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    crossDomain: true,                
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                    },
+                    success: async function (data) {
+                        document.getElementById('select_LRDB').innerHTML = data;
+                        document.getElementById("txt_lr_selected_server").value = target;
+                        document.getElementById('tbl_tables').innerHTML = "";
+                    },
+                    error: function (error) {
+                        console.log(`Error ${error}`);
+                    }
+                });            
+        }
+
+        function findTables(){
+            let targetPG = document.getElementById("txt_lr_selected_server").value;
+            let selectedDB = document.getElementById("select_LRDB"); 
+            let targetDBoid = selectedDB.value;
+            let targetDB = selectedDB.options[selectedDB.selectedIndex].text;
+            
+            const active_bfm = document.getElementById("active_bfm").innerText;
+            let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/findProblemTables/'+targetPG+'/'+targetDB;
+            $.ajax({
+                    url: bfmUrl,
+                    type: "POST",
+                    headers: {
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    crossDomain: true,                
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                    },
+                    success: async function (data) {
+                        $('#tbl_tables').DataTable().clear();
+                        $('#tbl_tables').DataTable().destroy();
+                        const dataSet = JSON.parse(data);
+
+                        new DataTable('#tbl_tables', {
+                                    columns: [
+                                        { title: 'Table Name', data: 'tbl'},
+                                        { title: 'Replica Identity', data: 'replica_identity'},
+                                        { title: 'Operation',className : 'dt-center', render : function(data, type, row) {  
+                                                if (row['replica_identity'] == 'full') {
+                                                    return '<a href="#" class="pe-none btn btn-dark btn-xs" aria-disabled="true" role="button"><i class="fa fa-cogs" aria-hidden="true"></i></a>'                      
+                                                } else {
+                                                    return '<a href="#" class="btn btn-primary btn-xs" role="button"><i class="fa fa-cogs" aria-hidden="true"></i></a>'
+                                                }  
+                                            } 
+                                        }
+                                    ],
+                                    data: dataSet
+                                    });
+                    },
+                    error: function (error) {
+                        console.log(`Error ${error}`);
+                    }
+                });            
+            }
+    </script>
+
 </body>
 </html>
