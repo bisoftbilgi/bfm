@@ -266,7 +266,9 @@ public class ClusterCheckScheduler {
         }
 
         if (this.bfmContext.getMasterServer() != null){
-            if (postgresqlServer.getVersionNum() > this.bfmContext.getMasterServer().getVersionNum()){
+            if (postgresqlServer.getVersionNum() > this.bfmContext.getMasterServer().getVersionNum() &&
+                postgresqlServer.hasSubscription() == Boolean.FALSE
+                ){
                 postgresqlServer.setDatabaseStatus(DatabaseStatus.SUBSCRIBER_CANDIDATE);
             } 
         }

@@ -7,7 +7,7 @@
     {
       "address": "167.172.99.9:5432",
       "databaseStatus": "SLAVE",
-      "lastCheck": "2024-11-11 07:59:10",
+      "lastCheck": "2024-11-11 09:00:47",
       "lastWalPos": "0/2A4A4CF0",
       "replayLag": "0",
       "timeline": 4
@@ -15,15 +15,16 @@
     {
       "address": "157.230.108.70:5432",
       "databaseStatus": "MASTER",
-      "lastCheck": "2024-11-11 07:59:10",
+      "lastCheck": "2024-11-11 09:00:47",
       "lastWalPos": "0/2A4A4CF0",
       "replayLag": "0",
       "timeline": 4
     },
     {
       "address": "164.92.179.111:5432",
-      "databaseStatus": "SUBSCRIBER_CANDIDATE",
-      "lastCheck": "2024-11-11 07:59:10",
+      "databaseStatus": "SUBSCRIBER",
+      "lastCheck": "2024-11-11 09:00:47",
+      "lastWalPos": "0/2A4A4CF0",
       "replayLag": "0",
       "timeline": 1
     }
