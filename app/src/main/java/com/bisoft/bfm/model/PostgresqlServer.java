@@ -463,4 +463,23 @@ public class PostgresqlServer {
         }
         return major_version;
     }
+
+    public String setTableReplicaIdentityFull(String targetDB,String targetTable){
+        String retval = "";
+        if (this.databaseStatus.equals(DatabaseStatus.MASTER) || this.databaseStatus.equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)){
+            try {
+                Class.forName("org.postgresql.Driver");
+                Connection con = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/"+targetDB,username,password);                
+                String sql = "ALTER TABLE "+ targetTable+ " REPLICA IDENTITY FULL;";
+                PreparedStatement ps = con.prepareStatement(sql);
+                ps.executeQuery();
+                retval = "OK";                
+                con.close();
+            } catch (Exception e) {
+                log.warn("Connection Failed to server:"+this.getServerAddress());
+                this.databaseStatus = DatabaseStatus.INACCESSIBLE;
+            }
+        }
+        return retval;
+    }
 }

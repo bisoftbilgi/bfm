@@ -904,7 +904,7 @@ public class BfmController {
 
     @RequestMapping(path = "/getDatabases/{target}",method = RequestMethod.POST)
     public @ResponseBody String getDatabases(@PathVariable(value = "target") String targetPg){
-        String retval ="<option selected>Select Database</option>";       
+        String retval ="<option value=\"SelectDB\" selected>Select Database</option>";       
         if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
             PostgresqlServer pg = this.bfmContext.getPgList().stream()
                                     .filter(s -> s.getServerAddress().equals(targetPg)).findFirst().get();
@@ -925,5 +925,16 @@ public class BfmController {
             problem_table_json = pg.findProblemTablesOnPublication(targetDB);
         }
         return problem_table_json;
+    }
+
+    @RequestMapping(path = "/setTableRepID/{targetPG}/{targetDB}/{targetTBL}",method = RequestMethod.POST)
+    public @ResponseBody String setTableRepID(@PathVariable(value = "targetPG") String targetPG, @PathVariable(value = "targetDB") String targetDB, @PathVariable(value = "targetTBL") String targetTBL){
+        String retval = "";
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            PostgresqlServer pg = this.bfmContext.getPgList().stream()
+                                    .filter(s -> s.getServerAddress().equals(targetPG)).findFirst().get();
+            retval = pg.setTableReplicaIdentityFull(targetDB,targetTBL);
+        }
+        return retval;
     }
 }
