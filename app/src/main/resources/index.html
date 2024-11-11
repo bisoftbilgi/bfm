@@ -7,27 +7,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <script src="/js/jquery-3.7.1.js"></script>
-    <script src="/js/popper.min.js"></script>
-    <script src="/bootstrap/js/bootstrap.min.js"></script>
 
-    <link href="/css/jquery.growl.css" rel="stylesheet">
-    <script src="/js/jquery.growl.js"></script>
-
-    <!-- Bootstrap CSS -->
+    <!-- Bootstrap -->
     <link rel="stylesheet" href="/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="/fa/css/font-awesome.min.css">
-
-    <!-- Bootstrap-Tables -->
-    <link rel="stylesheet" href="/bootstrap-tables/bootstrap-table.min.css">
-    <script src="/bootstrap-tables/bootstrap-table.min.js"></script>
-    <script src="/bootstrap-tables/bootstrap-table-locale-all.min.js"></script>
-    <script src="/bootstrap-tables/extensions/export/bootstrap-table-export.min.js"></script>
-    <script src="/bootstrap-tables/export/tableExport.min.js"></script>
+    <script src="/bootstrap/js/bootstrap.min.js"></script>
 
     <!-- Datatables (JS)-->
     <link rel="stylesheet" href="/datatables/datatables.min.css">
     <script src="/datatables/datatables.min.js"></script>
 
+    <!-- <script src="/js/popper.min.js"></script> -->
+    <link href="/css/jquery.growl.css" rel="stylesheet">
+    <script src="/js/jquery.growl.js"></script>    
 
     <title>BFM Cluster Overview</title>
     <link rel="icon" type="image/x-icon"
@@ -141,7 +133,7 @@
                                 </tr>
                                 <tr>
                                     <td class="align-middle" colspan="2">
-                                        <select id="slave_options" onclick="document.getElementById('cb_refresh').checked = false;">
+                                        <select class="form-select" id="slave_options" onclick="document.getElementById('cb_refresh').checked = false;">
                                             <option value="" selected>Select Slave</option>
                                             {{ SLAVE_OPTIONS }}
                                         </select>
@@ -191,6 +183,7 @@
         <!-- <div class="loading-spinner lg" style="background-color: #FFF;"></div> -->
          <img src="/images/loading.gif" style="width:150px; margin: 18% 0 0 45%">
     </div>
+  
     <!-- Modal -->
     <div class="modal fade" id="priorityModal" data-backdrop="static" tabindex="-1" aria-labelledby="priorityModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-sm modal-dialog-centered">
@@ -327,6 +320,12 @@
 
     <script>
         window.addEventListener("load", function () {
+
+            // $.growl({ title: "Growl", message: "The kitten is awake!" });
+            // $.growl.error({ message: "Please Select a Slave Server for Switch Over!" });
+            // $.growl.notice({ message: "The kitten is cute!" });
+            // $.growl.warning({ message: "The kitten is ugly!" });
+
            var clusterCheckStatus = document.getElementById("cb_check").checked;
 
             if (clusterCheckStatus) {
@@ -863,8 +862,22 @@
                         $('#tbl_tables').DataTable().destroy();
                         const dataSet = JSON.parse(data);
 
-                        new DataTable('#tbl_tables', {
+                        let dt = new DataTable('#tbl_tables', {
+                                    columnDefs: [
+                                                    {
+                                                        render : DataTable.render.select(),
+                                                        //className: 'select-checkbox',
+                                                        orderable: true,
+                                                        targets: 0
+                                                    }
+                                                ],
+                                    select: {
+                                        style: 'multi',
+                                        selector: 'td:first-child'
+                                    },
+                                    order: [[ 1, 'asc' ]],
                                     columns: [
+                                        {},
                                         { title: 'Table Name', data: 'tbl'},
                                         { title: 'Replica Identity', data: 'replica_identity'},
                                         { title: 'Operation',className : 'dt-center', render : function(data, type, row) {  
@@ -877,7 +890,15 @@
                                         }
                                     ],
                                     data: dataSet
-                                    });
+                                });
+
+                                $('#tbl_tables').on('click', '#select_all', function () {
+                                    if ($('#select_all:checked').val() === 'on')
+                                        table.rows().select();
+                                    else
+                                        table.rows().deselect();
+                                });	
+                                
                     },
                     error: function (error) {
                         console.log(`Error ${error}`);

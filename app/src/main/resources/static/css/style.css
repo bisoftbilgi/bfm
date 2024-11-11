@@ -425,12 +425,6 @@ table.table {
     border-radius: 50%;
   }  
 
-
-
-
-
-
-
 .sore-wrap:before {
     position: absolute;
     background: rgba(0, 0, 0, 0.05);
@@ -463,7 +457,7 @@ table.table {
     font-family: Onest;
 }
 
-input {
+/* input {
   border-radius: 8px;
   border-color: #bfc0bdeb;
   width: 75%;
@@ -473,7 +467,7 @@ input {
 }
 
 
-select {
+.bfm-select {
     border-radius: 8px;
     border-color: #bfc0bdeb;
     width: 85%;
@@ -482,9 +476,10 @@ select {
     padding: 0 2.5em 0 0.5em;
 }
 
-select>option{
+.bfm-select>option{
     margin-left: 10px;
-}
+} 
+*/
 
 .btn-bfm {
     background-image: linear-gradient(275.76deg, #94C11F 44.33%, #BADC58 98.56%);
@@ -502,3 +497,6 @@ select>option{
   line-height: 1.5;
   border-radius: 3px;
 }
+
+
+
