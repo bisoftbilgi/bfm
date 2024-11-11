@@ -884,7 +884,7 @@
                                                 if (row['replica_identity'] == 'full') {
                                                     return '<a href="#" class="pe-none btn btn-dark btn-xs" aria-disabled="true" role="button"><i class="fa fa-cogs" aria-hidden="true"></i></a>'                      
                                                 } else {
-                                                    return '<a href="#" class="btn btn-primary btn-xs" role="button"><i class="fa fa-cogs" aria-hidden="true"></i></a>'
+                                                    return '<a href="#" class="btn btn-primary btn-xs" role="button" onclick="setTableReplicateIdentityFULL(\''+row['tbl']+'\',this)"><i class="fa fa-cogs" aria-hidden="true"></i></a>'
                                                 }  
                                             } 
                                         }
@@ -905,6 +905,36 @@
                     }
                 });            
             }
+
+            function setTableReplicateIdentityFULL(targetTBL,e){
+                let targetPG = document.getElementById("txt_lr_selected_server").value;
+                let selectedDB = document.getElementById("select_LRDB"); 
+                let targetDBoid = selectedDB.value;
+                let targetDB = selectedDB.options[selectedDB.selectedIndex].text;
+                
+                const active_bfm = document.getElementById("active_bfm").innerText;
+                let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/setTableRepID/'+targetPG+'/'+targetDB+'/'+ targetTBL;
+                $.ajax({
+                        url: bfmUrl,
+                        type: "POST",
+                        headers: {
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        crossDomain: true,                
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                        },
+                        success: async function (data) {
+                            e.setAttribute("aria-disabled","true");
+                            e.classList.add("pe-none");
+                            e.classList.add("btn-dark");
+                        },
+                        error: function (error) {
+                            console.log(`Error ${error}`);
+                        }
+                    });            
+            }
+
     </script>
 
 </body>
