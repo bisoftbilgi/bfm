@@ -482,4 +482,27 @@ public class PostgresqlServer {
         }
         return retval;
     }
+
+    public String getDBEncodingLcCollateData(String targetDB){
+        String db_infos = "";
+        try {
+            Class.forName("org.postgresql.Driver");
+            Connection con = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/"+targetDB,username,password);                
+            String sql = "select JSON_AGG(ROW_TO_JSON(TABLE_ROWS)) from ( "+
+                                    " SELECT pg_catalog.pg_encoding_to_char(d.encoding) as encoding, d.datcollate as collate FROM pg_database d WHERE datname = current_database() "+
+                                    ") as TABLE_ROWS";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.executeQuery();
+            ResultSet rs = ps.getResultSet();
+                            
+            while(rs.next()){
+                db_infos = rs.getString("json_agg");
+            }
+            con.close();
+        } catch (Exception e) {
+            log.warn("Connection Failed to server:"+this.getServerAddress());
+            this.databaseStatus = DatabaseStatus.INACCESSIBLE;
+        }
+        return db_infos;
+    }
 }

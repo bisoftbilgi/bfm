@@ -937,4 +937,29 @@ public class BfmController {
         }
         return retval;
     }
+
+    @RequestMapping(path = "/getSourceDBInfos/{targetPG}/{targetDB}",method = RequestMethod.POST)
+    public @ResponseBody String getSourceDBInfos(@PathVariable(value = "targetPG") String targetPG, @PathVariable(value = "targetDB") String targetDB){
+        String retval = "";
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            PostgresqlServer pg = this.bfmContext.getPgList().stream()
+                                    .filter(s -> s.getServerAddress().equals(targetPG)).findFirst().get();
+            retval = pg.getDBEncodingLcCollateData(targetDB);
+        }
+        return retval;
+    }
+
+    @RequestMapping(path = "/getLRTargets",method = RequestMethod.GET)
+    public @ResponseBody String getLRTargets(){
+        String retval = "<option value=\"SelectPG\" selected>Select Intance</option>";
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            for(PostgresqlServer lr : this.bfmContext.getPgList()){
+                if (lr.getStatus().equals(DatabaseStatus.SUBSCRIBER) ||
+                lr.getStatus().equals(DatabaseStatus.SUBSCRIBER_CANDIDATE)){
+                    retval += "<option value=\""+lr.getServerAddress()+"\">"+lr.getServerAddress()+"</option>";
+                }
+            }            
+        }
+        return retval;
+    }
 }

@@ -304,20 +304,51 @@
                             </select>
                           </div>
                         </div>
-                        <div class="row">
-                            <table class="table table-striped" id="tbl_tables">
-                            </table>
+                        <div class="row" id="div_dt">
+                            <table class="table table-striped" id="tbl_tables"></table>
                         </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary">Understood</button>    
+                        <div class="row align-items-center">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="cb_sourceready" onchange="sourceDBReady();">
+                                <label class="form-check-label" for="cb_sourceready">
+                                  Source DB Ready
+                                </label>
+                              </div>
+                        </div>
+                        <div class="row" id="div_targetLRDB" style="display: none;">
+                            <div class="row">
+                                <h1 class="modal-title fs-5">Create Target Logical Replica DB</h1>
+                            </div>
+                            <table class="table table-borderless table-striped">
+                                <tr>
+                                    <td>Source DB</td>
+                                    <td colspan="2"><div id="div_txt_source_db"></div></td>
+                                </tr>
+                                <tr>
+                                    <td>Encode / Collate</td>
+                                    <td><div id="div_txt_source_encode"></div></td>
+                                    <td><div id="div_txt_source_lccollate"></div></td>
+                                </tr>
+                                <tr>
+                                    <td>Select Target PG</td>
+                                    <td colspan="2">
+                                        <select class="form-select form-select-sm mb-3" id="select_targetLRDB">
+                                            <option value="SelectPG" selected>Select Intance</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-end">
+                                        <button class="btn btn-md btn-info">Prepare TargetDB</button>
+                                    </td>
+                                </tr>
+                            </table>              
+                        </div>                       
+                    </div>    
                 </div>
             </div>
         </div>
     </div>
-
     <script>
         window.addEventListener("load", function () {
 
@@ -634,7 +665,6 @@
                                     document.getElementById("div_cluster_cover").classList.remove("cls-table-danger");
                                     document.getElementById("div_cluster_cover").classList.remove("cls-table-warning");
                                     document.getElementById("div_cluster_cover").classList.add("bg-dark");
-                                    console.log(data);
                                 }
                             };
                             
@@ -955,7 +985,70 @@
 
 
             }
+            function sourceDBReady(){
+                let targetPG = document.getElementById("txt_lr_selected_server").value;
+                let selectedDB = document.getElementById("select_LRDB"); 
+                let targetDBoid = selectedDB.value;
+                let targetDB = selectedDB.options[selectedDB.selectedIndex].text;
 
+                if (document.getElementById("cb_sourceready").checked == true){
+                    document.getElementById("div_targetLRDB").style.display = 'block';
+                    document.getElementById("select_LRDB").disabled = true;
+                    document.getElementById("div_dt").classList.add("pe-none");
+                    document.getElementById("div_dt").style.opacity=0.3;
+                    document.getElementById("div_txt_source_db").innerText = targetPG + "/"+ targetDB;
+                    const active_bfm = document.getElementById("active_bfm").innerText;
+                    let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getSourceDBInfos/'+targetPG+'/'+targetDB;
+                    $.ajax({
+                            url: bfmUrl,
+                            type: "POST",
+                            headers: {
+                                'Access-Control-Allow-Origin': '*'
+                            },
+                            crossDomain: true,                
+                            beforeSend: function (xhr) {
+                                xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                            },
+                            success: async function (data) {
+                                const jo = JSON.parse(data);
+                                document.getElementById("div_txt_source_encode").innerText = jo[0].encoding;
+                                document.getElementById("div_txt_source_lccollate").innerText = jo[0].collate;
+                            },
+                            error: function (error) {
+                                console.log(`Error ${error}`);
+                            }
+                    });
+                    
+                    bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getLRTargets';
+                    $.ajax({
+                            url: bfmUrl,
+                            type: "GET",
+                            headers: {
+                                'Access-Control-Allow-Origin': '*'
+                            },
+                            crossDomain: true,                
+                            beforeSend: function (xhr) {
+                                xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                            },
+                            success: async function (data) {
+                                document.getElementById("select_targetLRDB").innerHTML = data;
+                            },
+                            error: function (error) {
+                                console.log(`Error ${error}`);
+                            }
+                    });
+
+                } else {
+                    document.getElementById("div_targetLRDB").style.display = 'none';
+                    document.getElementById("select_LRDB").disabled = false;
+                    document.getElementById("div_dt").classList.remove("pe-none");
+                    document.getElementById("div_dt").style.opacity=1;
+                    document.getElementById("div_txt_source_db").innerText ="";
+                    document.getElementById("div_txt_source_encode").innerText = "";
+                    document.getElementById("div_txt_source_lccollate").innerText = "";
+                }
+
+            }
     </script>
 
 </body>

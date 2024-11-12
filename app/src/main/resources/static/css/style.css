@@ -457,30 +457,6 @@ table.table {
     font-family: Onest;
 }
 
-/* input {
-  border-radius: 8px;
-  border-color: #bfc0bdeb;
-  width: 75%;
-  height: 30px;
-  box-shadow: 0 0 8px #bfc0bdeb inset;
-  padding: 0 2.5em 0 0.5em;
-}
-
-
-.bfm-select {
-    border-radius: 8px;
-    border-color: #bfc0bdeb;
-    width: 85%;
-    height: 30px;
-    box-shadow: 0 0 8px #bfc0bdeb inset;
-    padding: 0 2.5em 0 0.5em;
-}
-
-.bfm-select>option{
-    margin-left: 10px;
-} 
-*/
-
 .btn-bfm {
     background-image: linear-gradient(275.76deg, #94C11F 44.33%, #BADC58 98.56%);
     color: white;
