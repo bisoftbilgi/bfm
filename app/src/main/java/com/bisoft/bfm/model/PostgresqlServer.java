@@ -14,6 +14,7 @@ import java.util.Objects;
 
 import com.bisoft.bfm.dto.DatabaseStatus;
 import com.bisoft.bfm.dto.PgVersion;
+import com.bisoft.bfm.dto.SubscriberDTO;
 
 import lombok.Builder;
 import lombok.Data;
@@ -470,11 +471,11 @@ public class PostgresqlServer {
             try {
                 Class.forName("org.postgresql.Driver");
                 Connection con = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/"+targetDB,username,password);                
-                String sql = "ALTER TABLE "+ targetTable+ " REPLICA IDENTITY FULL;";
-                PreparedStatement ps = con.prepareStatement(sql);
-                ps.executeQuery();
-                retval = "OK";                
+                Statement st = con.createStatement();
+                st.execute("ALTER TABLE "+ targetTable+ " REPLICA IDENTITY FULL;");
+                st.close();
                 con.close();
+                retval = "OK";                
             } catch (Exception e) {
                 log.warn("Connection Failed to server:"+this.getServerAddress());
                 this.databaseStatus = DatabaseStatus.INACCESSIBLE;
@@ -504,5 +505,39 @@ public class PostgresqlServer {
             this.databaseStatus = DatabaseStatus.INACCESSIBLE;
         }
         return db_infos;
+    }
+
+    public String createPublication(String targetDB){
+        String retval = "";
+        try {
+            Class.forName("org.postgresql.Driver");
+            Connection con = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/"+targetDB,username,password);                
+            Statement st = con.createStatement();
+            st.execute("CREATE PUBLICATION pub_"+targetDB+" FOR ALL TABLES;");
+            st.close();
+            con.close();
+            retval = "OK";
+        } catch (Exception e) {
+            log.warn("Connection Failed to server:"+this.getServerAddress());
+            this.databaseStatus = DatabaseStatus.INACCESSIBLE;
+        }
+        return retval;
+    }
+
+    public String createSubscription(SubscriberDTO subscriberDTO){
+        String retval = "";
+        try {
+            Class.forName("org.postgresql.Driver");
+            Connection con = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/"+subscriberDTO.getDatname(),username,password);                
+            Statement st = con.createStatement();
+            st.execute("CREATE SUBSCRIPTION sub_"+subscriberDTO.getDatname()+" CONNECTION 'host="+subscriberDTO.getPublisherAddress()+" port="+subscriberDTO.getPublisherPort()+" user="+subscriberDTO.getPublisherPU()+" password="+subscriberDTO.getPublisherPP()+" dbname="+subscriberDTO.getDatname()+"' PUBLICATION pub_"+subscriberDTO.getDatname()+";");
+            st.close();
+            con.close();
+            retval = "OK";
+        } catch (Exception e) {
+            log.warn("Connection Failed to server:"+this.getServerAddress());
+            this.databaseStatus = DatabaseStatus.INACCESSIBLE;
+        }
+        return retval;
     }
 }

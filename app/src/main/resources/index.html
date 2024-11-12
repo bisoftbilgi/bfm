@@ -332,17 +332,20 @@
                                 <tr>
                                     <td>Select Target PG</td>
                                     <td colspan="2">
-                                        <select class="form-select form-select-sm mb-3" id="select_targetLRDB">
+                                        <select class="form-select form-select-sm mb-3" id="select_targetLRDB" onchange="setPrepareBtn();">
                                             <option value="SelectPG" selected>Select Intance</option>
                                         </select>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td colspan="3" class="text-end">
-                                        <button class="btn btn-md btn-info">Prepare TargetDB</button>
+                                        <button class="btn btn-md btn-info" id="btn_prepareSubscriber" onclick="prepareSubscriber();" disabled>Prepare TargetDB</button>
                                     </td>
                                 </tr>
                             </table>              
+                        </div>
+                        <div class="row" id="div_startLR">
+                            <button class="btn btn-md btn-primary" id="btn_startLR" onclick="startLR();" disabled>Start LR</button>
                         </div>                       
                     </div>    
                 </div>
@@ -351,11 +354,11 @@
     </div>
     <script>
         window.addEventListener("load", function () {
-
-            // $.growl({ title: "Growl", message: "The kitten is awake!" });
-            // $.growl.error({ message: "Please Select a Slave Server for Switch Over!" });
-            // $.growl.notice({ message: "The kitten is cute!" });
-            // $.growl.warning({ message: "The kitten is ugly!" });
+            
+            document.getElementById('modalLR').addEventListener('hidden.bs.modal', event => {
+                document.getElementById("cb_sourceready").checked=false;
+                sourceDBReady();
+            })
 
            var clusterCheckStatus = document.getElementById("cb_check").checked;
 
@@ -1047,6 +1050,141 @@
                     document.getElementById("div_txt_source_encode").innerText = "";
                     document.getElementById("div_txt_source_lccollate").innerText = "";
                 }
+
+            }
+
+            function setPrepareBtn(){
+                if (document.getElementById("select_targetLRDB").value == "SelectPG"){
+                    document.getElementById("btn_prepareSubscriber").disabled = true;
+                } else {
+                    document.getElementById("btn_prepareSubscriber").disabled = false;
+                }
+            }
+
+            function prepareSubscriber(){
+                document.getElementById("overlay").style.display = 'block';
+
+                let publisherPG = document.getElementById("txt_lr_selected_server").value;
+                let selectedDB = document.getElementById("select_LRDB"); 
+                let targetDBoid = selectedDB.value;
+                let targetDB = selectedDB.options[selectedDB.selectedIndex].text;
+                let subscriberPG = document.getElementById("select_targetLRDB").value;
+
+                if (document.getElementById("cb_sourceready").checked == true){
+                    let publisherAddress = (publisherPG.split(":"))[0];
+                    let publisherPort = (publisherPG.split(":"))[1];
+                    let encoding = document.getElementById("div_txt_source_encode").innerText;
+                    let lc_collate = document.getElementById("div_txt_source_lccollate").innerText;
+                    const subscriberDTO = { datname: targetDB, encoding: encoding, lc_collate: lc_collate, publisherAddress:publisherAddress, publisherPort:publisherPort, publisherPU:document.getElementById("axbu").innerText, publisherPP:document.getElementById("axbp").innerText};
+                    
+                    const active_bfm = document.getElementById("active_bfm").innerText;
+                    let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/prepareSubscriber/'+subscriberPG;
+                    $.ajax({
+                            url: bfmUrl,
+                            type: "POST",
+                            headers: {
+                                'Access-Control-Allow-Origin': '*',
+                                'Content-Type': 'application/json; charset=utf-8'
+                            },
+                            data: JSON.stringify(subscriberDTO),
+                            crossDomain: true,                
+                            beforeSend: function (xhr) {
+                                xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                            },
+                            success: async function (data) {
+                                if (data == "OK"){
+                                    document.getElementById("overlay").style.display = 'none';
+                                    $.growl.notice({title:"Success",message:"Subscriber DB "+ targetDB +"Successfully create on "+ subscriberPG});
+                                    document.getElementById("div_dt").classList.add("pe-none");
+                                    document.getElementById("div_dt").style.opacity=0.3;
+                                    document.getElementById("div_startLR").style.display='block';
+                                    document.getElementById("btn_startLR").disabled=false;
+                                } else {
+                                    document.getElementById("overlay").style.display = 'none';
+                                    $.growl.error({title:"Failed",message:"Subscriber DB "+ targetDB +" create FAILED on "+ subscriberPG});
+                                    console.log(data);
+                                }
+                            },
+                            error: function (error) {
+                                console.log(`Error ${error}`);
+                            }
+                    });
+                }
+            }
+
+            function startLR(){
+                document.getElementById("overlay").style.display = 'block';
+
+                let publisherPG = document.getElementById("txt_lr_selected_server").value;
+                let selectedDB = document.getElementById("select_LRDB"); 
+                let targetDBoid = selectedDB.value;
+                let targetDB = selectedDB.options[selectedDB.selectedIndex].text;
+                let subscriberPG = document.getElementById("select_targetLRDB").value;
+
+                const active_bfm = document.getElementById("active_bfm").innerText;
+                let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/createPublication/'+publisherPG+'/'+targetDB;
+
+                $.ajax({
+                        url: bfmUrl,
+                        type: "POST",
+                        headers: {
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        crossDomain: true,                
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                        },
+                        success: async function (data) {
+                            publication_result = data;
+                        },
+                        error: function (error) {
+                            console.log(`Error ${error}`);
+                        }
+                });
+                
+                let publisherAddress = (publisherPG.split(":"))[0];
+                let publisherPort = (publisherPG.split(":"))[1];
+                let encoding = document.getElementById("div_txt_source_encode").innerText;
+                let lc_collate = document.getElementById("div_txt_source_lccollate").innerText;
+                const subscriberDTO = { datname: targetDB, encoding: encoding, lc_collate: lc_collate, publisherAddress:publisherAddress, publisherPort:publisherPort, publisherPU:document.getElementById("axbu").innerText, publisherPP:document.getElementById("axbp").innerText};
+                console.log(JSON.stringify(subscriberDTO));
+
+                bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/createSubscription/'+subscriberPG;
+                $.ajax({
+                        url: bfmUrl,
+                        type: "POST",
+                        headers: {
+                            'Access-Control-Allow-Origin': '*',
+                            'Content-Type': 'application/json; charset=utf-8'
+                        },
+                        data: JSON.stringify(subscriberDTO),
+                        crossDomain: true,                
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                        },
+                        success: async function (data) {
+                            if (publication_result == "OK"){
+                                $.growl.notice({title:"Success",message:"Publication created on "+ publisherPG +"/"+ targetDB});
+                            } else {
+                                $.growl.error({title:"Failed",message:"Publication create FAILED on "+ publisherPG + "/"+targetDB});
+                                console.log(publication_result);
+                            }
+
+                            if (data == "OK"){
+                                document.getElementById("overlay").style.display = 'none';
+                                $.growl.notice({title:"Success",message:"Subscription created on "+ subscriberPG +"/"+ targetDB});
+                                document.getElementById("div_startLR").classList.add("pe-none");
+                                document.getElementById("div_startLR").style.opacity=0.3;
+                            } else {
+                                document.getElementById("overlay").style.display = 'none';
+                                $.growl.error({title:"Failed",message:"Subscription create FAILED on "+ subscriberPG + "/"+targetDB});
+                                console.log(data);
+                            }
+                        },
+                        error: function (error) {
+                            console.log(`Error ${error}`);
+                        }
+                });
 
             }
     </script>

@@ -16,7 +16,6 @@ import java.nio.file.Paths;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -34,12 +33,14 @@ import org.springframework.stereotype.Controller;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.bisoft.bfm.dto.ClusterStatus;
 import com.bisoft.bfm.dto.DatabaseStatus;
+import com.bisoft.bfm.dto.SubscriberDTO;
 import com.bisoft.bfm.helper.MinipgAccessUtil;
 import com.bisoft.bfm.helper.SymmetricEncryptionUtil;
 import com.bisoft.bfm.model.BfmContext;
@@ -959,6 +960,48 @@ public class BfmController {
                     retval += "<option value=\""+lr.getServerAddress()+"\">"+lr.getServerAddress()+"</option>";
                 }
             }            
+        }
+        return retval;
+    }
+
+    @RequestMapping(path = "/prepareSubscriber/{subscriberPG}",method = RequestMethod.POST)
+    public @ResponseBody String prepareSubscriber(@PathVariable(value = "subscriberPG") String subscriberPG, @RequestBody SubscriberDTO subscriberDTO){
+        String retval = "";
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            PostgresqlServer pg = this.bfmContext.getPgList().stream()
+                                            .filter(s -> s.getServerAddress().equals(subscriberPG)).findFirst().get();
+            
+            try {
+                String prep_result = this.minipgAccessUtil.prepareSubscriber(pg,subscriberDTO);
+                log.info("Prepare Subscriber Result:" + prep_result);
+                return "OK";
+            } catch (Exception e) {
+                e.printStackTrace();
+                return e.getMessage();
+            }
+        }
+        return retval;
+    }
+
+    @RequestMapping(path = "/createPublication/{targetPG}/{targetDB}",method = RequestMethod.POST)
+    public @ResponseBody String createPublication(@PathVariable(value = "targetPG") String targetPG, @PathVariable(value = "targetDB") String targetDB){
+        String retval = "";
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            PostgresqlServer pg = this.bfmContext.getPgList().stream()
+                                    .filter(s -> s.getServerAddress().equals(targetPG)).findFirst().get();
+            retval = pg.createPublication(targetDB);
+        }
+        return retval;
+    }
+
+    @RequestMapping(path = "/createSubscription/{subscriberPG}",method = RequestMethod.POST)
+    public @ResponseBody String startSubscription(@PathVariable(value = "subscriberPG") String subscriberPG, @RequestBody SubscriberDTO subscriberDTO){
+        String retval = "";
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            PostgresqlServer pg = this.bfmContext.getPgList().stream()
+                                            .filter(s -> s.getServerAddress().equals(subscriberPG)).findFirst().get();
+            
+            retval = pg.createSubscription(subscriberDTO);
         }
         return retval;
     }

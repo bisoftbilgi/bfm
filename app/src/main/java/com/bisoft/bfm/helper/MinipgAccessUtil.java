@@ -43,6 +43,7 @@ import org.springframework.stereotype.Component;
 import com.bisoft.bfm.dto.PromoteDTO;
 import com.bisoft.bfm.dto.ReBaseUpDTO;
 import com.bisoft.bfm.dto.RewindDTO;
+import com.bisoft.bfm.dto.SubscriberDTO;
 import com.bisoft.bfm.model.PostgresqlServer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -892,6 +893,54 @@ public class MinipgAccessUtil {
             }
         } catch (IOException e) {
             log.error("Unable get set-async-replication to server "+master_server.getServerAddress());
+        }
+        return "OK";
+    }
+
+    public String prepareSubscriber(PostgresqlServer pgSubscriber, SubscriberDTO subscriberDTO) throws Exception {
+        //log.info("username : "+username+", password : "+password);
+        final String serverAddress = pgSubscriber.getServerAddress().split(":")[0];
+        final String serverPort = pgSubscriber.getServerAddress().split(":")[1];
+        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                NoopHostnameVerifier.INSTANCE);
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(scsf)
+                .build();
+
+        ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
+        String json = ow.writeValueAsString(subscriberDTO);
+
+        credsProvider.setCredentials(
+                new AuthScope(serverAddress, port),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+
+        try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credsProvider)
+                .build()) {
+
+            HttpPost request = new HttpPost(minipgUrl+"/minipg/preparesubs");
+            request.setHeader("Accept", "application/json");
+            request.setHeader("Content-type", "application/json");
+
+            final StringEntity entity = new StringEntity(json);
+            request.setEntity(entity);
+
+            try (CloseableHttpResponse response1 = httpclient.execute(request)) {
+                HttpEntity entity1 = (HttpEntity) response1.getEntity();
+                // do something useful with the response body
+                // and ensure it is fully consumed
+                String result = (EntityUtils.toString(response1.getEntity()));
+                return result;
+            }catch (Exception e){
+                log.error("Error on prepare Subscriber on server "+pgSubscriber.getServerAddress());
+            }
+        } catch (IOException e) {
+            log.error("Error on prepare Subscriber on server "+pgSubscriber.getServerAddress());
         }
         return "OK";
     }
