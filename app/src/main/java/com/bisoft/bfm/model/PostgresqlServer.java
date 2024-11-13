@@ -381,6 +381,30 @@ public class PostgresqlServer {
         return db_list;
     }
 
+    public String hasDBPublication(String targetDB){
+        String json_str="";
+        if (this.databaseStatus.equals(DatabaseStatus.MASTER) || this.databaseStatus.equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)){
+            try {
+                Class.forName("org.postgresql.Driver");
+                Connection con = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/"+targetDB,username,password);                
+                String sql = "select JSON_AGG(ROW_TO_JSON(TABLE_ROWS)) from ( "+
+                                    "select * from pg_publication order by 1) as TABLE_ROWS";
+                PreparedStatement ps = con.prepareStatement(sql);
+                ps.executeQuery();
+                ResultSet rs = ps.getResultSet();
+                                
+                while(rs.next()){
+                    json_str = rs.getString("json_agg");
+                }
+                con.close();
+            } catch (Exception e) {
+                log.warn("Connection Failed to server:"+this.getServerAddress());
+                this.databaseStatus = DatabaseStatus.INACCESSIBLE;
+            }
+        }
+        return json_str;
+    }
+
     public String findProblemTablesOnPublication(String targetDB){
         String json_str="";
         if (this.databaseStatus.equals(DatabaseStatus.MASTER) || this.databaseStatus.equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)){

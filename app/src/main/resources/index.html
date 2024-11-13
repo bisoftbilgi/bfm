@@ -935,7 +935,36 @@
             let targetDB = selectedDB.options[selectedDB.selectedIndex].text;
             
             const active_bfm = document.getElementById("active_bfm").innerText;
-            let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/findProblemTables/'+targetPG+'/'+targetDB;
+            let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/hasDBPublication/'+targetPG+'/'+targetDB;
+            $.ajax({
+                    url: bfmUrl,
+                    type: "POST",
+                    headers: {
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    crossDomain: true,                
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                    },
+                    success: async function (data) {                        
+                        let jo_count = 0;
+                        if (data.length > 0){
+                            let jo = JSON.parse(data);
+                            jo_count = jo.length;                       	
+                        }                         
+                        if (jo_count > 0){
+                            document.getElementById("div_sourcedb_ready").classList.add('pe-none');
+                            $.growl.warning({title:"Already Publicated", message:"Selected Database already Publicated..."});
+                        } else {
+                            document.getElementById("div_sourcedb_ready").classList.remove('pe-none');;
+                        }
+                    },
+                    error: function (error) {
+                        console.log(`Error ${error}`);
+                    }
+                });            
+            
+            bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/findProblemTables/'+targetPG+'/'+targetDB;
             $.ajax({
                     url: bfmUrl,
                     type: "POST",
@@ -947,10 +976,11 @@
                         xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
                     },
                     success: async function (data) {
-                        document.getElementById("div_sourcedb_ready").style.display='block';
                         $('#tbl_tables').DataTable().clear();
                         $('#tbl_tables').DataTable().destroy();
-                        const dataSet = JSON.parse(data);
+                        
+                        document.getElementById("div_sourcedb_ready").style.display='block';
+                        let dataSet = JSON.parse(data);
 
                         let dt = new DataTable('#tbl_tables', {
                                     columnDefs: [
@@ -987,7 +1017,7 @@
                                 //         table.rows().select();
                                 //     else
                                 //         table.rows().deselect();
-                                // });	
+                                // });
                                 
                     },
                     error: function (error) {

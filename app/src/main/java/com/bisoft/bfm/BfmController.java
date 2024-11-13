@@ -889,6 +889,17 @@ public class BfmController {
         return retval;
     }
 
+    @RequestMapping(path = "/hasDBPublication/{targetPG}/{targetDB}",method = RequestMethod.POST)
+    public @ResponseBody String hasDBPublication(@PathVariable(value = "targetPG") String targetPG, @PathVariable(value = "targetDB") String targetDB){
+        String json_result = "";
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            PostgresqlServer pg = this.bfmContext.getPgList().stream()
+                                    .filter(s -> s.getServerAddress().equals(targetPG)).findFirst().get();
+            json_result = pg.hasDBPublication(targetDB);
+        }
+        return json_result;
+    }
+
     @RequestMapping(path = "/findProblemTables/{targetPG}/{targetDB}",method = RequestMethod.POST)
     public @ResponseBody String findProblemTables(@PathVariable(value = "targetPG") String targetPG, @PathVariable(value = "targetDB") String targetDB){
         String problem_table_json = "";
