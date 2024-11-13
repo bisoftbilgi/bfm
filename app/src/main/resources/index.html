@@ -840,9 +840,9 @@
                         xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
                     },
                     success: async function (data) {
-                        //document.getElementById('tbl_sub_dt').innerHTML = data;
-                        const dataSet = JSON.parse(data);
-                        function format(d) {
+                        
+                        if ($.fn.dataTable.isDataTable("#tbl_sub_dt") == false){
+                            function format(d) {
                                             // `d` is the original data object for the row
                                             return (
                                                 '<dl>' +
@@ -853,7 +853,8 @@
                                                 '</dl>'
                                             );
                                         }
-                        let table = new DataTable('#tbl_sub_dt', {
+
+                            let table = new DataTable('#tbl_sub_dt', {
                                     columns: [
                                         {
                                             className: 'dt-control',
@@ -869,24 +870,30 @@
                                         { title: 'subslotname', data: 'subslotname'},
                                         { title: 'subpublications', data: 'subpublications'}
                                     ],
-                                    data: dataSet
+                                    data: JSON.parse(data)
                                 });
 
 
-                        // Add event listener for opening and closing details
-                        table.on('click', 'td.dt-control', function (e) {
-                            let tr = e.target.closest('tr');
-                            let row = table.row(tr);
+                            // Add event listener for opening and closing details
+                            table.on('click', 'td.dt-control', function (e) {
+                                let tr = e.target.closest('tr');
+                                let row = table.row(tr);
+                            
+                                if (row.child.isShown()) {
+                                    // This row is already open - close it
+                                    row.child.hide();
+                                }
+                                else {
+                                    // Open this row
+                                    row.child(format(row.data())).show();
+                                }
+                            });
+                        } else {
+                            // $('#tbl_sub_dt').DataTable().clear();
+                            // $('#tbl_sub_dt').DataTable().destroy();
+                            $('#tbl_sub_dt').DataTable().clear().rows.add(JSON.parse(data)).draw();
+                        }
                         
-                            if (row.child.isShown()) {
-                                // This row is already open - close it
-                                row.child.hide();
-                            }
-                            else {
-                                // Open this row
-                                row.child(format(row.data())).show();
-                            }
-                        });
 
                         $('#subscriptionModal').modal('show');
                     },
