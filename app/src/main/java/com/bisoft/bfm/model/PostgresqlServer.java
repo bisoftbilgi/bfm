@@ -328,39 +328,18 @@ public class PostgresqlServer {
         return hasSubscription;
     }
 
-    public Map<String,ArrayList<String>> getSubscriberInfoMap(){
-        Map<String,ArrayList<String>> subscriptionMap = new HashMap<>();
+    public String getSubscriberInfo(){
+        String retval = "";
         if (this.databaseStatus.equals(DatabaseStatus.SUBSCRIBER)){
             try {
                 Connection con  = this.getServerConnection();
-                PreparedStatement ps = con.prepareStatement("select usesuper from pg_user where usename='"+ username +"';");
+                PreparedStatement ps = con.prepareStatement("select JSON_AGG(ROW_TO_JSON(TABLE_ROWS)) from ( "
+                                            +" select d.datname, s.subname, s.subowner::regrole::text as subowner, subenabled, subconninfo, subslotname, subpublications "
+                                            +" from pg_subscription s join pg_database d on d.oid = s.subdbid ) as TABLE_ROWS");
                 ps.executeQuery();
                 ResultSet rs = ps.getResultSet();
-                rs.next();
-                if (rs.getString("usesuper").equals("f")){
-                    log.error("User " + username + " is not SUPERUSER. Please grant superuser to "+ username);
-                }
-                ps = con.prepareStatement("select d.datname, s.subname, s.subowner::regrole::text as subowner,subenabled,subconninfo,subslotname ,subpublications from pg_subscription s join pg_database d on d.oid = s.subdbid;");
-                ps.executeQuery();
-                rs = ps.getResultSet();
                 while(rs.next()){
-                    String datname = rs.getString("datname");
-                    String subname = rs.getString("subname");
-                    String subowner = rs.getString("subowner");
-                    String subenabled = rs.getString("subenabled");
-                    String subconninfo = rs.getString("subconninfo");                    
-                    String subslotname = rs.getString("subslotname");
-                    String subpublications = rs.getString("subpublications");
-
-                    ArrayList<String> values = new ArrayList<String>();
-                    values.add(datname);
-                    values.add(subname);
-                    values.add(subowner);
-                    values.add(subenabled);
-                    values.add(subconninfo);
-                    values.add(subslotname);
-                    values.add(subpublications);
-                    subscriptionMap.put(this.serverAddress, values);
+                    retval = rs.getString("json_agg");
                 }
 
             } catch (Exception e) {
@@ -369,7 +348,7 @@ public class PostgresqlServer {
             }
         }
 
-        return subscriptionMap;
+        return retval;
     }
 
     public Map<Integer,String> getDatabases(){

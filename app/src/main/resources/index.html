@@ -263,14 +263,14 @@
     </div>
 
     <div class="modal fade" id="subscriptionModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="subscriptionModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
                     <h1 class="modal-title fs-5">Subscriber Info</h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="form-group" id="div_sub_msg"></div>
+                    <table id="tbl_sub_dt"></table>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
@@ -308,12 +308,12 @@
                             <table class="table table-striped" id="tbl_tables"></table>
                         </div>
                         <div class="row align-items-center">
-                            <div class="form-check">
+                            <div class="form-check" id="div_sourcedb_ready" style="display: none;">
                                 <input class="form-check-input" type="checkbox" value="" id="cb_sourceready" onchange="sourceDBReady();">
                                 <label class="form-check-label" for="cb_sourceready">
                                   Source DB Ready
                                 </label>
-                              </div>
+                            </div>
                         </div>
                         <div class="row" id="div_targetLRDB" style="display: none;">
                             <div class="row">
@@ -345,7 +345,7 @@
                             </table>              
                         </div>
                         <div class="row" id="div_startLR">
-                            <button class="btn btn-md btn-primary" id="btn_startLR" onclick="startLR();" disabled>Start LR</button>
+                            <button class="btn btn-md btn-primary" id="btn_startLR" onclick="startLR();" style="display: none;">Start LR</button>
                         </div>                       
                     </div>    
                 </div>
@@ -356,8 +356,10 @@
         window.addEventListener("load", function () {
             
             document.getElementById('modalLR').addEventListener('hidden.bs.modal', event => {
+                document.getElementById("btn_startLR").style.display='none';
                 document.getElementById("cb_sourceready").checked=false;
                 sourceDBReady();
+                document.getElementById("div_sourcedb_ready").style.display='none';
             })
 
            var clusterCheckStatus = document.getElementById("cb_check").checked;
@@ -838,7 +840,54 @@
                         xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
                     },
                     success: async function (data) {
-                        document.getElementById('div_sub_msg').innerHTML = data;
+                        //document.getElementById('tbl_sub_dt').innerHTML = data;
+                        const dataSet = JSON.parse(data);
+                        function format(d) {
+                                            // `d` is the original data object for the row
+                                            return (
+                                                '<dl>' +
+                                                '<dt>subconninfo:</dt>' +
+                                                '<dd>' +
+                                                d.subconninfo +
+                                                '</dd>' +
+                                                '</dl>'
+                                            );
+                                        }
+                        let table = new DataTable('#tbl_sub_dt', {
+                                    columns: [
+                                        {
+                                            className: 'dt-control',
+                                            orderable: false,
+                                            data: null,
+                                            defaultContent: ''
+                                        },
+                                        { title: 'datname', data: 'datname'},
+                                        { title: 'subname', data: 'subname'},
+                                        { title: 'subowner', data: 'subowner'},
+                                        { title: 'subenabled', data: 'subenabled'},
+                                        // { title: 'subconninfo', data: 'subconninfo'},
+                                        { title: 'subslotname', data: 'subslotname'},
+                                        { title: 'subpublications', data: 'subpublications'}
+                                    ],
+                                    data: dataSet
+                                });
+
+
+                        // Add event listener for opening and closing details
+                        table.on('click', 'td.dt-control', function (e) {
+                            let tr = e.target.closest('tr');
+                            let row = table.row(tr);
+                        
+                            if (row.child.isShown()) {
+                                // This row is already open - close it
+                                row.child.hide();
+                            }
+                            else {
+                                // Open this row
+                                row.child(format(row.data())).show();
+                            }
+                        });
+
                         $('#subscriptionModal').modal('show');
                     },
                     error: function (error) {
@@ -891,6 +940,7 @@
                         xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
                     },
                     success: async function (data) {
+                        document.getElementById("div_sourcedb_ready").style.display='block';
                         $('#tbl_tables').DataTable().clear();
                         $('#tbl_tables').DataTable().destroy();
                         const dataSet = JSON.parse(data);
@@ -1099,6 +1149,7 @@
                                     document.getElementById("div_dt").style.opacity=0.3;
                                     document.getElementById("div_startLR").style.display='block';
                                     document.getElementById("btn_startLR").disabled=false;
+                                    document.getElementById("btn_startLR").style.display='block';
                                 } else {
                                     document.getElementById("overlay").style.display = 'none';
                                     $.growl.error({title:"Failed",message:"Subscriber DB "+ targetDB +" create FAILED on "+ subscriberPG});

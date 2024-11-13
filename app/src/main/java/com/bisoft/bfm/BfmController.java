@@ -814,37 +814,9 @@ public class BfmController {
         if (this.bfmContext.isMasterBfm() == Boolean.TRUE){ 
             PostgresqlServer pg = this.bfmContext.getPgList().stream().filter(s -> s.getServerAddress().equals(targetPg)).findFirst().get();           
             if (pg != null && pg.getStatus().equals(DatabaseStatus.SUBSCRIBER)){
-                Map<String,ArrayList<String>> subscriptionMap = pg.getSubscriberInfoMap();
-
-                ArrayList<String> pgSubscription = subscriptionMap.get(pg.getServerAddress());           
+                String subscriptionJson = pg.getSubscriberInfo();
                                 
-                String sub_rows = "<table class=\"table table-striped table-hover\"><tr><td>Subscriber : </td><td>"+pg.getServerAddress()+"</td></tr>";
-                int col_num = 0;
-                for(String data : pgSubscription){
-
-                    if (col_num == 0){
-                        sub_rows += "<tr><td>datname</td><td>"+data+"</td></tr>";
-                    } else if (col_num == 1){
-                        sub_rows += "<tr><td>subname</td><td>"+data+"</td></tr>";
-                    } else if (col_num == 2){
-                        sub_rows += "<tr><td>subowner</td><td>"+data+"</td></tr>";
-                    } else if (col_num == 3){
-                        sub_rows += "<tr><td>subenabled</td><td>"+data+"</td></tr>";
-                    } else if (col_num == 4){
-                        sub_rows += "<tr><td>subconninfo</td><td>"+data+"</td></tr>";
-                    } else if (col_num == 5){
-                        sub_rows += "<tr><td>subslotname</td><td>"+data+"</td></tr>";
-                    }  else if (col_num == 6){
-                        sub_rows += "<tr><td>subpublications</td><td>"+data+"</td></tr>";
-                    } else {
-                        sub_rows += "<tr><td></td><td>"+data+"</td></tr>";
-                    }
-
-                    col_num += 1;
-                    
-                }
-                sub_rows += "</table>";
-                return sub_rows;
+                return subscriptionJson;
             } else {
                 return "Cant Find Subscriber";    
             }            
