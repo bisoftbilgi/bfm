@@ -911,13 +911,15 @@ public class ClusterCheckScheduler {
                 this.bfmContext.getPgList().stream()
                 .filter(pg -> pg.getStatus() == DatabaseStatus.SLAVE)
                 .forEach(slv -> {
-                        if (slv.getApplication_name() == null || slv.getApplication_name() == " " || slv.getApplication_name().equals("walreceiver")){
+                        if (slv.getApplication_name() == null 
+                            || slv.getApplication_name() == " " 
+                            || slv.getApplication_name().equals("walreceiver")
+                            || slv.getApplication_name().indexOf("main") > -1 ){
                             try {
                                 String ipAddr = slv.getServerAddress().split(":")[0];
                                 String newAppName = ipAddr.replace(".", "_");
                                 minipgAccessUtil.setApplicationName(slv, "BFM_"+ newAppName);
                             } catch (Exception e) {
-                                // TODO Auto-generated catch block
                                 e.printStackTrace();
                             }
                         }
