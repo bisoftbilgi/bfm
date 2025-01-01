@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="/datatables/datatables.min.css">
     <script src="/datatables/datatables.min.js"></script>
 
-    <!-- <script src="/js/popper.min.js"></script> -->
+    <script src="/js/popper.min.js"></script>
     <link href="/css/jquery.growl.css" rel="stylesheet">
     <script src="/js/jquery.growl.js"></script>    
 
@@ -29,1215 +29,536 @@
 </head>
 
 <body>
-    <div class="container-fluid">
-        <div class="d-flex justify-content-end">
-            <img class="bg-elephant" src="/images/bg-elephant-active.png" alt="bg-elephant-active">
-        </div>               
-        <div class="d-flex justify-content-left">
-            <img class="left-logo" src="/images/bfm-logo-active.png" alt="bfm-logo-active">
-        </div>
-        <h3>Welcome!</h3>        
-        <h1>Cluster Overview</h1>
-        <div class="state-div">
-            <i class="fa fa-circle" style="color: #7CB039;"></i>
-            <label id="lbl_state" style="font-size: 15pt;">
-                Active
-            </label>            
-        </div>
-        <div class="refresh-wrap">
-            <div>
-                &nbsp;
-            </div>
-            <div class="cls-table text-left">
-                <label style="margin-top: 1px; font-size: 11pt;">Auto - Refresh : </label>
-                <label class="switch-sm" style="margin-top: 1px;">
-                    <input id="cb_refresh" type="checkbox">
-                    <span class="slider-sm round"></span>
-                </label>
-            </div>
-        </div>
-        <div class="cls-wrap">
-            <div>
-                &nbsp;
-            </div>
-            <div class="cls-table text-left" id="div_cluster_cover">
-                <label style="margin-left: 2%; font-size: 15pt;" id="label_cluster_status">Cluster Status : </label>
-            </div>
-        </div>
-        <div class="table-wrap">
-            <div style="margin-bottom: -36px;">
-                &nbsp;
-            </div>
-            <div id="div_cluster_rows">
-            </div>
-            <div style="margin-top: -25px;">
-                &nbsp;
-            </div>
-        </div>
+    <div class="background">
+    </div>
+        <img class="left-logo" src="/images/bfm-logo-active.png" alt="bfm-logo-active"> 
 
+        <ul class="nav nav-justified mb-3" style="margin-top: -85vh;">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#tab_overview" role="tab" aria-controls="tab_overview" aria-selected="true">Overview</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#tab_lr" role="tab" aria-controls="tab_lr" aria-selected="false">Logical Replication</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#tab_iupgrade" role="tab" aria-controls="tab_iupgrade" aria-selected="false">InPlace Upgrade</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#tab_pginstall" role="tab" aria-controls="tab_pginstall" aria-selected="false">Instance Install</a>
+            </li> 
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#tab_config" role="tab" aria-controls="tab_config" aria-selected="false" onclick="getRunningConfig();">Configuration</a>
+            </li> 
+        </ul> 
+        <hr style="margin-top: -15px;">
 
-        <div class="container-fluid" style="margin:-6% 0 0 2.3%">
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="toggle-wrap">
-                        <div style="margin-bottom: -4%;">
-                            &nbsp;
-                        </div>
-                        <div style="width: 93%;margin-left: 3%;">
-                            <table class="table table-borderless toggle-table">
-                                <tr>
-                                    <td class="align-middle">Cluster Check</td>
-                                    <td>
-                                        <label class="switch">
-                                            <input id="cb_check" type="checkbox" {{ CHECK_STATUS }} onchange="set_cluster_check();">
-                                            <span class="slider" id="round"></span>
-                                        </label>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="align-middle">Mail Notifications</td>
-                                    <td>
-                                        <label class="switch">
-                                            <input id="cb_mail" type="checkbox" {{ MAIL_ENABLED }} onchange="set_mail_notification();">
-                                            <span class="slider" id="round"></span>
-                                        </label>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="align-middle">Watch Strategy</td>
-                                    <td>
-                                        <label class="switch">
-                                            <input id="cb_watch" type="checkbox" {{ WATCH_STRATEGY }} onchange="set_watch_strategy();">
-                                            <span class="slider round"></span>
-                                        </label>                                           
-                                    </td>
-                                </tr>
-                            </table> 
-                        </div>
-                        <div style="margin-top: -2.5%;">
-                            &nbsp;
-                        </div>
-                    </div> 
-                </div>            
-                <div class="col-md-4" style="margin-left: -4%;">
-                    <div class="sore-wrap">
-                        <div style="margin-bottom: -4%">
-                            &nbsp;
-                        </div>
-                        <div style="width: 93%;margin-left: 3%;">
-                            <table class="table table-borderless sore-table">
-                                <tr>
-                                    <td class="align-middle text-center" colspan="2">
-                                        <label style="font-size: 15pt;">Switch Over/ Re-Initialize</label>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="align-middle" colspan="2">
-                                        <select class="form-select" id="slave_options" onclick="document.getElementById('cb_refresh').checked = false;">
-                                            <option value="" selected>Select Slave</option>
-                                            {{ SLAVE_OPTIONS }}
-                                        </select>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-            
-                                        <button type="button" class="btn btn-bfm" onclick="ask_switch_confirm();">
-                                            <i class="fa fa-random"></i>
-                                            Switch Over
-                                        </button>
-                                        
-                                    </td>
-                                    <td>
-                                        <button type="button" class="btn btn-bfm" onclick="ask_reinit();">
-                                            <i class="fa fa-refresh"></i>
-                                            Re-Initialize
-                                        </button>
-                                    </td>
-                                </tr>
-                            </table> 
-                        </div>
-                        <div style="margin-top: -2.5%;">
-                            &nbsp;
-                        </div>
-                    </div> 
-                </div>
-                <div class="col-md-4" style="margin-left: -4%;">
-                    <div class="sore-wrap">
-                        <div style="margin-bottom: -4%">
-                            &nbsp;
-                        </div>
-                        <div class="align-middle text-center sore-table" style="width: 100%;margin-left: 3%;">
-                            <label id="lbl_log" style="font-size: 15pt;">Cluster Check Logs</label>
-                            <textarea id="txt_log" rows="9" class="form-control" style="margin-left:1%; width:98%; font-size: 8pt">logs loading...</textarea>
+        <div id="div_tab_bg"></div>
+        <div class="tab-content" id="div_tab_content">
+            <div class="tab-pane fade show active text-center" id="tab_overview" role="tabpanel" aria-labelledby="tab_overview">
+                <div class="d-flex bd-highlight mb-3">
+                    <div class="p-2 bd-highlight" id="div_refresh">
+                        <div class="d-flex bd-highlight">
+                            <div class="p-2 bd-highlight">
+                                <label style="font-size: 11pt;">Auto - Refresh : </label>
+                            </div>                    
+                            <div class="align-content-end bd-highlight">
+                                    <label class="switch-sm">
+                                        <input id="cb_refresh" type="checkbox">
+                                        <span class="slider-sm round"></span>
+                                    </label>
+                            </div>                    
                         </div>
                     </div>
+                    <div class="p-2 bd-highlight align-content-center">
+                        <div class="d-flex align-items-center" style="margin-left: 3vh;">
+                            <i class="fa fa-circle" style="color: #7CB039;"></i>
+                            <label id="lbl_state" style="font-size: 15pt;margin-left: 1vh;">
+                                Active
+                            </label>                
+                        </div>
+                    </div>
+                    <div class="ms-auto p-2 bd-highlight align-content-center" id="div_state">
+                        <div class="d-flex align-items-center">
+                            <label id="label_cluster_status">Cluster Status : Healty</label>                            
+                        </div>                    
+                    </div>
+
                 </div>
+                <div id="div_cluster_rows" class="d-flex bd-highlight mb-3">
+
+                    <table class="table table-borderless table-hover">
+                        
+                        <thead class="align-middle">
+                            <tr>
+                                <th>Server Address</th>
+                                <th>DB Role</th>
+                                <th>MiniPG Status</th>
+                                <th>Auto Failover Mode</th>
+                                <th>Last Wal Position</th>
+                                <th>Replay Lag</th>
+                                <th>Timeline ID</th>
+                                <th>Last Check Timestamp</th>
+                                <th>Application Name</th>
+                                <th>Sync State</th>    
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>192.168.1.1</td>
+                                <td>MASTER</td>
+                                <td style="text-align: center; vertical-align: middle;"><i class="fa fa-circle" style="color: #7CB039;"></i></td>
+                                <td style="text-align: center; vertical-align: middle;">
+                                    <a href="#" class="tooltip-test" title="Priority:1">                    
+                                        <label class="switch-sm">
+                                            <input type="checkbox">
+                                            <span class="slider-sm round"></span>
+                                        </label>    
+                                    </a>    
+                                </td>
+                                <td>8/ANDLLLAF8</td>
+                                <td>0</td>
+                                <td>12</td>
+                                <td>2024-07-20 18:24:969</td>
+                                <td>bfm1</td>
+                                <td>
+                                    <label class="switch-sm">
+                                        <input type="checkbox">
+                                        <span class="slider-sm round"></span>
+                                    </label>
+                                </td>                            
+                            </tr>
+                            <tr>
+                                <td>192.168.1.2</td>
+                                <td style="text-align: center; vertical-align: middle;">SLAVE</td>
+                                <td style="text-align: center; vertical-align: middle;"><i class="fa fa-circle" style="color: #E83D0F;"></i></td>
+                                <td style="text-align: center; vertical-align: middle;">
+                                    <a href="#" class="tooltip-test" title="Priority:1">                    
+                                        <label class="switch-sm">
+                                            <input type="checkbox" checked>
+                                            <span class="slider-sm round"></span>
+                                        </label>
+    
+                                    </a>    
+                                </td>
+                                <td>8/CDZXLL63</td>
+                                <td>0</td>
+                                <td>12</td>
+                                <td>2024-07-20 18:24:969</td>
+                                <td>bfm2</td>
+                                <td>
+                                    <label class="switch-sm">
+                                        <input type="checkbox" checked>
+                                        <span class="slider-sm round"></span>
+                                    </label>
+
+                                </td>                  
+                            </tr>
+                            <tr>
+                                <td>192.168.1.3</td>
+                                <td>SLAVE</td>
+                                <td style="text-align: center; vertical-align: middle;"><i class="fa fa-circle" style="color: #000000;"></i></td>
+                                <td style="text-align: center; vertical-align: middle;">
+                                    <a href="#" class="tooltip-test" title="Priority:1">                    
+                                        <label class="switch-sm">
+                                            <input type="checkbox">
+                                            <span class="slider-sm round"></span>
+                                        </label>    
+                                    </a>    
+                                </td>
+                                <td>8/HNFJSDFL5</td>
+                                <td>0</td>
+                                <td>12</td>
+                                <td>2024-07-20 18:24:969</td>
+                                <td>bfm3</td>
+                                <td>
+                                    <label class="switch-sm">
+                                        <input type="checkbox">
+                                        <span class="slider-sm round"></span>
+                                    </label>
+                                </td>                
+                            </tr>
+                        </tbody>
+                    </table> 
+
+                </div>
+                <div class="d-flex bd-highlight">
+                    <div class="p-2 bd-highlight" id="div_cls_ctl">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td class="align-middle">Cluster Check</td>
+                                <td>
+                                    <label class="switch">
+                                        <input id="cb_check" type="checkbox" checked onchange="set_cluster_check();">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="align-middle">Mail Notifications</td>
+                                <td>
+                                    <label class="switch">
+                                        <input id="cb_mail" type="checkbox" {{ MAIL_ENABLED }} onchange="set_mail_notification();">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="align-middle">Watch Strategy</td>
+                                <td>
+                                    <label class="switch">
+                                        <input id="cb_watch" type="checkbox" checked onchange="set_watch_strategy();">
+                                        <span class="slider round"></span>
+                                    </label>                                           
+                                </td>
+                            </tr>
+                        </table> 
+                    </div>
+
+                    <div class="p-2 bd-highlight" id="div_switchover">
+                        <div>
+                            <label style="font-size: 14pt;margin-top: 1vh;">Switch Over/ Re-Initialize</label>
+                        </div>
+                        
+                        <div class="container text-center">
+                            <div class="row justify-content-center mb-3" style="margin-top: 3vh;">
+                                <select class="form-select mb-3" style="border-radius: 12px; max-width: 320px;" id="slave_options" onclick="document.getElementById('cb_refresh').checked = false;">
+                                    <option value="" selected>Select Slave</option>
+                                    {{ SLAVE_OPTIONS }}
+                                </select>
+                            </div>
+
+                            <div class="row">
+                                <div class="col align-self-start">
+                                    <button type="button" class="btn btn-sm btn-bfm" onclick="ask_switch_confirm();">
+                                        <i class="fa fa-random"></i>
+                                        Switch Over
+                                    </button>
+                                </div>
+                                
+                                <div class="col align-self-end">
+                                    <button type="button" class="btn btn-sm btn-bfm" onclick="ask_reinit();">
+                                        <i class="fa fa-refresh"></i>
+                                        Re-Initialize
+                                    </button>
+                                </div>
+                              </div>
+                            
+                            
+                        </div>
+
+                    </div>
+
+                    <div class="p-2 bd-highlight ms-auto mb3 overflow-auto" id="div_bfmlogs">
+                        <label id="lbl_log" style="font-size: 14pt;">Cluster Check Logs</label>
+                        <textarea id="txt_log" rows="9" class="form-control bfm-txt">logs loading...</textarea>
+                    </div>
+                </div>
+
             </div>
+            <div class="tab-pane fade" id="tab_lr" role="tabpanel" aria-labelledby="tab_lr">
+                Tab 2 Content
+            </div>
+            <div class="tab-pane fade" id="tab_iupgrade" role="tabpanel" aria-labelledby="tab_iupgrade">
+                InPlace Upgrade
+            </div>
+            <div class="tab-pane fade" id="tab_pginstall" role="tabpanel" aria-labelledby="tab_pginstall">
+                Intance Install
+            </div>
+            <div class="tab-pane fade" id="tab_config" role="tabpanel" aria-labelledby="tab_config">
+                <div class="container">
+                    <div class="row">                        
+                        <div class="col-2 align-content-center">Username : </div>    
+                        <div class="col-2 align-content-center">
+                            <input class="form-control" type="text" id="txt_username" data-bs-toggle="tooltip" data-bs-placement="top"
+                            data-bs-custom-class="custom-tooltip" data-bs-title="Restart required on Username Changes!">
+                        </div>
+                        <div class="col-2 align-content-center">Password : </div>    
+                        <div class="col-2">
+                            <input class="form-control" type="password" id="txt_password" data-bs-toggle="tooltip" data-bs-placement="top"
+                            data-bs-custom-class="custom-tooltip" data-bs-title="Restart required on Password Changes!">
+                        </div>
+                        <div class="col-2 align-content-center">is Encrypted :</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_isencrypted" data-bs-toggle="tooltip" data-bs-placement="top"
+                            data-bs-custom-class="custom-tooltip" data-bs-title="Restart required on Changes!">
+                        </div>
+                        <div class="col-2 align-content-center">Cluster Port : </div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_clusterPort" data-bs-toggle="tooltip" data-bs-placement="top"
+                                            data-bs-custom-class="custom-tooltip" data-bs-title="Restart required on Port Changes!">
+                        </div>
+                        <div class="col-7"></div>
+                        <div class="col-1 align-content-end justify-content-end text-right">
+                            <input type="button" class="btn btn-warning float-right" value="Restart" onclick="setPort();">
+                        </div>    
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-2 align-content-center"> Cluster Name : </div>
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_clusterName">
+                        </div>
+                        <div class="col-2 align-content-center">Cluster Server List :</div>    
+                        <div class="col-6">
+                            <input class="form-control" type="text" id="txt_pgserverlist">
+                        </div>
+                        <div class="col-2 align-content-center">Cluster Pair : </div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_bfmPair">
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-2 align-content-center">MiniPG Port :</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_minipgport">
+                        </div>
+                        <div class="col-2 align-content-center">MiniPG Username :</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_minipgusername">
+                        </div>
+                        <div class="col-2 align-content-center">MiniPG Password :</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_minipgpassword">
+                        </div>
+                        <div class="col-2 align-content-center">MiniPG Use TLS :</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_minipgusetls">
+                        </div>
+                        <div class="col-2 align-content-center">BFM Use TLS : </div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_bfmUseTls">
+                        </div>
+                        
+                    </div>
+                    <hr>
+                    <div class="row"> 
+                        <div class="col-2 align-content-center">Slave BaseBackup Join  :</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_basebackupslavejoin">
+                        </div>
+                        <div class="col-2 align-content-center">ExMaster Behavior :</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_exmasterbehavior">
+                        </div>
+                        <div class="col-2 align-content-center">TimeOut Ignorance Count:</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_ignorancecount">
+                        </div>
+                        <div class="col-2 align-content-center">Data Loss Tolerance :</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_dataLossTolerance">
+                        </div>
+                        <div class="col-2 align-content-center">Status File Expire :</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_statusfileexpire">
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row" style="background-color: azure;">
+                        <div class="col-2 align-content-center">Mail Receivers :</div>    
+                        <div class="col-6">
+                            <input class="form-control" type="text" id="txt_mailreceivers">
+                        </div>
+                        <div class="col-4"></div>
+                        <div class="col-2 align-content-center">SMTP Server Address:</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_smtpserveraddress">
+                        </div>
+                        <div class="col-2 align-content-center">SMTP Server Port:</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_smtpserverport">
+                        </div>
+                        <div class="col-2 align-content-center">SMTP Username:</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_smtpusername">
+                        </div>
+                        <div class="col-2 align-content-center">SMTP Password:</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="password" id="txt_smtpPassword">
+                        </div>
+                        <div class="col-2 align-content-center">SMTP Authentication:</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_smtpAuth">
+                        </div>
+                        <div class="col-2 align-content-center">SMTP TLS Enabled:</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_smtpTLSenabled">
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row"> 
+                        <div class="col-2 align-content-center">Use SSL :</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_useSSL">
+                        </div>                    
+                        <div class="col-2 align-content-center">TLSKeyStore :</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_tlsKeyStore">
+                        </div>
+                        <div class="col-2 align-content-center">TLSKeyStore Type :</div>    
+                        <div class="col-2">
+                            <input class="form-control" type="text" id="txt_tlsKeyStoreType">
+                        </div>
+                    </div>
+                    <div class="row" style="background-color: azure;">
+                        <div class="col-3">is Configuration Ready ?</div>
+                        <div class="col-5">
+                            <select class="form-select">
+                                <option value="" selected disabled>Select</option>
+                                <option value="1">Yes</option>
+                                <option value="0">No</option>
+                            </select>
+                        </div>
+                        <div class="col-3"></div>
+                        <div class="col-1 align-content-end justify-content-end text-right">
+                            <input type="button" class="btn btn-warning float-right" value="Save Config" onclick="saveConf();">
+                        </div>                        
+                    </div>
+                    <div class="row">
+                        <p></p>
+                        <p></p>
+                    </div>
+                </div>                
+            </div>
+        </div>
+        <div id="overlay" class="overlay" style="display: none;">
+            <!-- <div class="loading-spinner lg" style="background-color: #FFF;"></div> -->
+             <img src="/images/loading.gif" style="width:250px; margin: 18% 0 0 45%">
         </div>
         <label id="axbu" name="axbu" style="display: none;">{{ USERNAME }}</label>
         <label id="axbp" name="axbp" style="display: none;">{{ PASSWORD }}</label>
         <label id="active_bfm" name="active_bfm" style="display: none;">{{ ACTIVE_BFM }}</label>  
-    </div>
-    <div id="overlay" class="overlay" style="display: none;">
-        <!-- <div class="loading-spinner lg" style="background-color: #FFF;"></div> -->
-         <img src="/images/loading.gif" style="width:150px; margin: 18% 0 0 45%">
-    </div>
-  
-    <!-- Modal -->
-    <div class="modal fade" id="priorityModal" data-backdrop="static" tabindex="-1" aria-labelledby="priorityModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-            <h5 class="modal-title" id="priorityModalTitle">Failover Priority</h5>
-            <!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button> -->
-            </div>
-            <div class="modal-body">
-                <div class="container">
-                    <div class="row">
-                        Server Address : 
-                        <input type="text" id="prioServerAddress" readonly>
-                    </div>
-                    <hr>
-                    <div class="row">
-                        Auto Failover / Priority : 
-                        <select id="select_priority">
-                            <option value="">Select a Priority</option>
-                            <option value="0">Disabled</option>
-                            <option value="1">Enable - Priority : 1</option>
-                            <option value="2">Enable - Priority : 2</option>                                
-                            <option value="3">Enable - Priority : 3</option>                                
-                            <option value="4">Enable - Priority : 4</option>                                
-                            <option value="5">Enable - Priority : 5</option>                                
-                        </select>
-                    </div>
 
-                </div>
-            </div>
-            <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="savePriority()">Save</button>
-            </div>
-        </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="confirmModal" data-bs-keyboard="false" tabindex="-1" aria-labelledby="reinitModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title fs-5">Confirmation</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form>
-                    <div class="form-group" id="div_confirm_msg">
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" id="btn_confirm_ok">OK</button>
-            </div>
-        </div>
-        </div>
-    </div>
-    <div class="modal fade" id="reinitModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="reinitModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-sm modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5">Confirmation</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group" id="div_reinit_msg"></div>
-                </div>
-                <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="btn_confirm_ok">OK</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="subscriptionModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="subscriptionModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5">Subscriber Info</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <table id="tbl_sub_dt"></table>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="modalLR" data-bs-backdrop="static" 
-            data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalLRLabel" aria-hidden="true">
-        <!-- <div class="modal-dialog modal-fullscreen"> -->
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5">Manage Logical Replication</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="container-fluid">
-                        <div class="row">
-                            <div class="col-md-4">Selected Server</div>
-                            <div class="col-md-8">
-                                <input class="input-group input-group-md mb-3" type="text" id="txt_lr_selected_server" value="" disabled>
-                            </div>
-                        </div>
-                        <div class="row">
-                          <div class="col-md-4">Database</div>
-                          <div class="col-md-8">
-                            <select class="form-select form-select-sm mb-3" id="select_LRDB" onchange="findTables();">
-                                <option selected>Select Database</option>
-                            </select>
-                          </div>
-                        </div>
-                        <div class="row" id="div_dt">
-                            <table class="table table-striped" id="tbl_tables"></table>
-                        </div>
-                        <div class="row align-items-center">
-                            <div class="form-check" id="div_sourcedb_ready" style="display: none;">
-                                <input class="form-check-input" type="checkbox" value="" id="cb_sourceready" onchange="sourceDBReady();">
-                                <label class="form-check-label" for="cb_sourceready">
-                                  Source DB Ready
-                                </label>
-                            </div>
-                        </div>
-                        <div class="row" id="div_targetLRDB" style="display: none;">
-                            <div class="row">
-                                <h1 class="modal-title fs-5">Create Target Logical Replica DB</h1>
-                            </div>
-                            <table class="table table-borderless table-striped">
-                                <tr>
-                                    <td>Source DB</td>
-                                    <td colspan="2"><div id="div_txt_source_db"></div></td>
-                                </tr>
-                                <tr>
-                                    <td>Encode / Collate</td>
-                                    <td><div id="div_txt_source_encode"></div></td>
-                                    <td><div id="div_txt_source_lccollate"></div></td>
-                                </tr>
-                                <tr>
-                                    <td>Select Target PG</td>
-                                    <td colspan="2">
-                                        <select class="form-select form-select-sm mb-3" id="select_targetLRDB" onchange="setPrepareBtn();">
-                                            <option value="SelectPG" selected>Select Intance</option>
-                                        </select>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td colspan="3" class="text-end">
-                                        <button class="btn btn-md btn-info" id="btn_prepareSubscriber" onclick="prepareSubscriber();" disabled>Prepare TargetDB</button>
-                                    </td>
-                                </tr>
-                            </table>              
-                        </div>
-                        <div class="row" id="div_startLR">
-                            <button class="btn btn-md btn-primary" id="btn_startLR" onclick="startLR();" style="display: none;">Start LR</button>
-                        </div>                       
-                    </div>    
-                </div>
-            </div>
-        </div>
-    </div>
     <script>
-        window.addEventListener("load", function () {
-            
-            document.getElementById('modalLR').addEventListener('hidden.bs.modal', event => {
-                document.getElementById("btn_startLR").style.display='none';
-                document.getElementById("cb_sourceready").checked=false;
-                sourceDBReady();
-                document.getElementById("div_sourcedb_ready").style.display='none';
-            })
 
-           var clusterCheckStatus = document.getElementById("cb_check").checked;
+            window.addEventListener("load", function () {
+                const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+                const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));        
+            });
 
-            if (clusterCheckStatus) {
+            function getRunningConfig(){
                 
-                document.getElementById("cb_mail").disabled = false;
-                document.getElementById("cb_watch").disabled = false;
-                document.getElementById("slave_options").disabled = false;
-                document.querySelector(".btn-bfm[onclick='ask_switch_confirm();']").disabled = false;
-                document.querySelector(".btn-bfm[onclick='ask_reinit();']").disabled = false;
-            } else {
-            
-                document.getElementById("cb_mail").disabled = true;
-                document.getElementById("cb_watch").disabled = true;
-                document.getElementById("slave_options").disabled = true;
-                document.querySelector(".btn-bfm[onclick='ask_switch_confirm();']").disabled = true;
-                document.querySelector(".btn-bfm[onclick='ask_reinit();']").disabled = true;
-            }
-        });
-    
-        function set_cluster_check(){
-            var isChecked = document.getElementById("cb_check").checked;
-
-            document.getElementById("cb_mail").disabled = !isChecked;
-            document.getElementById("cb_watch").disabled = !isChecked;
-            document.getElementById("slave_options").disabled = !isChecked;
-            document.querySelector(".btn-bfm[onclick='ask_switch_confirm();']").disabled = !isChecked;
-            document.querySelector(".btn-bfm[onclick='ask_reinit();']").disabled = !isChecked;
-
-            var active_bfm = document.getElementById("active_bfm").innerText
-            document.getElementById("overlay").style.display = 'block';
-            var bfmUrl = '';
-            if (document.getElementById("cb_check").checked == false){
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/check-pause';
-            } else if (document.getElementById("cb_check").checked == true){
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/check-resume';
-            } else {
-                var bfmUrl = '#';
-            }
-            
-            $.ajax({
-                url: bfmUrl,
-                type: "GET",
-                headers: {
-                    'Access-Control-Allow-Origin': '*'
-                },
-                crossDomain: true,
-                beforeSend: function (xhr) {
-                    xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
-                },
-                success: async function (data) {
-                    window.location.reload();
-                },
-                error: function (error) {
-                    console.log(`Error ${error}`);
-                }
-            });
-        }
-
-        function set_mail_notification(){
-            var active_bfm = document.getElementById("active_bfm").innerText
-            document.getElementById("overlay").style.display = 'block';
-            var bfmUrl = '';
-            if (document.getElementById("cb_mail").checked == true){
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/mail-resume';
-            } else if (document.getElementById("cb_mail").checked == false){
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/mail-pause';
-            } else {
-                var bfmUrl = '#';
-            }
-            
-            $.ajax({
-                url: bfmUrl,
-                type: "GET",
-                headers: {
-                    'Access-Control-Allow-Origin': '*'
-                },
-                crossDomain: true,                
-                beforeSend: function (xhr) {
-                    xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
-                },
-                success: function (data) {
-                    window.location.reload();
-                },
-                error: function (error) {
-                    console.log(`Error ${error}`);
-                }
-            });
-        }
-
-        function set_watch_strategy(){
-            var active_bfm = document.getElementById("active_bfm").innerText
-            document.getElementById("overlay").style.display = 'block';
-            if (document.getElementById("cb_watch").checked == true){
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/watch-strategy/A';
-            } else if (document.getElementById("cb_watch").checked == false){
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/watch-strategy/M';
-            } else {
-                var bfmUrl = '#'
-            }            
-            
-            $.ajax({
-                url: bfmUrl,
-                type: "POST",
-                headers: {
-                    'Access-Control-Allow-Origin': '*'
-                },
-                crossDomain: true,                
-                beforeSend: function (xhr) {
-                    xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
-                },
-                success: function (data) {
-                    window.location.reload();
-                },
-                error: function (error) {
-                    console.log(`Error ${error}`);
-                }
-            });
-        }
-        function ask_reinit(){
-            document.getElementById('cb_refresh').checked = false;
-            let targetPg = document.getElementById("slave_options").value;
-            document.getElementById('div_confirm_msg').innerHTML = 'Are you sure to Re Initialize Server ' + targetPg+ ' ?';
-            document.getElementById('btn_confirm_ok').setAttribute( "onClick", "start_reinit();" );
-            $('#confirmModal').modal('show');
-        }
-        function start_reinit(){
-            $('#confirmModal').modal('hide');
-            var active_bfm = document.getElementById("active_bfm").innerText
-            var bfmUrl = '';
-            var targetPg = document.getElementById("slave_options").value;
-            if (targetPg.length < 5 ){
-                // $.growl({ title: "Growl", message: "The kitten is awake!" });
-                $.growl.error({ message: "Please Select a Slave Server for Re Initalize!" });
-                // $.growl.notice({ message: "The kitten is cute!" });
-                // $.growl.warning({ message: "The kitten is ugly!" });
-            } else {
-                document.getElementById("overlay").style.display = 'block';
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/reinit/'+targetPg;            
-                $.ajax({
-                    url: bfmUrl,
-                    type: "POST",
-                    headers: {
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    crossDomain: true,                
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
-                    },
-                    success: async function (data) {
-                        await new Promise(r => setTimeout(r, 7000));
-                        getRows(true);
-                        document.getElementById("overlay").style.display = 'none';                   
-                    },
-                    error: function (error) {
-                        console.log(`Error ${error}`);
-                    }
-                });
-            }
-            
-        }
-
-        function ask_switch_confirm(){
-
-            document.getElementById('cb_refresh').checked = false;
-            
-            let targetPg = document.getElementById("slave_options").value;
-            let table = document.getElementById("tbl_pglist");
-            let master_replay_lag;
-            let master_timeline_id;
-            let target_replay_lag;
-            let target_timeline_id;
-            let target_failover_priority;
-            let target_sync_state;
-
-            for (var i = 0, row; row = table.rows[i]; i++) {
-                if (row.cells[0].innerText == targetPg){
-                    target_replay_lag = row.cells[4].innerText;
-                    target_timeline_id = row.cells[5].innerText;
-                    target_failover_priority = parseInt((document.getElementById('ah_'+targetPg).getAttribute('title')).split(":")[1]);
-                    target_sync_state = row.cells[8].innerText;
-                }
-
-                if (row.cells[1].innerText == "MASTER"){
-                    master_replay_lag = row.cells[4].innerText;
-                    master_timeline_id = row.cells[5].innerText;
-                }
-            }
- 
-            if (target_sync_state == "async"){
-                $.growl.error({ message: "Switch Over Cancelled. <br> Selected Slave is async !" });
-                return;
-            }
-
-            if (target_failover_priority == 0){
-                $.growl.error({ message: "Switch Over Cancelled. <br> Failover Disabled Slave !" });
-                return;
-            }
-            
-            if (parseInt(master_timeline_id) != parseInt(target_timeline_id)){
-                $.growl.error({ message: "Switch Over Cancelled. <br> Timelines not equal !" });
-                return;
-            } 
-
-            if (target_replay_lag != "0"){
-                $.growl.error({ message: "Switch Over Cancelled.<br> Target replay lag is not zero(0)!" });
-                return;
-            }
-
-            document.getElementById('div_confirm_msg').innerHTML = 'Are you sure to Switchover to ' + targetPg+ ' ?';
-            document.getElementById('btn_confirm_ok').setAttribute( "onClick", "start_switch();" );
-            $('#confirmModal').modal('show');
-        }
-
-        function start_switch(){
-            $('#confirmModal').modal('hide');
-            const active_bfm = document.getElementById("active_bfm").innerText
-            let targetPg = document.getElementById("slave_options").value;
-            var bfmUrl = '';            
-            if (targetPg.length < 5 ){
-                // $.growl({ title: "Growl", message: "The kitten is awake!" });
-                $.growl.error({ message: "Please Select a Slave Server for Switch Over!" });
-                // $.growl.notice({ message: "The kitten is cute!" });
-                // $.growl.warning({ message: "The kitten is ugly!" });
-            } else {
-                document.getElementById("overlay").style.display = 'block';
-                //var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/switchover/'+targetPg;
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/switchover/'+targetPg;
-                console.log(bfmUrl);
-                $.ajax({
-                    url: bfmUrl,
-                    type: "POST",
-                    headers: {
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    crossDomain: true,                
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
-                    },
-                    success: async function (data) {
-                        await new Promise(r => setTimeout(r, 7000));
-                        document.getElementById("overlay").style.display = 'none';
-                        window.location.reload();                  
-                    },
-                    error: function (error) {
-                        console.log(`Error ${error}`);
-                    }
-                });
-            }
-        }
-    </script>
-    <script>
-        (function () {
-            function getLogs() {
-                const focusedElement = document.activeElement;
                 var active_bfm = document.getElementById("active_bfm").innerText;
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getLogs';
+                var bfmUrl = '/bfm/configuration';
 
                 $.ajax({
-                        url: bfmUrl,
-                        context: document.body
-                        }).done(function(data) {
-                            if ((data != null || data != undefined) && (data.length > 0))
-                            {                        
-                                let memo = document.getElementById("txt_log")
-                                memo.disabled = false
-                                memo.value  += data
-                                //memo.focus();
-                                memo.scrollTop = memo.scrollHeight;
-                                memo.disabled = true
-                                
-                            };
-                        });
-                focusedElement.focus();
-            }                   
-            setInterval(getLogs, 5000);
-        })();        
-    </script>
-    <script>
-        (function () {
-            function getStatus(runOnce) {
-                var active_bfm = document.getElementById("active_bfm").innerText;
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getClsStatus';
+                url: bfmUrl,
+                context: document.body
+                }).done(function(data) {
+                    if ((data != null || data != undefined) && (data.length > 0))
+                    {
+                        result = JSON.parse(data);
+                        document.getElementById("txt_clusterName").value = result.clusterName;
+                        document.getElementById("txt_pgserverlist").value = result.pgServerList;
+                        document.getElementById("txt_pgserverlist").value = result.pgServerList;
+                        document.getElementById("txt_isencrypted").value = result.isEncrypted;
+                        document.getElementById("txt_clusterPort").value = result.clusterPort;
+                        document.getElementById("txt_ignorancecount").value = result.ignoranceCount;
+                        document.getElementById("txt_useSSL").value = result.useSsl;
+                        document.getElementById("txt_bfmPair").value = result.bfmPair;
+                        document.getElementById("txt_tlsKeyStoreType").value = result.tlsKeyStoreType;
+                        document.getElementById("txt_tlsKeyStore").value = result.tlsKeyStore;
+                        document.getElementById("txt_username").value = result.pgUsername;
+                        document.getElementById("txt_password").value = result.pgPassword;
+                        document.getElementById("txt_bfmUseTls").value = result.bfmUseTls;
+                        document.getElementById("txt_minipgport").value = result.minipgPort;
+                        document.getElementById("txt_minipgusername").value = result.minipgUsername;
+                        document.getElementById("txt_minipgpassword").value = result.minipgPassword;
+                        document.getElementById("txt_minipgusetls").value = result.minipgUseTls;
+                        document.getElementById("txt_dataLossTolerance").value = result.dataLossTolerance;
+                        document.getElementById("txt_statusfileexpire").value = result.statusFileExpire;
+                        document.getElementById("txt_exmasterbehavior").value = result.exMasterBehavior;
+                        document.getElementById("txt_basebackupslavejoin").value = result.basebackupSlaveJoin;
+                        document.getElementById("txt_mailreceivers").value = result.mailReceivers;
+                        document.getElementById("txt_smtpserveraddress").value = result.smtpServerAddress;
+                        document.getElementById("txt_smtpserverport").value = result.smtpServerPort;
+                        document.getElementById("txt_smtpusername").value = result.smtpUsername;
+                        document.getElementById("txt_smtpPassword").value = result.smtpPassword;
+                        document.getElementById("txt_smtpAuth").value = result.smtpAuth;
+                        document.getElementById("txt_smtpTLSenabled").value = result.smtpTLSenabled;
 
-                if (document.getElementById('cb_refresh').checked == true || runOnce == true){
-                    $.ajax({
-                        url: bfmUrl,
-                        context: document.body
-                        }).done(function(data) {
-                            if ((data != null || data != undefined) && (data.length > 0))
-                            {   
-                                document.getElementById("label_cluster_status").innerText  = 'Cluster Status : ' + data
-                                if (data === "Healthy") {
-                                    document.getElementById("div_cluster_cover").classList.remove("cls-table-warning");
-                                    document.getElementById("div_cluster_cover").classList.remove("cls-table-danger");
-                                    document.getElementById("div_cluster_cover").classList.remove("bg-dark");
-                                    
-                                } else if (data === "Warning") {
-                                    document.getElementById("div_cluster_cover").classList.remove("cls-table-danger");
-                                    document.getElementById("div_cluster_cover").classList.remove("bg-dark");
-                                    document.getElementById("div_cluster_cover").classList.add("cls-table-warning");
-                                } else if (data === "Not_healty") {
-                                    document.getElementById("div_cluster_cover").classList.remove("cls-table-warning");
-                                    document.getElementById("div_cluster_cover").classList.remove("bg-dark");
-                                    document.getElementById("div_cluster_cover").classList.add("cls-table-danger");
-                                } else {
-                                    document.getElementById("div_cluster_cover").classList.remove("cls-table-danger");
-                                    document.getElementById("div_cluster_cover").classList.remove("cls-table-warning");
-                                    document.getElementById("div_cluster_cover").classList.add("bg-dark");
-                                }
-                            };
-                            
-                        });
-                    }
-            }
-            getStatus(true);
-            setInterval(getStatus, 5000);
-        })(); 
-    </script> 
-    <script>
-        function getSlaveRows(){
-            
-            var active_bfm = document.getElementById("active_bfm").innerText;
-            var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getSlvRows';
-            $.ajax({
-            url: bfmUrl,
-            context: document.body
-            }).done(function(data) {
-                if ((data != null || data != undefined) && (data.length > 0))
-                {
-                    document.getElementById("slave_options").innerHTML=data;
-                }
-            })
-        };
-
-        function getRows(runOnce) {
-                var active_bfm = document.getElementById("active_bfm").innerText;
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getClsRows';
-                if (document.getElementById('cb_refresh').checked == true || runOnce == true){
-                    $.ajax({
-                    url: bfmUrl,
-                    context: document.body
-                    }).done(function(data) {
-                        if ((data != null || data != undefined) && (data.length > 0))
-                        {
-                            strTable = '<table id="tbl_pglist" class="table table-borderless">'
-                            strTable += '<thead style="padding-bottom: 20px;">'
-                            strTable += '<th>Server Address</th>'
-                            strTable += '<th>DB Role</th>'
-                            strTable += '<th>MiniPG Status</th>'
-                            strTable += '<th>Auto Failover Mode</th>'
-                            strTable += '<th>Last Wal Position</th>'
-                            strTable += '<th>Replay Lag</th>'
-                            strTable += '<th>Timeline ID</th>'
-                            strTable += '<th>Last Check Timestamp</th>'
-                            strTable += '<th>Application Name</th>'
-                            strTable += '<th colspan="2">Sync State</th>'
-                            strTable += '</thead>'
-                            strTable += '<tbody>'               
-                            strTable += data
-                            strTable += '</tbody>'
-                            strTable += '</table> '
-                            document.getElementById("div_cluster_rows").innerHTML  = strTable
-                        };
                         
-                    });
-                    getSlaveRows();  
-                } 
-                             
-            }
-
-        (function () {
-            getRows(true);            
-            setInterval(getRows, 5000);
-            
-        })();
-    </script>
-    <script>
-        function setSyncAsync(slave_appname){
-            //document.getElementById('cb_refresh').removeAttribute('checked');
-            document.getElementById('cb_refresh').checked = false;
-            document.getElementById("overlay").style.display = 'block';
-            var active_bfm = document.getElementById("active_bfm").innerText;
-            let bfmUrl = window.location.protocol +'//' + active_bfm ;
-            if (document.getElementById('cb_sync_'+slave_appname).checked == true){
-                bfmUrl += '/bfm/setsync/' + slave_appname;
-            } else {
-                bfmUrl += '/bfm/setasync/' + slave_appname;
-            }
-            $.ajax({
-                    url: bfmUrl,
-                    type: "POST",
-                    headers: {
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    crossDomain: true,                
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
-                    },
-                    success: async function (data) {
-                        await new Promise(r => setTimeout(r, 7000));
-                        getRows(true);
-                        document.getElementById("overlay").style.display = 'none';
-                        //window.location.reload();                    
-                    },
-                    error: function (error) {
-                        console.log(`Error ${error}`);
-                    }
-                });
-            
-        }
-    </script>
-
-    <script>
-        $("#priorityModal").on("hide.bs.modal", function () {
-            getRows(true);
-        });
-
-        function setPriority(serverAddress,currPriority,e){
-            //document.getElementById('cb_refresh').removeAttribute('checked');
-            document.getElementById('cb_refresh').checked = false;
-            if (e.checked == true){
-                $("#select_priority").val(currPriority).change();
-                $('#prioServerAddress').val(serverAddress);
-                $('#priorityModal').modal('show');        
-            } else {
-                savePriority(serverAddress,0);
-            }
-        }
-
-        function savePriority(serverAddress,newPriority){
-            if (serverAddress == null){
-                serverAddress = $('#prioServerAddress').val();
-            }
-
-            if (newPriority == null){
-                newPriority = $("#select_priority").val();
-            }
-
-            document.getElementById("overlay").style.display = 'block';
-            const active_bfm = document.getElementById("active_bfm").innerText;
-            let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/setpriority/'+serverAddress+'/'+newPriority;
-            $.ajax({
-                    url: bfmUrl,
-                    type: "POST",
-                    headers: {
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    crossDomain: true,                
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
-                    },
-                    success: async function (data) {
-                        await new Promise(r => setTimeout(r, 7000));
-                        getRows(true);
-                        document.getElementById("overlay").style.display = 'none';
-                    },
-                    error: function (error) {
-                        console.log(`Error ${error}`);
-                    }
-                });            
-            $('#priorityModal').modal('hide');
-        }
-    </script>
-    <script>
-        function showSubscriptionInfo(target){
-            const active_bfm = document.getElementById("active_bfm").innerText;
-            let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getSubscriptionInfo/'+target;
-            $.ajax({
-                    url: bfmUrl,
-                    type: "POST",
-                    headers: {
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    crossDomain: true,                
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
-                    },
-                    success: async function (data) {
                         
-                        if ($.fn.dataTable.isDataTable("#tbl_sub_dt") == false){
-                            function format(d) {
-                                            // `d` is the original data object for the row
-                                            return (
-                                                '<dl>' +
-                                                '<dt>subconninfo:</dt>' +
-                                                '<dd>' +
-                                                d.subconninfo +
-                                                '</dd>' +
-                                                '</dl>'
-                                            );
+                    };                    
+                });
+            }
+
+            function saveConf(){
+                let clusterName = document.getElementById("txt_clusterName").value;
+                let clusterPort = document.getElementById("txt_clusterPort").value;
+                let bfmPair = document.getElementById("txt_bfmPair").value;
+                let pgUsername = document.getElementById("txt_username").value;
+                let pgPassword = document.getElementById("txt_password").value;
+                let isEncrypted = false;
+                let ignoranceCount = parseInt(document.getElementById("txt_ignorancecount").value);
+                let pgServerList = document.getElementById("txt_pgserverlist").value;
+                let watchStrategy = "manual";
+                let mailEnabled = false;
+                let tlsKeyAlias = "bfm";
+                let useSsl = false;
+                let tlsSecret = "tlsSecret";
+                let tlsKeyStoreType = document.getElementById("txt_tlsKeyStoreType").value;
+                let tlsKeyStore = document.getElementById("txt_tlsKeyStore").value;
+                let bfmUseTls = false;
+                let minipgUseTls = false;
+                let minipgUsername = document.getElementById("txt_minipgusername").value;
+                let minipgPassword = document.getElementById("txt_minipgpassword").value;
+                let minipgPort = parseInt(document.getElementById("txt_minipgport").value);
+                let heartbeatInterval = 10;
+                let heartbeatQuery = "select 1";
+                let dataLossTolerance = document.getElementById("txt_dataLossTolerance").value;
+                let statusFileExpire = document.getElementById("txt_statusfileexpire").value;
+                let exMasterBehavior = document.getElementById("txt_exmasterbehavior").value;
+                let basebackupSlaveJoin = true;
+                let mailReceivers = document.getElementById("txt_mailreceivers").value;
+                let smtpServerAddress = document.getElementById("txt_smtpserveraddress").value;
+                let smtpServerPort = document.getElementById("txt_smtpserverport").value;
+
+                let smtpUsername = document.getElementById("txt_smtpusername").value;
+                let smtpPassword = document.getElementById("txt_smtpPassword").value;
+                let smtpAuth = true;
+                let smtpTLSenabled = true;
+                let isConfigured = true;
+
+                const configuration = {
+                                        clusterName: clusterName,
+                                        clusterPort: clusterPort,
+                                        bfmPair: bfmPair,
+                                        pgUsername: pgUsername,
+                                        pgPassword: pgPassword,
+                                        isEncrypted: false,
+                                        ignoranceCount: 3,
+                                        pgServerList: pgServerList,
+                                        watchStrategy: "manual",
+                                        mailEnabled: false,
+                                        tlsKeyAlias: "bfm",
+                                        useSsl: false,
+                                        tlsSecret: "tlsSecret",
+                                        tlsKeyStoreType: "PKCS12",
+                                        tlsKeyStore: "bfm.p12",
+                                        bfmUseTls: false,
+                                        minipgUseTls: false,
+                                        minipgUsername: minipgUsername,
+                                        minipgPassword: minipgPassword,
+                                        minipgPort: minipgPort,
+                                        heartbeatInterval: 10,
+                                        heartbeatQuery: "select 1",
+                                        dataLossTolerance: dataLossTolerance,
+                                        statusFileExpire: statusFileExpire,
+                                        exMasterBehavior: exMasterBehavior,
+                                        basebackupSlaveJoin: true,
+                                        mailReceivers: mailReceivers,
+                                        smtpServerAddress: smtpServerAddress,
+                                        smtpServerPort: smtpServerPort,
+                                        smtpUsername: smtpUsername,
+                                        smtpPassword: smtpPassword,
+                                        smtpAuth: true,
+                                        smtpTLSenabled: true,
+                                        isConfigured: isConfigured
                                         }
 
-                            let table = new DataTable('#tbl_sub_dt', {
-                                    columns: [
-                                        {
-                                            className: 'dt-control',
-                                            orderable: false,
-                                            data: null,
-                                            defaultContent: ''
-                                        },
-                                        { title: 'datname', data: 'datname'},
-                                        { title: 'subname', data: 'subname'},
-                                        { title: 'subowner', data: 'subowner'},
-                                        { title: 'subenabled', data: 'subenabled'},
-                                        // { title: 'subconninfo', data: 'subconninfo'},
-                                        { title: 'subslotname', data: 'subslotname'},
-                                        { title: 'subpublications', data: 'subpublications'}
-                                    ],
-                                    data: JSON.parse(data)
-                                });
-
-
-                            // Add event listener for opening and closing details
-                            table.on('click', 'td.dt-control', function (e) {
-                                let tr = e.target.closest('tr');
-                                let row = table.row(tr);
-                            
-                                if (row.child.isShown()) {
-                                    // This row is already open - close it
-                                    row.child.hide();
-                                }
-                                else {
-                                    // Open this row
-                                    row.child(format(row.data())).show();
-                                }
-                            });
-                        } else {
-                            // $('#tbl_sub_dt').DataTable().clear();
-                            // $('#tbl_sub_dt').DataTable().destroy();
-                            $('#tbl_sub_dt').DataTable().clear().rows.add(JSON.parse(data)).draw();
-                        }
-                        
-
-                        $('#subscriptionModal').modal('show');
-                    },
-                    error: function (error) {
-                        console.log(`Error ${error}`);
-                    }
-                });            
-        }
-    </script>
-    <script>
-        function manage_LR(target){
-            const active_bfm = document.getElementById("active_bfm").innerText;
-            let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getDatabases/'+target;
-            $.ajax({
-                    url: bfmUrl,
-                    type: "POST",
-                    headers: {
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    crossDomain: true,                
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
-                    },
-                    success: async function (data) {
-                        document.getElementById('select_LRDB').innerHTML = data;
-                        document.getElementById("txt_lr_selected_server").value = target;
-                        document.getElementById('tbl_tables').innerHTML = "";
-                    },
-                    error: function (error) {
-                        console.log(`Error ${error}`);
-                    }
-                });            
-        }
-
-        function findTables(){
-            let targetPG = document.getElementById("txt_lr_selected_server").value;
-            let selectedDB = document.getElementById("select_LRDB"); 
-            let targetDBoid = selectedDB.value;
-            let targetDB = selectedDB.options[selectedDB.selectedIndex].text;
-            
-            const active_bfm = document.getElementById("active_bfm").innerText;
-            let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/hasDBPublication/'+targetPG+'/'+targetDB;
-            $.ajax({
-                    url: bfmUrl,
-                    type: "POST",
-                    headers: {
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    crossDomain: true,                
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
-                    },
-                    success: async function (data) {                        
-                        let jo_count = 0;
-                        if (data.length > 0){
-                            let jo = JSON.parse(data);
-                            jo_count = jo.length;                       	
-                        }                         
-                        if (jo_count > 0){
-                            document.getElementById("div_sourcedb_ready").classList.add('pe-none');
-                            $.growl.warning({title:"Already Publicated", message:"Selected Database already Publicated..."});
-                        } else {
-                            document.getElementById("div_sourcedb_ready").classList.remove('pe-none');;
-                        }
-                    },
-                    error: function (error) {
-                        console.log(`Error ${error}`);
-                    }
-                });            
-            
-            bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/findProblemTables/'+targetPG+'/'+targetDB;
-            $.ajax({
-                    url: bfmUrl,
-                    type: "POST",
-                    headers: {
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    crossDomain: true,                
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
-                    },
-                    success: async function (data) {
-                        $('#tbl_tables').DataTable().clear();
-                        $('#tbl_tables').DataTable().destroy();
-                        
-                        document.getElementById("div_sourcedb_ready").style.display='block';
-                        let dataSet = JSON.parse(data);
-
-                        let dt = new DataTable('#tbl_tables', {
-                                    columnDefs: [
-                                                    {
-                                                        render : DataTable.render.select(),
-                                                        //className: 'select-checkbox',
-                                                        orderable: true,
-                                                        targets: 0
-                                                    }
-                                                ],
-                                    select: {
-                                        style: 'multi',
-                                        selector: 'td:first-child'
-                                    },
-                                    order: [[ 1, 'asc' ]],
-                                    columns: [
-                                        {},
-                                        { title: 'Table Name', data: 'tbl'},
-                                        { title: 'Replica Identity', data: 'replica_identity'},
-                                        { title: 'Operation',className : 'dt-center', render : function(data, type, row) {  
-                                                if (row['replica_identity'] == 'full') {
-                                                    return '<a href="#" class="pe-none btn btn-dark btn-xs" aria-disabled="true" role="button"><i class="fa fa-cogs" aria-hidden="true"></i></a>'                      
-                                                } else {
-                                                    return '<a href="#" class="btn btn-primary btn-xs" role="button" onclick="setTableReplicateIdentityFULL(\''+row['tbl']+'\',this)"><i class="fa fa-cogs" aria-hidden="true"></i></a>'
-                                                }  
-                                            } 
-                                        }
-                                    ],
-                                    data: dataSet
-                                });
-
-                                // $('#tbl_tables').on('click', '#select_all', function () {
-                                //     if ($('#select_all:checked').val() === 'on')
-                                //         table.rows().select();
-                                //     else
-                                //         table.rows().deselect();
-                                // });
-                                
-                    },
-                    error: function (error) {
-                        console.log(`Error ${error}`);
-                    }
-                });            
-            }
-
-            function setTableReplicateIdentityFULL(targetTBL,e){
-                let targetPG = document.getElementById("txt_lr_selected_server").value;
-                let selectedDB = document.getElementById("select_LRDB"); 
-                let targetDBoid = selectedDB.value;
-                let targetDB = selectedDB.options[selectedDB.selectedIndex].text;
-                
-                const active_bfm = document.getElementById("active_bfm").innerText;
-                let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/setTableRepID/'+targetPG+'/'+targetDB+'/'+ targetTBL;
-                $.ajax({
-                        url: bfmUrl,
-                        type: "POST",
-                        headers: {
-                            'Access-Control-Allow-Origin': '*'
-                        },
-                        crossDomain: true,                
-                        beforeSend: function (xhr) {
-                            xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
-                        },
-                        success: async function (data) {
-                            // e.setAttribute("aria-disabled","true");
-                            // e.classList.add("pe-none");
-                            // e.classList.add("btn-dark");
-                        },
-                        error: function (error) {
-                            console.log(`Error ${error}`);
-                        }
-                    });
-                    
-                    bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/findProblemTables/'+targetPG+'/'+targetDB;
-                    $.ajax({
-                            url: bfmUrl,
-                            type: "POST",
-                            headers: {
-                                'Access-Control-Allow-Origin': '*'
-                            },
-                            crossDomain: true,                
-                            beforeSend: function (xhr) {
-                                xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
-                            },
-                            success: async function (data) {
-                                $('#tbl_tables').DataTable().clear().rows.add(JSON.parse(data)).draw();                                        
-                            },
-                            error: function (error) {
-                                console.log(`Error ${error}`);
-                            }
-                        });                                
-
-
-            }
-            function sourceDBReady(){
-                let targetPG = document.getElementById("txt_lr_selected_server").value;
-                let selectedDB = document.getElementById("select_LRDB"); 
-                let targetDBoid = selectedDB.value;
-                let targetDB = selectedDB.options[selectedDB.selectedIndex].text;
-
-                if (document.getElementById("cb_sourceready").checked == true){
-                    document.getElementById("div_targetLRDB").style.display = 'block';
-                    document.getElementById("select_LRDB").disabled = true;
-                    document.getElementById("div_dt").classList.add("pe-none");
-                    document.getElementById("div_dt").style.opacity=0.3;
-                    document.getElementById("div_txt_source_db").innerText = targetPG + "/"+ targetDB;
-                    const active_bfm = document.getElementById("active_bfm").innerText;
-                    let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getSourceDBInfos/'+targetPG+'/'+targetDB;
-                    $.ajax({
-                            url: bfmUrl,
-                            type: "POST",
-                            headers: {
-                                'Access-Control-Allow-Origin': '*'
-                            },
-                            crossDomain: true,                
-                            beforeSend: function (xhr) {
-                                xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
-                            },
-                            success: async function (data) {
-                                const jo = JSON.parse(data);
-                                document.getElementById("div_txt_source_encode").innerText = jo[0].encoding;
-                                document.getElementById("div_txt_source_lccollate").innerText = jo[0].collate;
-                            },
-                            error: function (error) {
-                                console.log(`Error ${error}`);
-                            }
-                    });
-                    
-                    bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getLRTargets';
-                    $.ajax({
-                            url: bfmUrl,
-                            type: "GET",
-                            headers: {
-                                'Access-Control-Allow-Origin': '*'
-                            },
-                            crossDomain: true,                
-                            beforeSend: function (xhr) {
-                                xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
-                            },
-                            success: async function (data) {
-                                document.getElementById("select_targetLRDB").innerHTML = data;
-                            },
-                            error: function (error) {
-                                console.log(`Error ${error}`);
-                            }
-                    });
-
-                } else {
-                    document.getElementById("div_targetLRDB").style.display = 'none';
-                    document.getElementById("select_LRDB").disabled = false;
-                    document.getElementById("div_dt").classList.remove("pe-none");
-                    document.getElementById("div_dt").style.opacity=1;
-                    document.getElementById("div_txt_source_db").innerText ="";
-                    document.getElementById("div_txt_source_encode").innerText = "";
-                    document.getElementById("div_txt_source_lccollate").innerText = "";
-                }
-
-            }
-
-            function setPrepareBtn(){
-                if (document.getElementById("select_targetLRDB").value == "SelectPG"){
-                    document.getElementById("btn_prepareSubscriber").disabled = true;
-                } else {
-                    document.getElementById("btn_prepareSubscriber").disabled = false;
-                }
-            }
-
-            function prepareSubscriber(){
-                document.getElementById("overlay").style.display = 'block';
-
-                let publisherPG = document.getElementById("txt_lr_selected_server").value;
-                let selectedDB = document.getElementById("select_LRDB"); 
-                let targetDBoid = selectedDB.value;
-                let targetDB = selectedDB.options[selectedDB.selectedIndex].text;
-                let subscriberPG = document.getElementById("select_targetLRDB").value;
-
-                if (document.getElementById("cb_sourceready").checked == true){
-                    let publisherAddress = (publisherPG.split(":"))[0];
-                    let publisherPort = (publisherPG.split(":"))[1];
-                    let encoding = document.getElementById("div_txt_source_encode").innerText;
-                    let lc_collate = document.getElementById("div_txt_source_lccollate").innerText;
-                    const subscriberDTO = { datname: targetDB, encoding: encoding, lc_collate: lc_collate, publisherAddress:publisherAddress, publisherPort:publisherPort, publisherPU:document.getElementById("axbu").innerText, publisherPP:document.getElementById("axbp").innerText};
-                    
-                    const active_bfm = document.getElementById("active_bfm").innerText;
-                    let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/prepareSubscriber/'+subscriberPG;
-                    $.ajax({
-                            url: bfmUrl,
-                            type: "POST",
-                            headers: {
-                                'Access-Control-Allow-Origin': '*',
-                                'Content-Type': 'application/json; charset=utf-8'
-                            },
-                            data: JSON.stringify(subscriberDTO),
-                            crossDomain: true,                
-                            beforeSend: function (xhr) {
-                                xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
-                            },
-                            success: async function (data) {
-                                if (data == "OK"){
-                                    document.getElementById("overlay").style.display = 'none';
-                                    $.growl.notice({title:"Success",message:"Subscriber DB "+ targetDB +"Successfully create on "+ subscriberPG});
-                                    document.getElementById("div_dt").classList.add("pe-none");
-                                    document.getElementById("div_dt").style.opacity=0.3;
-                                    document.getElementById("div_startLR").style.display='block';
-                                    document.getElementById("btn_startLR").disabled=false;
-                                    document.getElementById("btn_startLR").style.display='block';
-                                } else {
-                                    document.getElementById("overlay").style.display = 'none';
-                                    $.growl.error({title:"Failed",message:"Subscriber DB "+ targetDB +" create FAILED on "+ subscriberPG});
-                                    console.log(data);
-                                }
-                            },
-                            error: function (error) {
-                                console.log(`Error ${error}`);
-                            }
-                    });
-                }
-            }
-
-            function startLR(){
-                document.getElementById("overlay").style.display = 'block';
-
-                let publisherPG = document.getElementById("txt_lr_selected_server").value;
-                let selectedDB = document.getElementById("select_LRDB"); 
-                let targetDBoid = selectedDB.value;
-                let targetDB = selectedDB.options[selectedDB.selectedIndex].text;
-                let subscriberPG = document.getElementById("select_targetLRDB").value;
-
-                const active_bfm = document.getElementById("active_bfm").innerText;
-                let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/createPublication/'+publisherPG+'/'+targetDB;
-
-                $.ajax({
-                        url: bfmUrl,
-                        type: "POST",
-                        headers: {
-                            'Access-Control-Allow-Origin': '*'
-                        },
-                        crossDomain: true,                
-                        beforeSend: function (xhr) {
-                            xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
-                        },
-                        success: async function (data) {
-                            publication_result = data;
-                        },
-                        error: function (error) {
-                            console.log(`Error ${error}`);
-                        }
-                });
-                
-                let publisherAddress = (publisherPG.split(":"))[0];
-                let publisherPort = (publisherPG.split(":"))[1];
-                let encoding = document.getElementById("div_txt_source_encode").innerText;
-                let lc_collate = document.getElementById("div_txt_source_lccollate").innerText;
-                const subscriberDTO = { datname: targetDB, encoding: encoding, lc_collate: lc_collate, publisherAddress:publisherAddress, publisherPort:publisherPort, publisherPU:document.getElementById("axbu").innerText, publisherPP:document.getElementById("axbp").innerText};
-                console.log(JSON.stringify(subscriberDTO));
-
-                bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/createSubscription/'+subscriberPG;
+                let bfmUrl = '/bfm/saveconfig';
                 $.ajax({
                         url: bfmUrl,
                         type: "POST",
@@ -1245,27 +566,17 @@
                             'Access-Control-Allow-Origin': '*',
                             'Content-Type': 'application/json; charset=utf-8'
                         },
-                        data: JSON.stringify(subscriberDTO),
+                        data: JSON.stringify(configuration),
                         crossDomain: true,                
                         beforeSend: function (xhr) {
                             xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
                         },
                         success: async function (data) {
-                            if (publication_result == "OK"){
-                                $.growl.notice({title:"Success",message:"Publication created on "+ publisherPG +"/"+ targetDB});
-                            } else {
-                                $.growl.error({title:"Failed",message:"Publication create FAILED on "+ publisherPG + "/"+targetDB});
-                                console.log(publication_result);
-                            }
-
                             if (data == "OK"){
-                                document.getElementById("overlay").style.display = 'none';
-                                $.growl.notice({title:"Success",message:"Subscription created on "+ subscriberPG +"/"+ targetDB});
-                                document.getElementById("div_startLR").classList.add("pe-none");
-                                document.getElementById("div_startLR").style.opacity=0.3;
+                                // document.getElementById("overlay").style.display = 'none';
+                                $.growl.notice({title:"Success",message:"Configuration saved Successfully.. "});
                             } else {
-                                document.getElementById("overlay").style.display = 'none';
-                                $.growl.error({title:"Failed",message:"Subscription create FAILED on "+ subscriberPG + "/"+targetDB});
+                                $.growl.error({title:"Failed",message:"Config save FAILED..."});
                                 console.log(data);
                             }
                         },
@@ -1273,9 +584,79 @@
                             console.log(`Error ${error}`);
                         }
                 });
+            }
+
+            function setPort(){
+                var bfmUrl = '/bfm/setPort/'+document.getElementById("txt_clusterPort").value;
+                $.ajax({
+                        url: bfmUrl,
+                        type: "POST",
+                        headers: {
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        crossDomain: true,                
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                        },
+                        success: async function (data) {
+                            callRestart();
+                            window.location.href = window.location.protocol +'//167.172.99.9:' +  document.getElementById("txt_clusterPort").value+ '/bfm/index.html';
+                        },
+                        error: function (error) {
+                            console.log(`Error ${error}`);
+                        }
+                });
+            }
+
+            function callRestart(){
+                var bfmUrl = '/actuator/restart';
+                $.ajax({
+                        url: bfmUrl,
+                        type: "POST",
+                        headers: {
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        crossDomain: true,                
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                        },
+                        success: async function (data) {
+                            //gotoNewPort();
+                        },
+                        error: function (error) {
+                            console.log(`Error ${error}`);
+                        }
+                });
 
             }
-    </script>
 
+            function gotoNewPort(){
+                window.location.href = window.location.protocol +'//167.172.99.9:' +  document.getElementById("txt_clusterPort").value+ '/bfm/index.html';
+            }
+
+            function setUsername(){
+                var bfmUrl = '/bfm/setUsername/'+document.getElementById("txt_username").value;
+                $.ajax({
+                        url: bfmUrl,
+                        type: "POST",
+                        headers: {
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        crossDomain: true,                
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                        },
+                        success: async function (data) {
+                            callRestart();
+                            window.location.href = window.location.protocol +'//167.172.99.9:' +  document.getElementById("txt_clusterPort").value+ '/bfm/index.html';
+                        },
+                        error: function (error) {
+                            console.log(`Error ${error}`);
+                        }
+                });
+            }
+    </script>
 </body>
 </html>
+        
+                   

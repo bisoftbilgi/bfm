@@ -13,7 +13,6 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.annotation.PostConstruct;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -37,9 +36,10 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.Timeout;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.bisoft.bfm.ConfigurationManager;
 import com.bisoft.bfm.dto.PromoteDTO;
 import com.bisoft.bfm.dto.ReBaseUpDTO;
 import com.bisoft.bfm.dto.RewindDTO;
@@ -49,6 +49,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
+import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,39 +60,24 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MinipgAccessUtil {
 
+    @Autowired
+    private ConfigurationManager configurationManager;
+
     private final SymmetricEncryptionUtil symmetricEncryptionUtil;
 
-    @Value("${minipg.username:postgres}")
-    private String username;
-
-    @Value("${minipg.password:bfm}")
-    private String password;
-
-    @Value("${minipg.port:9995}")
-    private int port;
-
-    @Value("${minipg.timeout:5}")
-    private int minipgTimeout;
-
-    @Value("${minipg.use-tls:false}")
-    private boolean useTls;
-
+    // @Value("${minipg.timeout:5}")
+    private int minipgTimeout = 5;
     private String serverUrl;
-
-    @Value("${bfm.user-crypted:false}")
-    public boolean isEncrypted;
-
     private SSLContext sslContext;
 
 
     @PostConstruct
     public void init() throws Exception {
-        final String scheme = useTls == false?"http":"https";
-        serverUrl = scheme+"://{HOST}:"+String.valueOf(port);
-        if(isEncrypted) {
-            //  log.info(symmetricEncryptionUtil.decrypt(tlsSecret).replace("=",""));
-            // password = (symmetricEncryptionUtil.decrypt(password).replace("=", ""));
-            password = (symmetricEncryptionUtil.decrypt(password));
+        final String scheme = this.configurationManager.getConfiguration().getMinipgUseTls() == false?"http":"https";
+        serverUrl = scheme+"://{HOST}:"+String.valueOf(this.configurationManager.getConfiguration().getMinipgPort());
+        if(this.configurationManager.getConfiguration().getIsEncrypted()) {
+            this.configurationManager.getConfiguration()
+            .setMinipgPassword((symmetricEncryptionUtil.decrypt(this.configurationManager.getConfiguration().getMinipgPassword())));
         }
         SSLContext sslContext = SSLContext.getInstance("TLS");
         var trustManager = new X509TrustManager() {
@@ -126,7 +112,7 @@ public class MinipgAccessUtil {
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(new URI(minipgUrl+"/minipg/pgstatus"))
                 .timeout(Duration.ofSeconds(this.minipgTimeout))
-                .header("Authorization", getBasicAuthenticationHeader(username, password))
+                .header("Authorization", getBasicAuthenticationHeader(this.configurationManager.getConfiguration().getMinipgUsername(), this.configurationManager.getConfiguration().getMinipgPassword()))
                 .GET()
                 .build();
 
@@ -154,8 +140,8 @@ public class MinipgAccessUtil {
         String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
         final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
         credsProvider.setCredentials(
-                new AuthScope(serverAddress, port),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
+                new AuthScope(serverAddress, this.configurationManager.getConfiguration().getMinipgPort()),
+                new UsernamePasswordCredentials(this.configurationManager.getConfiguration().getMinipgUsername(), this.configurationManager.getConfiguration().getMinipgPassword().toCharArray()));
         SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
                 SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
                 NoopHostnameVerifier.INSTANCE);
@@ -197,8 +183,9 @@ public class MinipgAccessUtil {
         String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
         final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
         credsProvider.setCredentials(
-                new AuthScope(serverAddress, port),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
+            new AuthScope(serverAddress, this.configurationManager.getConfiguration().getMinipgPort()),
+            new UsernamePasswordCredentials(this.configurationManager.getConfiguration().getMinipgUsername(), this.configurationManager.getConfiguration().getMinipgPassword().toCharArray()));
+
 
         SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
                 SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
@@ -256,8 +243,9 @@ public class MinipgAccessUtil {
         //String json = ow.writeValueAsString(cpdto);
 
         credsProvider.setCredentials(
-                new AuthScope(serverAddress, port),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
+            new AuthScope(serverAddress, this.configurationManager.getConfiguration().getMinipgPort()),
+            new UsernamePasswordCredentials(this.configurationManager.getConfiguration().getMinipgUsername(), this.configurationManager.getConfiguration().getMinipgPassword().toCharArray()));
+
 
         try (CloseableHttpClient httpclient = HttpClients.custom()
                 .setDefaultCredentialsProvider(credsProvider)
@@ -306,8 +294,9 @@ public class MinipgAccessUtil {
         String json = ow.writeValueAsString(promoteDTO);
 
         credsProvider.setCredentials(
-                new AuthScope(serverAddress, port),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
+            new AuthScope(serverAddress, this.configurationManager.getConfiguration().getMinipgPort()),
+            new UsernamePasswordCredentials(this.configurationManager.getConfiguration().getMinipgUsername(), this.configurationManager.getConfiguration().getMinipgPassword().toCharArray()));
+
 
         try (CloseableHttpClient httpclient = HttpClients.custom()
                 .setConnectionManager(cm)
@@ -368,8 +357,9 @@ public class MinipgAccessUtil {
         String json = ow.writeValueAsString(rewindDTO);
 
         credsProvider.setCredentials(
-                new AuthScope(serverAddress, port),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
+            new AuthScope(serverAddress, this.configurationManager.getConfiguration().getMinipgPort()),
+            new UsernamePasswordCredentials(this.configurationManager.getConfiguration().getMinipgUsername(), this.configurationManager.getConfiguration().getMinipgPassword().toCharArray()));
+
 
         try (CloseableHttpClient httpclient = HttpClients.custom()
                 .setConnectionManager(cm)
@@ -423,8 +413,9 @@ public class MinipgAccessUtil {
         String json = ow.writeValueAsString(rebaseDTO);
 
         credsProvider.setCredentials(
-                new AuthScope(serverAddress, port),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
+            new AuthScope(serverAddress, this.configurationManager.getConfiguration().getMinipgPort()),
+            new UsernamePasswordCredentials(this.configurationManager.getConfiguration().getMinipgUsername(), this.configurationManager.getConfiguration().getMinipgPassword().toCharArray()));
+
 
         try (CloseableHttpClient httpclient = HttpClients.custom()
                 .setConnectionManager(cm)
@@ -471,8 +462,9 @@ public class MinipgAccessUtil {
                 .build();
 
         credsProvider.setCredentials(
-                new AuthScope(serverAddress, port),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
+            new AuthScope(serverAddress, this.configurationManager.getConfiguration().getMinipgPort()),
+            new UsernamePasswordCredentials(this.configurationManager.getConfiguration().getMinipgUsername(), this.configurationManager.getConfiguration().getMinipgPassword().toCharArray()));
+
 
         try (CloseableHttpClient httpclient = HttpClients.custom()
                 .setConnectionManager(cm)
@@ -518,8 +510,9 @@ public class MinipgAccessUtil {
                 .build();
 
         credsProvider.setCredentials(
-                new AuthScope(serverAddress, port),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
+            new AuthScope(serverAddress, this.configurationManager.getConfiguration().getMinipgPort()),
+            new UsernamePasswordCredentials(this.configurationManager.getConfiguration().getMinipgUsername(), this.configurationManager.getConfiguration().getMinipgPassword().toCharArray()));
+
 
         try (CloseableHttpClient httpclient = HttpClients.custom()
                 .setConnectionManager(cm)
@@ -578,8 +571,9 @@ public class MinipgAccessUtil {
         String json = ow.writeValueAsString(promoteDTO);
 
         credsProvider.setCredentials(
-                new AuthScope(serverAddress, port),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
+            new AuthScope(serverAddress, this.configurationManager.getConfiguration().getMinipgPort()),
+            new UsernamePasswordCredentials(this.configurationManager.getConfiguration().getMinipgUsername(), this.configurationManager.getConfiguration().getMinipgPassword().toCharArray()));
+
 
         try (CloseableHttpClient httpclient = HttpClients.custom()
                 .setConnectionManager(cm)
@@ -614,8 +608,9 @@ public class MinipgAccessUtil {
         String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
         final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
         credsProvider.setCredentials(
-                new AuthScope(serverAddress, port),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
+            new AuthScope(serverAddress, this.configurationManager.getConfiguration().getMinipgPort()),
+            new UsernamePasswordCredentials(this.configurationManager.getConfiguration().getMinipgUsername(), this.configurationManager.getConfiguration().getMinipgPassword().toCharArray()));
+
 
         SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
                 SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
@@ -663,8 +658,9 @@ public class MinipgAccessUtil {
         String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
         final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
         credsProvider.setCredentials(
-                new AuthScope(serverAddress, port),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
+            new AuthScope(serverAddress, this.configurationManager.getConfiguration().getMinipgPort()),
+            new UsernamePasswordCredentials(this.configurationManager.getConfiguration().getMinipgUsername(), this.configurationManager.getConfiguration().getMinipgPassword().toCharArray()));
+
 
         SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
                 SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
@@ -715,8 +711,9 @@ public class MinipgAccessUtil {
         String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
         final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
         credsProvider.setCredentials(
-                new AuthScope(serverAddress, port),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
+            new AuthScope(serverAddress, this.configurationManager.getConfiguration().getMinipgPort()),
+            new UsernamePasswordCredentials(this.configurationManager.getConfiguration().getMinipgUsername(), this.configurationManager.getConfiguration().getMinipgPassword().toCharArray()));
+
 
         SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
                 SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
@@ -777,8 +774,9 @@ public class MinipgAccessUtil {
                 .build();
 
         credsProvider.setCredentials(
-                new AuthScope(serverAddress, port),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
+            new AuthScope(serverAddress, this.configurationManager.getConfiguration().getMinipgPort()),
+            new UsernamePasswordCredentials(this.configurationManager.getConfiguration().getMinipgUsername(), this.configurationManager.getConfiguration().getMinipgPassword().toCharArray()));
+
 
         try (CloseableHttpClient httpclient = HttpClients.custom()
                 .setConnectionManager(cm)
@@ -822,8 +820,9 @@ public class MinipgAccessUtil {
                 .build();
 
         credsProvider.setCredentials(
-                new AuthScope(serverAddress, port),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
+            new AuthScope(serverAddress, this.configurationManager.getConfiguration().getMinipgPort()),
+            new UsernamePasswordCredentials(this.configurationManager.getConfiguration().getMinipgUsername(), this.configurationManager.getConfiguration().getMinipgPassword().toCharArray()));
+
 
         try (CloseableHttpClient httpclient = HttpClients.custom()
                 .setConnectionManager(cm)
@@ -867,8 +866,9 @@ public class MinipgAccessUtil {
                 .build();
 
         credsProvider.setCredentials(
-                new AuthScope(serverAddress, port),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
+            new AuthScope(serverAddress, this.configurationManager.getConfiguration().getMinipgPort()),
+            new UsernamePasswordCredentials(this.configurationManager.getConfiguration().getMinipgUsername(), this.configurationManager.getConfiguration().getMinipgPassword().toCharArray()));
+
 
         try (CloseableHttpClient httpclient = HttpClients.custom()
                 .setConnectionManager(cm)
@@ -915,8 +915,9 @@ public class MinipgAccessUtil {
         String json = ow.writeValueAsString(subscriberDTO);
 
         credsProvider.setCredentials(
-                new AuthScope(serverAddress, port),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
+            new AuthScope(serverAddress, this.configurationManager.getConfiguration().getMinipgPort()),
+            new UsernamePasswordCredentials(this.configurationManager.getConfiguration().getMinipgUsername(), this.configurationManager.getConfiguration().getMinipgPassword().toCharArray()));
+
 
         try (CloseableHttpClient httpclient = HttpClients.custom()
                 .setConnectionManager(cm)

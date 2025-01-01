@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -44,6 +44,7 @@ import com.bisoft.bfm.dto.SubscriberDTO;
 import com.bisoft.bfm.helper.MinipgAccessUtil;
 import com.bisoft.bfm.helper.SymmetricEncryptionUtil;
 import com.bisoft.bfm.model.BfmContext;
+import com.bisoft.bfm.model.Configuration;
 import com.bisoft.bfm.model.ContextServer;
 import com.bisoft.bfm.model.ContextStatus;
 import com.bisoft.bfm.model.PostgresqlServer;
@@ -61,24 +62,14 @@ import lombok.extern.slf4j.Slf4j;
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class BfmController {
 
+    @Autowired
     private final BfmContext bfmContext;
+    
     private  final MinipgAccessUtil minipgAccessUtil;
     private final SymmetricEncryptionUtil symmetricEncryptionUtil;
 
-    @Value("${watcher.cluster-pair:no-pair}")
-    private String bfmPair;
-
-    @Value("${server.pguser:postgres}")
-    private String username;
-
-    @Value("${server.pgpassword:postgres}")
-    private String password;
-
-    @Value("${watcher.cluster-port:9994}")
-    private String cluster_port;
-
-    @Value("${bfm.basebackup-slave-join:false}")
-    public boolean basebackup_slave_join;
+    @Autowired
+    private ConfigurationManager configurationManager;
 
     @RequestMapping(path = "/status",method = RequestMethod.GET)
     public @ResponseBody
@@ -136,11 +127,11 @@ public class BfmController {
             } catch (SocketException e) {
                 e.printStackTrace();
             }
-
+            //Todo bfm active maybe individual server meaning maybe not on pg server
             String bfmIpStr = this.bfmContext.getPgList().stream().filter(s -> (serverIPAddress.contains(s.getServerAddress().split(":")[0]))).findFirst().get().getServerAddress();
-            return ((bfmIpStr.split(":")[0])+":"+cluster_port);
+            return ((bfmIpStr.split(":")[0])+":"+this.configurationManager.getConfiguration().getClusterPort());
         }
-        return bfmPair;
+        return this.configurationManager.getConfiguration().getBfmPair();
     }
 
     @RequestMapping(path = "/check-pause",method = RequestMethod.GET)
@@ -174,13 +165,13 @@ public class BfmController {
 
     @RequestMapping(path = "/mail-pause",method = RequestMethod.GET)
     public @ResponseBody String clusterMailPause(){
-        this.bfmContext.setMail_notification_enabled(Boolean.FALSE);
+        this.configurationManager.getConfiguration().setMailEnabled(Boolean.FALSE);
         return "Mail Notifications Paused.\n";
     }
 
     @RequestMapping(path = "/mail-resume",method = RequestMethod.GET)
     public @ResponseBody String clusterMailResume(){
-        this.bfmContext.setMail_notification_enabled(Boolean.TRUE);
+        this.configurationManager.getConfiguration().setMailEnabled(Boolean.TRUE);
         return "Mail Notifications started.\n";
     }
 
@@ -193,7 +184,7 @@ public class BfmController {
            
             retval = retval + "\nCluster Status : "+this.bfmContext.getClusterStatus();
             retval = retval + "\nCluster Check : "+(this.bfmContext.isCheckPaused() == Boolean.TRUE ? "Paused" : "Processing");
-            retval = retval + "\nWatch Strategy : "+this.bfmContext.getWatch_strategy();
+            retval = retval + "\nWatch Strategy : "+this.configurationManager.getConfiguration().getWatchStrategy();
             retval = retval + "\n\n"+ 
                                 String.format("%-25s", "Server Address :") + 
                                 "\t" + 
@@ -306,10 +297,10 @@ public class BfmController {
             // availability,manual,performance,protection
             // retval = retval + new_strategy;
             if (new_strategy.equals("M")){
-                this.bfmContext.setWatch_strategy("manual");
+                this.configurationManager.getConfiguration().setWatchStrategy("manual");
                 retval = retval + "Watch strategy set to -manual-\n";
             } else if (new_strategy.equals("A")){
-                this.bfmContext.setWatch_strategy("availability");
+                this.configurationManager.getConfiguration().setWatchStrategy("availability");
                 retval = retval + "Watch strategy set to -availability-\n";
             } else {
                 retval = retval + "Watch strategy set FAIL. invalid Parameter:"+new_strategy +"\n";
@@ -344,11 +335,11 @@ public class BfmController {
                         } else {
                             if (switchOverToPG.getReplayLag().equals("0")){
                                 this.bfmContext.setCheckPaused(Boolean.TRUE);
-                                String ws = this.bfmContext.getWatch_strategy();
-                                Boolean mail_notify = this.bfmContext.isMail_notification_enabled();
+                                String ws = this.configurationManager.getConfiguration().getWatchStrategy();
+                                Boolean mail_notify = this.configurationManager.getConfiguration().getMailEnabled();
                                 
-                                this.bfmContext.setWatch_strategy("manual");
-                                this.bfmContext.setMail_notification_enabled(Boolean.FALSE);
+                                this.configurationManager.getConfiguration().setWatchStrategy("manual");
+                                this.configurationManager.getConfiguration().setMailEnabled(Boolean.FALSE);
     
                                 PostgresqlServer old_master = this.bfmContext.getMasterServer();
                                 String result ="";
@@ -372,7 +363,7 @@ public class BfmController {
                                                                             String rewind_result = minipgAccessUtil.rewind(pg, switchOverToPG);
                                                                             if (! rewind_result.equals("OK")){
                                                                                 log.info("on SwitchOver pg_rewind was FAILED. Response is : "+rewind_result+" Slave Target:" + pg.getServerAddress());
-                                                                                if (basebackup_slave_join == Boolean.TRUE){
+                                                                                if (this.configurationManager.getConfiguration().getBasebackupSlaveJoin() == Boolean.TRUE){
                                                                                     String rejoin_result = minipgAccessUtil.rebaseUp(pg, switchOverToPG);
                                                                                     log.info("pg_basebackup join cluster result is:"+rejoin_result);
                                                                                 } else {
@@ -398,8 +389,8 @@ public class BfmController {
                                     checkCount--;
                                 }                                
                                 
-                                this.bfmContext.setWatch_strategy(ws);
-                                this.bfmContext.setMail_notification_enabled(mail_notify);
+                                this.configurationManager.getConfiguration().setWatchStrategy(ws);
+                                this.configurationManager.getConfiguration().setMailEnabled(mail_notify);
                                 retval = retval +"Switch Over Completed Succesfully :\n";
                                 
     
@@ -443,11 +434,11 @@ public class BfmController {
                         } else {
                             try {
                                 this.bfmContext.setCheckPaused(Boolean.TRUE);
-                                String ws = this.bfmContext.getWatch_strategy();
-                                Boolean mail_notify = this.bfmContext.isMail_notification_enabled();
+                                String ws = this.configurationManager.getConfiguration().getWatchStrategy();
+                                Boolean mail_notify = this.configurationManager.getConfiguration().getMailEnabled();
                                 
-                                this.bfmContext.setWatch_strategy("manual");
-                                this.bfmContext.setMail_notification_enabled(Boolean.FALSE);
+                                this.configurationManager.getConfiguration().setWatchStrategy("manual");
+                                this.configurationManager.getConfiguration().setMailEnabled(Boolean.FALSE);
 
                                 PostgresqlServer master_server = this.bfmContext.getPgList().stream()
                                 .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE || server.getStatus() == DatabaseStatus.MASTER ).findFirst().get();                    
@@ -467,8 +458,8 @@ public class BfmController {
                                     TimeUnit.SECONDS.sleep(5);
                                     checkCount--;
                                 }   
-                                this.bfmContext.setWatch_strategy(ws);
-                                this.bfmContext.setMail_notification_enabled(mail_notify);
+                                this.configurationManager.getConfiguration().setWatchStrategy(ws);
+                                this.configurationManager.getConfiguration().setMailEnabled(mail_notify);
                                 retval = retval +targetPG+" re-initialize Completed Succesfully :\n";
 
                             } catch (Exception e) {
@@ -509,8 +500,8 @@ public class BfmController {
         String growl_js_str = asString(growl_js);
         retval = retval.replace("{{ GROWL_SCRIPT }}", growl_js_str);
 
-        retval = retval.replace("{{ USERNAME }}", username);
-        retval = retval.replace("{{ PASSWORD }}", password);
+        retval = retval.replace("{{ USERNAME }}", this.configurationManager.getConfiguration().getPgUsername());
+        retval = retval.replace("{{ PASSWORD }}", this.configurationManager.getConfiguration().getPgPassword());
         if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
             if (this.bfmContext.getClusterStatus() == null){
                 retval = retval.replace("{{ CLUSTER_STATUS }}", "Cluster Starting...");
@@ -555,10 +546,10 @@ public class BfmController {
                 retval = retval.replace("{{ CLASS_CARD_BODY }}", "bg-primary");
                 retval = retval.replace("{{ CLASS_SERVER_ROWS }}", "text-white");
                 retval = retval.replace("{{ CHECK_STATUS }}", (this.bfmContext.isCheckPaused() == Boolean.TRUE ? " " : "checked"));
-                retval = retval.replace("{{ MAIL_ENABLED }}", (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE ? "checked" : " "));
+                retval = retval.replace("{{ MAIL_ENABLED }}", (this.configurationManager.getConfiguration().getMailEnabled() == Boolean.TRUE ? "checked" : " "));
                 retval = retval.replace("{{ ACTIVE_BFM }}", this.getActiveBfm());
                 retval = retval.replace("{{ SLAVE_OPTIONS }}", slave_options);
-                retval = retval.replace("{{ WATCH_STRATEGY }}", (this.bfmContext.getWatch_strategy().equals("availability") ? "checked" : " "));
+                retval = retval.replace("{{ WATCH_STRATEGY }}", (this.configurationManager.getConfiguration().getWatchStrategy().equals("availability") ? "checked" : " "));
                 return retval;    
             }
         } else {
@@ -610,14 +601,14 @@ public class BfmController {
             Resource resource = resourceLoader.getResource("classpath:index.html");
             retval = asString(resource);
     
-            retval = retval.replace("{{ USERNAME }}", username);
-            retval = retval.replace("{{ PASSWORD }}", password);
+            retval = retval.replace("{{ USERNAME }}", this.configurationManager.getConfiguration().getPgUsername());
+            retval = retval.replace("{{ PASSWORD }}", this.configurationManager.getConfiguration().getPgPassword());
+            retval = retval.replace("{{ ACTIVE_BFM }}", this.getActiveBfm());
     
             if (this.bfmContext.getClusterStatus() == null){
                 retval = retval.replace("{{ CHECK_STATUS }}", "");
                 retval = retval.replace("{{ MAIL_ENABLED }}", "");
-                retval = retval.replace("{{ WATCH_STRATEGY }}", "");
-                retval = retval.replace("{{ ACTIVE_BFM }}", "");                
+                retval = retval.replace("{{ WATCH_STRATEGY }}", "");                
                 return retval;        
             } else {
                 String server_rows = "";
@@ -661,11 +652,11 @@ public class BfmController {
                                         "<option value=\""+pg.getServerAddress()+"\">"+pg.getServerAddress()+"</option>";
                     }
                 }
-                retval = retval.replace("{{ ACTIVE_BFM }}", this.getActiveBfm());
+
                 retval = retval.replace("{{ SLAVE_OPTIONS }}", slave_options);
                 retval = retval.replace("{{ CHECK_STATUS }}", (this.bfmContext.isCheckPaused() == Boolean.TRUE ? " " : "checked"));
-                retval = retval.replace("{{ MAIL_ENABLED }}", (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE ? "checked" : " "));
-                retval = retval.replace("{{ WATCH_STRATEGY }}", (this.bfmContext.getWatch_strategy().equals("availability") ? "checked" : " "));
+                retval = retval.replace("{{ MAIL_ENABLED }}", (this.configurationManager.getConfiguration().getMailEnabled() == Boolean.TRUE ? "checked" : " "));
+                retval = retval.replace("{{ WATCH_STRATEGY }}", (this.configurationManager.getConfiguration().getWatchStrategy().equals("availability") ? "checked" : " "));
                 return retval;    
             }
         } else {
@@ -987,5 +978,40 @@ public class BfmController {
             retval = pg.createSubscription(subscriberDTO);
         }
         return retval;
+    }
+
+    @RequestMapping(path = "/configuration",method = RequestMethod.GET)
+    public @ResponseBody String configuration(){
+        String retval = "";
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            return gson.toJson(this.configurationManager.loadConf());
+        }
+        return retval;
+    }
+
+    @RequestMapping(path = "/saveconfig",method = RequestMethod.POST)
+    public @ResponseBody String saveConfig(@RequestBody Configuration configuration){
+        String retval = "";
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            this.configurationManager.setConfiguration(configuration);
+            this.configurationManager.saveConfig();
+            this.bfmContext.init();
+            return "OK";
+        }
+        return retval;
+    }
+
+    @RequestMapping(path = "/setPort/{clusterPort}",method = RequestMethod.POST)
+    public @ResponseBody void setPort(@PathVariable(value = "clusterPort") Integer clusterPort){
+        this.configurationManager.getConfiguration().setClusterPort(clusterPort);
+        this.configurationManager.saveConfig();
+        
+    }
+
+    @RequestMapping(path = "/setUsername/{pgUsername}",method = RequestMethod.POST)
+    public @ResponseBody void setUsername(@PathVariable(value = "pgUsername") String pgUsername){
+        this.configurationManager.getConfiguration().setPgUsername(pgUsername);
+        this.configurationManager.saveConfig();        
     }
 }

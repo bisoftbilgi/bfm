@@ -23,8 +23,11 @@ import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.Timeout;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import com.bisoft.bfm.ConfigurationManager;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -36,45 +39,31 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class BfmAccessUtil {
 
+    @Autowired
+    private ConfigurationManager configurationManager;
+
     private final SymmetricEncryptionUtil symmetricEncryptionUtil;
 
-    @Value("${server.pguser:postgres}")
-    private String username;
-
-    @Value("${server.pgpassword:postgres}")
-    private String password;
-
-
-    @Value("${bfm.use-tls:false}")
-    private boolean useTls;
-
     private String port;
-
-    @Value("${watcher.cluster-pair:no-pair}")
-    private String bfmPair;
-
     private String serverUrl;
-
-    @Value("${bfm.user-crypted:false}")
-    public boolean isEncrypted;
 
     @PostConstruct
     public void init(){
-        if(!bfmPair.equals("no-pair")) {
-            port = bfmPair.split(":")[1];
+        if(!this.configurationManager.getConfiguration().getBfmPair().equals("no-pair")) {
+            port = this.configurationManager.getConfiguration().getBfmPair().split(":")[1];
         }
-        String scheme = useTls == false?"http":"https";
-        serverUrl = scheme+"://"+bfmPair;
-        if(isEncrypted) {
+        String scheme = this.configurationManager.getConfiguration().getBfmUseTls() == false?"http":"https";
+        serverUrl = scheme+"://"+this.configurationManager.getConfiguration().getBfmPair();
+        if(this.configurationManager.getConfiguration().getIsEncrypted()) {
             //  log.info(symmetricEncryptionUtil.decrypt(tlsSecret).replace("=",""));
-            password = (symmetricEncryptionUtil.decrypt(password).replace("=", ""));
+            this.configurationManager.getConfiguration().setPgPassword(symmetricEncryptionUtil.decrypt(this.configurationManager.getConfiguration().getPgPassword()).replace("=", ""));
         }
     }
 
     public String isPairAlive() throws Exception{
 
-        if(bfmPair.equals("no-pair")){
-            return bfmPair;
+        if(this.configurationManager.getConfiguration().getBfmPair().equals("no-pair")){
+            return this.configurationManager.getConfiguration().getBfmPair();
         }
 
         SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
@@ -85,12 +74,12 @@ public class BfmAccessUtil {
                 .setSSLSocketFactory(scsf)
                 .build();
 
-        final String serverAddress = bfmPair.split(":")[0];
+        final String serverAddress = this.configurationManager.getConfiguration().getBfmPair().split(":")[0];
         String bfmUrl = serverUrl;
         final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
         credsProvider.setCredentials(
                 new AuthScope(serverAddress, Integer.valueOf(port)),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
+                new UsernamePasswordCredentials(this.configurationManager.getConfiguration().getPgUsername(), this.configurationManager.getConfiguration().getPgPassword().toCharArray()));
 
         try (CloseableHttpClient httpclient = HttpClients.custom()
                 .setConnectionManager(cm)
@@ -138,8 +127,8 @@ public class BfmAccessUtil {
 
     public String getLastSavedStatus() throws Exception{
 
-        if(bfmPair.equals("no-pair")){
-            return bfmPair;
+        if(this.configurationManager.getConfiguration().getBfmPair().equals("no-pair")){
+            return this.configurationManager.getConfiguration().getBfmPair();
         }
 
         SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
@@ -150,12 +139,12 @@ public class BfmAccessUtil {
                 .setSSLSocketFactory(scsf)
                 .build();
 
-        final String serverAddress = bfmPair.split(":")[0];
+        final String serverAddress = this.configurationManager.getConfiguration().getBfmPair().split(":")[0];
         String bfmUrl = serverUrl;
         final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
         credsProvider.setCredentials(
                 new AuthScope(serverAddress, Integer.valueOf(port)),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
+                new UsernamePasswordCredentials(this.configurationManager.getConfiguration().getPgUsername(), this.configurationManager.getConfiguration().getPgPassword().toCharArray()));
 
         try (CloseableHttpClient httpclient = HttpClients.custom()
                 .setConnectionManager(cm)

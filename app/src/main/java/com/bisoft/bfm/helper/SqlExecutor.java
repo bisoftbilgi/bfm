@@ -1,13 +1,5 @@
 package com.bisoft.bfm.helper;
 
-import com.bisoft.bfm.dto.PgVersion;
-import com.bisoft.bfm.model.PostgresqlServer;
-import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -15,18 +7,25 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.bisoft.bfm.ConfigurationManager;
+import com.bisoft.bfm.dto.PgVersion;
+import com.bisoft.bfm.model.PostgresqlServer;
+
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 @Component
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class SqlExecutor {
-    @Value("${server.pguser:postgres}")
-    private String username;
-
-    @Value("${server.pgpassword:postgres}")
-    private String password;
-
-
+public class SqlExecutor {    
+    @Autowired
+    private ConfigurationManager configurationManager;
+ 
     public List<String> retrieveSqlResult(String sqlString, PostgresqlServer postgresqlServer) {
 
         log.info("sql executing:" + sqlString);
@@ -34,7 +33,7 @@ public class SqlExecutor {
         List<String> cellValues = new ArrayList<>();
 
         try (Connection conn = DriverManager.getConnection("jdbc:postgresql://"+postgresqlServer.getServerAddress()+ "/postgres",
-                username,password)) {
+                this.configurationManager.getConfiguration().getPgUsername(),this.configurationManager.getConfiguration().getPgPassword())) {
             Statement stmt = conn.createStatement();
 
             Class.forName("org.postgresql.Driver");
@@ -61,7 +60,7 @@ public class SqlExecutor {
 
 
         try (Connection conn = DriverManager.getConnection("jdbc:postgresql://"+postgresqlServer.getServerAddress() +"/postgres",
-                username, password)) {
+        this.configurationManager.getConfiguration().getPgUsername(),this.configurationManager.getConfiguration().getPgPassword())) {
             Statement stmt = conn.createStatement();
             Class.forName("org.postgresql.Driver");
             stmt.executeUpdate(sqlString);
@@ -82,7 +81,7 @@ public class SqlExecutor {
         log.info("sql executing:" + sqlString);
 
         Connection conn = DriverManager.getConnection("jdbc:postgresql://"+postgresqlServer.getServerAddress()+"/postgres",
-                username, password);
+        this.configurationManager.getConfiguration().getPgUsername(),this.configurationManager.getConfiguration().getPgPassword());
         Statement stmt = conn.createStatement();
 
         Class.forName("org.postgresql.Driver");
@@ -101,7 +100,7 @@ public class SqlExecutor {
         // default
         PgVersion result = PgVersion.V10X;
         try (Connection conn = DriverManager.getConnection("jdbc:postgresql://"+postgresqlServer.getServerAddress() + "/postgres",
-                username, password)) {
+        this.configurationManager.getConfiguration().getPgUsername(),this.configurationManager.getConfiguration().getPgPassword())) {
             Statement stmt = conn.createStatement();
 
             Class.forName("org.postgresql.Driver");

@@ -1,34 +1,32 @@
 package com.bisoft.bfm.helper;
 
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
+import static java.nio.charset.StandardCharsets.UTF_8;
+import java.nio.ByteBuffer;
+import java.security.SecureRandom;
+import java.security.spec.KeySpec;
+import java.util.Base64;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.nio.ByteBuffer;
-import java.security.SecureRandom;
-import java.security.spec.KeySpec;
-import java.util.Base64;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import com.bisoft.bfm.ConfigurationManager;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class SymmetricEncryptionUtil {
+    
+    @Autowired
+    private ConfigurationManager configurationManager;
 
-    @Value("${bfm.approval-key:123456}")
-    public String approvalSecretKey;
-
-    @Value("${bfm.user-crypted:false}")
-    public boolean isEncrypted;
+    // @Value("${bfm.approval-key:123456}")
+    public String approvalSecretKey = "123456";
 
     static final int EXPIRE_DAYS_LATER = 365;
 
@@ -39,7 +37,7 @@ public class SymmetricEncryptionUtil {
 
     // dynamically generated iv vector is used as salt
     public String decrypt(final String strToDecrypt) {
-        if (!isEncrypted) {
+        if (!this.configurationManager.getConfiguration().getIsEncrypted()) {
             return strToDecrypt;
         }
 

@@ -1,6 +1,5 @@
 package com.bisoft.bfm;
-import com.bisoft.bfm.helper.SymmetricEncryptionUtil;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -12,8 +11,10 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+
+import com.bisoft.bfm.helper.SymmetricEncryptionUtil;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
 @EnableWebSecurity
@@ -22,14 +23,8 @@ public class WebSecurityConfig {
 
     private final SymmetricEncryptionUtil symmetricEncryptionUtil;
 
-    @Value("${server.pguser:postgres}")
-    private String username;
-
-    @Value("${server.pgpassword:postgres}")
-    private String password;
-
-    @Value("${bfm.user-crypted:false}")
-    public boolean isEncrypted;
+	@Autowired
+	private ConfigurationManager configurationManager;
 
     @Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -52,13 +47,13 @@ public class WebSecurityConfig {
 
 	@Bean
 	public UserDetailsService userDetailsService() {
-		if(isEncrypted){
+		if(this.configurationManager.getConfiguration().getIsEncrypted()){
             // password = symmetricEncryptionUtil.decrypt(password).replace("=","");
-            password = symmetricEncryptionUtil.decrypt(password);
+            this.configurationManager.getConfiguration().setPgPassword(symmetricEncryptionUtil.decrypt(this.configurationManager.getConfiguration().getPgPassword()));
         }
 		UserDetails user =
-			 User.withUsername(username)
-				.password(passwordEncoder().encode(password))
+			 User.withUsername(this.configurationManager.getConfiguration().getPgUsername())
+				.password(passwordEncoder().encode(this.configurationManager.getConfiguration().getPgPassword()))
 				.roles("USER")
 				.build();
 

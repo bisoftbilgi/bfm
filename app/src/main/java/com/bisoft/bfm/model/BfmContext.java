@@ -4,9 +4,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.bisoft.bfm.ConfigurationManager;
 import com.bisoft.bfm.dto.ClusterStatus;
 import com.bisoft.bfm.helper.SymmetricEncryptionUtil;
 
@@ -19,27 +20,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BfmContext {
 
+    @Autowired
+    private ConfigurationManager configurationManager;
     private final SymmetricEncryptionUtil symmetricEncryptionUtil;
 
     private List<PostgresqlServer> pgList;
-
-    @Value("${server.pglist:127.0.0.1:5432}")
-    String pgServerList;
-
-    @Value("${server.pguser:postgres}")
-    String pgUser;
-
-    @Value("${server.pgpassword:postgres}")
-    String pgPassword;
-
-    @Value("${bfm.user-crypted:false}")
-    public boolean isEncrypted;
-
-    @Value("${bfm.watch-strategy:availability}")
-    public String watch_strategy;
-    
-    @Value("${bfm.mail-notification-enabled:false}")
-    public boolean mail_notification_enabled;
     
     boolean isMasterBfm;
 
@@ -57,20 +42,26 @@ public class BfmContext {
 
     @PostConstruct
     public void init(){
+        System.out.println("context init run...");
         pgList = new ArrayList<>();
-        if(isEncrypted) {
+        if(this.configurationManager.getConfiguration().getIsEncrypted()) {
             //  log.info(symmetricEncryptionUtil.decrypt(tlsSecret).replace("=",""));
             // pgPassword = (symmetricEncryptionUtil.decrypt(pgPassword).replace("=", ""));
-            pgPassword = (symmetricEncryptionUtil.decrypt(pgPassword));
+            this.configurationManager.getConfiguration().setPgPassword((symmetricEncryptionUtil.decrypt(this.configurationManager.getConfiguration().getPgPassword())));
         }
-        Arrays.stream(pgServerList.split(",")).forEach( server -> {
+        Arrays.stream(this.configurationManager.getConfiguration().getPgServerList().split(",")).forEach( server -> {
             String serverAdress =server;
             int priority = 1;
             if(server.contains("|")){
                 serverAdress=server.split("\\|")[0];
                 priority = Integer.valueOf(server.split("\\|")[1]);
             }
-            PostgresqlServer pgserver = PostgresqlServer.builder().priority(priority).serverAddress(serverAdress).username(pgUser).password(pgPassword).build();
+            PostgresqlServer pgserver = PostgresqlServer.builder()
+                                                        .priority(priority)
+                                                        .serverAddress(serverAdress)
+                                                        .username(this.configurationManager.getConfiguration().getPgUsername())
+                                                        .password(this.configurationManager.getConfiguration().getPgPassword())
+                                                        .build();
             pgList.add(pgserver);
 
         });
