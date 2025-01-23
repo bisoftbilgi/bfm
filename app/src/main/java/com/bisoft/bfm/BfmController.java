@@ -779,6 +779,9 @@ public class BfmController {
             .filter(server -> server.getStatus() == DatabaseStatus.MASTER ).findFirst().get();                    
             try {
                 String sync_result = minipgAccessUtil.setReplicationToSync(master_server, targetAppName);
+                PostgresqlServer syncReplica = this.bfmContext.getPgList().stream().filter(r -> (r.getApplication_name() != null ? r.getApplication_name() :"").equals(targetAppName)).findFirst().get();
+                syncReplica.setSyncState("sync");
+                this.bfmContext.getSyncReplicas().add(syncReplica);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -796,6 +799,8 @@ public class BfmController {
             .filter(server -> server.getStatus() == DatabaseStatus.MASTER ).findFirst().get();                    
             try {
                 String async_result = minipgAccessUtil.setReplicationToAsync(master_server, targetAppName);
+                PostgresqlServer oldSyncReplica = this.bfmContext.getPgList().stream().filter(r -> (r.getApplication_name() != null ? r.getApplication_name() :"").equals(targetAppName)).findFirst().get();
+                this.bfmContext.getSyncReplicas().remove(oldSyncReplica);
             } catch (Exception e) {
                 e.printStackTrace();
             }
