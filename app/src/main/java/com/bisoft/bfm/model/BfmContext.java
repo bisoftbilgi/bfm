@@ -2,6 +2,7 @@ package com.bisoft.bfm.model;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +23,7 @@ public class BfmContext {
     private final SymmetricEncryptionUtil symmetricEncryptionUtil;
 
     private List<PostgresqlServer> pgList;
+    private List<PostgresqlServer> syncReplicas;
 
     @Value("${server.pglist:127.0.0.1:5432}")
     String pgServerList;
@@ -58,6 +60,7 @@ public class BfmContext {
     @PostConstruct
     public void init(){
         pgList = new ArrayList<>();
+        syncReplicas = new ArrayList<>();
         if(isEncrypted) {
             //  log.info(symmetricEncryptionUtil.decrypt(tlsSecret).replace("=",""));
             // pgPassword = (symmetricEncryptionUtil.decrypt(pgPassword).replace("=", ""));

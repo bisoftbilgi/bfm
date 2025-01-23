@@ -217,6 +217,24 @@ public class PostgresqlServer {
         return retval;
     }
 
+    public String getSyncReplicas(){
+        String retval = "";
+        try {
+            Connection con  = this.getServerConnection();
+            PreparedStatement ps = con.prepareStatement("show synchronous_standby_names;");
+            ps.executeQuery();
+            ResultSet rs = ps.getResultSet();
+            while(rs.next()){
+                retval += rs.getString(1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            // log.warn("Connection Failed to server:"+this.getServerAddress());
+            this.databaseStatus = DatabaseStatus.INACCESSIBLE;
+        }
+
+        return retval;
+    }
     public DatabaseStatus getDatabaseStatus(){
         this.setLastCheckDateTime(LocalDateTime.now());
         try {

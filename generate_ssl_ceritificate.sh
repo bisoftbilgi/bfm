@@ -13,3 +13,9 @@ keytool -importkeystore -srckeystore bfm.jks -destkeystore bfm.p12 -deststoretyp
 ############### IMPORT CERTIFICATE #####################################
 
 keytool -import -alias springboot -file myCertificate.crt -keystore springboot.p12 -storepass password
+
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 3650 -nodes -subj "/C=XX/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN=bfm"
+
+
+CRT ve PEM dosyalarindan asagidaki kibi p12 uretebiliyo
+openssl pkcs12 -export -out certificate.p12 -inkey privatekey.pem -in certificate.crt -certfile chain.crt
