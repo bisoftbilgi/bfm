@@ -14,4 +14,3 @@ It has many advantages over diferrent failover managers.
 
 5. WEB UI : You can manage and monitor your PostgreSQL-Cluster with modern web interface, also you can use command line tool (bfm_ctl).
 
-   
