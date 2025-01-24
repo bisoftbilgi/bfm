@@ -1,0 +1,20 @@
+[Unit]
+Description="BFM Service"
+Wants=network-online.target 
+After=network-online.target
+
+[Service]
+Type=forking
+WorkingDirectory=/etc/bfm/bfmwatcher
+User=postgres
+Group=postgres
+
+ExecStart=/etc/bfm/bfmwatcher/bfm.sh start
+ExecStop=/etc/bfm/bfmwatcher/bfm.sh stop
+ExecReload=/etc/bfm/bfmwatcher/bfm.sh reload
+
+Restart=always
+
+[Install]
+WantedBy=sysinit.target
+Alias=bfm.service

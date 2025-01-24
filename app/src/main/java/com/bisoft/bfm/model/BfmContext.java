@@ -4,9 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -14,6 +11,7 @@ import org.springframework.stereotype.Component;
 import com.bisoft.bfm.dto.ClusterStatus;
 import com.bisoft.bfm.helper.SymmetricEncryptionUtil;
 
+import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +23,7 @@ public class BfmContext {
     private final SymmetricEncryptionUtil symmetricEncryptionUtil;
 
     private List<PostgresqlServer> pgList;
+    private List<PostgresqlServer> syncReplicas;
 
     @Value("${server.pglist:127.0.0.1:5432}")
     String pgServerList;
@@ -61,6 +60,7 @@ public class BfmContext {
     @PostConstruct
     public void init(){
         pgList = new ArrayList<>();
+        syncReplicas = new ArrayList<>();
         if(isEncrypted) {
             //  log.info(symmetricEncryptionUtil.decrypt(tlsSecret).replace("=",""));
             // pgPassword = (symmetricEncryptionUtil.decrypt(pgPassword).replace("=", ""));
