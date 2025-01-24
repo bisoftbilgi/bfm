@@ -27,7 +27,7 @@
 
 	<modules>
 		<module>app</module>
-		<!-- <module>rpm</module> -->
+		<module>rpm</module>
 		<!-- <module>deb</module> -->
 	</modules>
 
