@@ -1,5 +1,4 @@
 package com.bisoft.bfm.model;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -11,10 +10,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import com.bisoft.bfm.dto.DatabaseStatus;
 import com.bisoft.bfm.dto.PgVersion;
-
 import lombok.Builder;
 import lombok.Data;
 import lombok.ToString;
@@ -38,6 +37,8 @@ public class PostgresqlServer {
     private String walLogPosition;
     private int timeLineId;
     private int sizeBehindMaster;
+    private String application_name;
+    private String syncState;
     private LocalDateTime lastCheckDateTime;
     private String replayLag;
     @Builder.Default
@@ -57,6 +58,12 @@ public class PostgresqlServer {
             } else {
                 connection.close();
                 connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
+                int retry = 5;
+                while (Objects.isNull(connection) && retry > 0){
+                    retry -= 1;
+                    log.warn("Cant Connect ot server : "+serverAddress+" retrying :"+retry);
+                    connection = DriverManager.getConnection("jdbc:postgresql://" + serverAddress + "/postgres",username,password);
+                }
             }               
         } catch (Exception e) {
             // log.warn("Can't connect to server "+this.getServerAddress());
@@ -154,23 +161,36 @@ public class PostgresqlServer {
         }
     }
 
-    public Map<String,String> getReplayLagMap(){
-        Map<String,String> replayLagMap = new HashMap<>();
+    public Map<String,ArrayList<String>> getReplayLagMap(){
+        Map<String,ArrayList<String>> replayLagMap = new HashMap<>();
         if (this.databaseStatus.equals(DatabaseStatus.MASTER)){
             try {
                 Connection con  = this.getServerConnection();
-                PreparedStatement ps = con.prepareStatement("select client_addr,replay_lag from pg_stat_replication;");
+                PreparedStatement ps = con.prepareStatement("select usesuper from pg_user where usename='"+ username +"';");
                 ps.executeQuery();
                 ResultSet rs = ps.getResultSet();
+                rs.next();
+                if (rs.getString("usesuper").equals("f")){
+                    log.error("User " + username + " is not SUPERUSER. Please grant superuser to "+ username);
+                }
+                ps = con.prepareStatement("select client_addr, replay_lag, application_name, sync_state from pg_stat_replication;");
+                ps.executeQuery();
+                rs = ps.getResultSet();
                 while(rs.next()){
                     String slave_addr = rs.getString("client_addr");
                     String replay_lag = rs.getString("replay_lag");
+                    String slave_appName = rs.getString("application_name");
+                    String sync_state = rs.getString("sync_state");                    
+                    ArrayList<String> values = new ArrayList<String>();
                     if (replay_lag == null) replay_lag = "0";
-                    replayLagMap.put(slave_addr, replay_lag);
+                    values.add(replay_lag);
+                    values.add(slave_appName);
+                    values.add(sync_state);
+                    replayLagMap.put(slave_addr, values);
                 }
 
             } catch (Exception e) {
-                // log.warn("Connection Failed to server:"+this.getServerAddress());
+                log.warn("Connection Failed to server:"+this.getServerAddress());
                 this.databaseStatus = DatabaseStatus.INACCESSIBLE;
             }
         }
@@ -197,6 +217,24 @@ public class PostgresqlServer {
         return retval;
     }
 
+    public String getSyncReplicas(){
+        String retval = "";
+        try {
+            Connection con  = this.getServerConnection();
+            PreparedStatement ps = con.prepareStatement("show synchronous_standby_names;");
+            ps.executeQuery();
+            ResultSet rs = ps.getResultSet();
+            while(rs.next()){
+                retval += rs.getString(1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            // log.warn("Connection Failed to server:"+this.getServerAddress());
+            this.databaseStatus = DatabaseStatus.INACCESSIBLE;
+        }
+
+        return retval;
+    }
     public DatabaseStatus getDatabaseStatus(){
         this.setLastCheckDateTime(LocalDateTime.now());
         try {
@@ -211,6 +249,9 @@ public class PostgresqlServer {
                     this.databaseStatus = DatabaseStatus.MASTER_WITH_NO_SLAVE;
                 }else if (this.isMaster == false && this.hasSlave == false) {
                     this.databaseStatus = DatabaseStatus.SLAVE;
+                    if (this.getHasMasterServer() == Boolean.FALSE){
+                        this.databaseStatus = DatabaseStatus.INACCESSIBLE;
+                    }
                 }else if(this.isMaster == false && this.hasSlave == true) {
                     this.databaseStatus = DatabaseStatus.SLAVE_WITH_SLAVE;
                 }

@@ -228,7 +228,14 @@ fi
 if [ -z $clsUser ] || [ -z $clsPwd ]; then
     echo "user or password NOT set. "
 else
-    active_bfm=$(curl -s http://localhost:9994/bfm/get-active-bfm -u $clsUser:$clsPwd)
+    if [ -f /etc/bfm/bfmwatcher/application.properties ]; then
+        export bfmPort=$(cat /etc/bfm/bfmwatcher/application.properties |grep watcher.cluster-port |cut -d "=" -f 2 |tr -d " ")
+    elif [ -f ./application.properties ]; then
+        export bfmPort=$(cat /etc/bfm/bfmwatcher/application.properties |grep watcher.cluster-port |cut -d "=" -f 2 |tr -d " ")
+    else
+        export bfmPort=9994
+    fi
+    active_bfm=$(curl -s http://localhost:$bfmPort/bfm/get-active-bfm -u $clsUser:$clsPwd)
     echo -e "\nActive BFM :"$active_bfm
     if [ ! -z $clsCommand ] && [ $clsCommand == "status" ]; then
         curl -X GET http://$active_bfm/bfm/cluster-status -u $clsUser:$clsPwd        

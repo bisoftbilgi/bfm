@@ -11,4 +11,6 @@ It has many advantages over diferrent failover managers.
 3. VIP support : You can use virtual ip and transfer virtual ip to new nodes so that your applications does not need any configuration change after the failover.  
 
 4. Self - HA  : You can prefer to use 2 seperate BFM instances to manage the PostgreSQL cluster. If one BFM is down the other will take control.
-   
+
+5. WEB UI : You can manage and monitor your PostgreSQL-Cluster with modern web interface, also you can use command line tool (bfm_ctl).
+
