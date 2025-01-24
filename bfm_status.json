@@ -7,18 +7,18 @@
     {
       "address": "46.101.246.180:5432",
       "databaseStatus": "MASTER",
-      "lastCheck": "2025-01-23 22:58:49",
-      "lastWalPos": "0/13000148",
+      "lastCheck": "2025-01-24 10:30:26",
+      "lastWalPos": "0/1A000148",
       "replayLag": "0",
-      "timeline": 1
+      "timeline": 3
     },
     {
       "address": "46.101.130.251:5432",
       "databaseStatus": "SLAVE",
-      "lastCheck": "2025-01-23 22:58:49",
-      "lastWalPos": "0/13000148",
+      "lastCheck": "2025-01-24 10:30:26",
+      "lastWalPos": "0/1A000148",
       "replayLag": "0",
-      "timeline": 1
+      "timeline": 3
     }
   ]
 }
