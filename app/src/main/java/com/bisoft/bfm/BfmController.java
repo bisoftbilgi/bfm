@@ -350,8 +350,11 @@ public class BfmController {
                                 PostgresqlServer old_master = this.bfmContext.getMasterServer();
                                 String result ="";
                                 
-                                result = minipgAccessUtil.prepareForSwitchOver(old_master);
-                                log.info("Prepare for SwitchOver result :" + result);
+                                // result = minipgAccessUtil.prepareForSwitchOver(old_master);
+                                // log.info("Prepare for SwitchOver result :" + result);
+
+                                result = minipgAccessUtil.stopPg(old_master);
+                                log.info("Stop old master result :" + result);
 
                                 minipgAccessUtil.vipDown(old_master);
 
@@ -382,8 +385,8 @@ public class BfmController {
                                                                         }
                                                                     });
                                                                     
-                                result = minipgAccessUtil.postSwitchOver(old_master, switchOverToPG);
-                                log.info("Ex-Master R/W Set Result :"+ result);
+                                // result = minipgAccessUtil.postSwitchOver(old_master, switchOverToPG);
+                                // log.info("Ex-Master R/W Set Result :"+ result);
                                     
                                 this.bfmContext.setCheckPaused(Boolean.FALSE);
                                 int checkCount = 3;
