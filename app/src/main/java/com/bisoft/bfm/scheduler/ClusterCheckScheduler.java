@@ -939,9 +939,7 @@ public class ClusterCheckScheduler {
                 .forEach(slv -> {
                         if (slv.getApplication_name() == null || slv.getApplication_name() == " " || slv.getApplication_name().equals("walreceiver")){
                             try {
-                                String ipAddr = slv.getServerAddress().split(":")[0];
-                                String newAppName = ipAddr.replace(".", "_");
-                                minipgAccessUtil.setApplicationName(slv, "BFM_"+ newAppName);
+                                minipgAccessUtil.fixApplicationName(slv);
                             } catch (Exception e) {
                                 // TODO Auto-generated catch block
                                 e.printStackTrace();
