@@ -921,6 +921,15 @@ public class ClusterCheckScheduler {
             (this.bfmContext.getPgList().stream().filter(pg -> pg.getStatus() == DatabaseStatus.MASTER).count()) > 0){
             try {
                 String result = minipgAccessUtil.checkMasterVIPNetwork(this.bfmContext.getMasterServer());
+                this.bfmContext.getPgList().stream()
+                                            .filter(sp -> sp.getDatabaseStatus().equals(DatabaseStatus.SLAVE))
+                                            .forEach(rep -> {
+                                                try {
+                                                    minipgAccessUtil.vipDown(rep);
+                                                } catch (Exception e) {
+                                                    log.warn("Error occurred when vip removimg from replica server :"+rep.getServerAddress());
+                                                }
+                                            });
                 log.info("VIP Network Check result:"+ result);
             } catch (Exception e) {
                 log.error("Error on Master Server VIP-Network check:", e);
