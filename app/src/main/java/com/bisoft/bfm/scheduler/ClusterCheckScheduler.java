@@ -914,7 +914,7 @@ public class ClusterCheckScheduler {
         }        
     }
 
-    @Scheduled(fixedDelay = 13000)
+    @Scheduled(fixedDelay = 7000)
     public void checkMasterVIPNetwork(){
         if (this.bfmContext.isCheckPaused() == Boolean.FALSE &&
             this.bfmContext.isMasterBfm() == Boolean.TRUE &&
