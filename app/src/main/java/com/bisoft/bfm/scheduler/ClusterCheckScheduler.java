@@ -898,7 +898,7 @@ public class ClusterCheckScheduler {
                             timelineWaitCount--;
                             if (timelineWaitCount == 0 ){
                                 String checkpoint_result = minipgAccessUtil.checkpoint(this.bfmContext.getMasterServer());
-                                checkpoint_result = minipgAccessUtil.checkpoint(pg);
+                                checkpoint_result += minipgAccessUtil.checkpoint(pg);
                                 timelineWaitCount = (timeoutIgnoranceCount == 0) ? 3 : timeoutIgnoranceCount;
                                 log.info("Master Server Checkpoint executed for timeline divergence. result:"+checkpoint_result);
                             }
