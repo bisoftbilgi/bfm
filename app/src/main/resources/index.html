@@ -75,7 +75,7 @@
                             <table class="table table-borderless toggle-table">
                                 <tr>
                                     <td class="align-middle">Cluster Check</td>
-                                    <td>
+                                    <td class="align-middle text-center">
                                         <label class="switch">
                                             <input id="cb_check" type="checkbox" {{ CHECK_STATUS }} onchange="set_cluster_check();">
                                             <span class="slider" id="round"></span>
@@ -84,7 +84,7 @@
                                 </tr>
                                 <tr>
                                     <td class="align-middle">Mail Notifications</td>
-                                    <td>
+                                    <td class="align-middle text-center">
                                         <label class="switch">
                                             <input id="cb_mail" type="checkbox" {{ MAIL_ENABLED }} onchange="set_mail_notification();">
                                             <span class="slider" id="round"></span>
@@ -93,11 +93,21 @@
                                 </tr>
                                 <tr>
                                     <td class="align-middle">Watch Strategy</td>
-                                    <td>
+                                    <td class="align-middle text-center">
                                         <label class="switch">
                                             <input id="cb_watch" type="checkbox" {{ WATCH_STRATEGY }} onchange="set_watch_strategy();">
                                             <span class="slider round"></span>
                                         </label>                                           
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="align-middle">Password Encrypter</td>
+                                    <td class="align-middle text-center">
+                                        <button type="button" class="btn btn-sm btn-info" style="border-radius: 8px;"
+                                        data-toggle="modal" data-target="#encryptModal">
+                                            <i class="fa fa-key" aria-hidden="true"></i>
+                                            &nbspEncrypt
+                                        </button>                                          
                                     </td>
                                 </tr>
                             </table> 
@@ -120,7 +130,7 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td class="align-middle" colspan="2">
+                                    <td class="align-middle text-center" colspan="2">
                                         <select id="slave_options" onclick="document.getElementById('cb_refresh').checked = false;">
                                             <option value="" selected>Select Slave</option>
                                             {{ SLAVE_OPTIONS }}
@@ -128,15 +138,11 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>
-            
+                                    <td class="align-middle text-center" colspan="2">            
                                         <button type="button" class="btn btn-bfm" onclick="ask_switch_confirm();">
                                             <i class="fa fa-random"></i>
                                             Switch Over
                                         </button>
-                                        
-                                    </td>
-                                    <td>
                                         <button type="button" class="btn btn-bfm" onclick="ask_reinit();">
                                             <i class="fa fa-refresh"></i>
                                             Re-Initialize
@@ -255,6 +261,28 @@
         </div>
         </div>
     </div>
+    <div class="modal fade" id="encryptModal" data-backdrop="static" tabindex="-1" aria-labelledby="encryptModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="confirmModalTitle">Password Encryption</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="form-control" id="txt_plain_password" placeholder="Plain Password">
+                <button type="button" class="btn btn-md btn-info" style="float: right;" onclick="encryptPlainText();">
+                    <i class="fa fa-key" aria-hidden="true"></i> &nbspEncypt
+                </button>
+                <input type="text" class="form-control" id="txt_conseal_password" disabled placeholder="Encrypted Password">                
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+        </div>
+    </div>
 
 
     <script src="/js/jquery-3.3.1.js"></script>
@@ -287,6 +315,31 @@
             }
         });
     
+        function encryptPlainText(){
+            document.getElementById("overlay").style.display = 'block';
+            var active_bfm = document.getElementById("active_bfm").innerText;
+            var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/encrypt/'+document.getElementById("txt_plain_password").value;
+            console.log(bfmUrl);
+            $.ajax({
+                url: bfmUrl,
+                type: "POST",
+                headers: {
+                    'Access-Control-Allow-Origin': '*'
+                },
+                crossDomain: true,                
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                },
+                success: function (data) {
+                    document.getElementById("overlay").style.display = 'none';
+                    document.getElementById("txt_conseal_password").value = data;
+                },
+                error: function (error) {
+                    console.log(`Error ${error}`);
+                }
+            });
+        }
+
         function set_cluster_check(){
             var isChecked = document.getElementById("cb_check").checked;
 
