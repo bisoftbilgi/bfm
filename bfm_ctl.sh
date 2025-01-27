@@ -229,32 +229,51 @@ if [ -z $clsUser ] || [ -z $clsPwd ]; then
     echo "user or password NOT set. "
 else
     if [ -f /etc/bfm/bfmwatcher/application.properties ]; then
-        export bfmPort=$(cat /etc/bfm/bfmwatcher/application.properties |grep watcher.cluster-port |cut -d "=" -f 2 |tr -d " ")
+        export bfmPair=$(cat /etc/bfm/bfmwatcher/application.properties |grep watcher.cluster-pair |cut -d "=" -f 2 |tr -d " ")
+        export bfmSSL=$(cat /etc/bfm/bfmwatcher/application.properties |grep bfm.use-tls |cut -d "=" -f 2 |tr -d " ")
     elif [ -f ./application.properties ]; then
-        export bfmPort=$(cat /etc/bfm/bfmwatcher/application.properties |grep watcher.cluster-port |cut -d "=" -f 2 |tr -d " ")
+        export bfmPair=$(cat /etc/bfm/bfmwatcher/application.properties |grep watcher.cluster-pair |cut -d "=" -f 2 |tr -d " ")
+        export bfmSSL=$(cat /etc/bfm/bfmwatcher/application.properties |grep bfm.use-tls |cut -d "=" -f 2 |tr -d " ")
     else
-        export bfmPort=9994
+        export bfmPair='127.0.0.1:9994'
+        export bfmSSL='false'
     fi
-    active_bfm=$(curl -s http://localhost:$bfmPort/bfm/get-active-bfm -u $clsUser:$clsPwd)
-    echo -e "\nActive BFM :"$active_bfm
+
+    if [ ! -z $bfmSSL ] && [ $bfmSSL == "true" ]; then
+        export bfmProtocol='https'
+    else
+        export bfmProtocol='http'
+    fi
+
+    active_bfm=$(curl -s $bfmProtocol://$bfmPair/bfm/get-active-bfm -u $clsUser:$clsPwd)
+    # echo -e "\nActive BFM :"$active_bfm
     if [ ! -z $clsCommand ] && [ $clsCommand == "status" ]; then
-        curl -X GET http://$active_bfm/bfm/cluster-status -u $clsUser:$clsPwd        
+        curl -X GET $bfmProtocol://$active_bfm/bfm/cluster-status -u $clsUser:$clsPwd        
     elif [ ! -z $clsCommand ] && [ $clsCommand == "pause" ]; then
-        curl -X GET http://$active_bfm/bfm/check-pause -u $clsUser:$clsPwd
+        curl -X GET $bfmProtocol://$active_bfm/bfm/check-pause -u $clsUser:$clsPwd
     elif [ ! -z $clsCommand ] && [ $clsCommand == "resume" ]; then
-        curl -X GET http://$active_bfm/bfm/check-resume -u $clsUser:$clsPwd
+        curl -X GET $bfmProtocol://$active_bfm/bfm/check-resume -u $clsUser:$clsPwd
     elif [ ! -z $clsCommand ] && [ $clsCommand == "mail-pause" ]; then
-        curl -X GET http://$active_bfm/bfm/mail-pause -u $clsUser:$clsPwd
+        curl -X GET $bfmProtocol://$active_bfm/bfm/mail-pause -u $clsUser:$clsPwd
     elif [ ! -z $clsCommand ] && [ $clsCommand == "mail-resume" ]; then
-        curl -X GET http://$active_bfm/bfm/mail-resume -u $clsUser:$clsPwd        
+        curl -X GET $bfmProtocol://$active_bfm/bfm/mail-resume -u $clsUser:$clsPwd        
     elif [ ! -z $clsCommand ] && [ $clsCommand == "strategy" ]; then
-        curl -X POST  http://$active_bfm/bfm/watch-strategy/$clsStrategy -u $clsUser:$clsPwd
+        curl -X POST  $bfmProtocol://$active_bfm/bfm/watch-strategy/$clsStrategy -u $clsUser:$clsPwd
     elif [ ! -z $clsCommand ] && [ $clsCommand == "switchOver" ]; then
-        curl -X POST  http://$active_bfm/bfm/switchover/$targetSlave -u $clsUser:$clsPwd
+        curl -X POST  $bfmProtocol://$active_bfm/bfm/switchover/$targetSlave -u $clsUser:$clsPwd
     elif [ ! -z $clsCommand ] && [ $clsCommand == "reinit" ]; then
-        curl -X POST  http://$active_bfm/bfm/reinit/$targetSlave -u $clsUser:$clsPwd     
+        curl -X POST  $bfmProtocol://$active_bfm/bfm/reinit/$targetSlave -u $clsUser:$clsPwd     
     elif [ ! -z $clsCommand ] && [ $clsCommand == "encrypt" ]; then
-        curl -X POST  http://$active_bfm/bfm/encrypt/$clearStr -u $clsUser:$clsPwd          
+        export retCode=$(curl -s -o /dev/null -w "%{http_code}\n" -k $bfmProtocol://$bfmPair/bfm/cluster-status -u $clsUser:$clsPwd)
+        if [[ "$retCode"=="000" ]]; then
+            export bfmPairIP=$(echo "$bfmPair" | awk -F':' '{print $1}')
+            export serverList=$(cat /etc/bfm/bfmwatcher/application.properties |grep server.pglist |cut -d "=" -f 2 |tr -d " " | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | tr ',' '\n' | grep -v "$bfmPairIP")
+        fi
+
+        curl -k -X POST  $bfmProtocol://$bfmPair/bfm/encrypt/$clearStr -u $clsUser:$clsPwd
+        # if [[ "$restval" == *"No route to host"* ]]; then
+        #     echo "It's there."
+        # fi
     else
         echo "command not found..."$clsCommand
     fi
