@@ -314,7 +314,12 @@
                 document.querySelector(".btn-bfm[onclick='ask_reinit();']").disabled = true;
             }
         });
-    
+        
+        $("#encryptModal").on("hide.bs.modal", function () {
+            document.getElementById("txt_plain_password").value ="";
+            document.getElementById("txt_conseal_password").value ="";
+        });
+
         function encryptPlainText(){
             document.getElementById("overlay").style.display = 'block';
             var active_bfm = document.getElementById("active_bfm").innerText;
