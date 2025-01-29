@@ -622,7 +622,7 @@ public class ClusterCheckScheduler {
     }
 
     public void healthy(){
-        remainingFailCount = timeoutIgnoranceCount;
+        remainingFailCount = (timeoutIgnoranceCount < 3) ? 3 : timeoutIgnoranceCount;
         isWarningMailSended = Boolean.FALSE;
         bfmContext.setClusterStatus(ClusterStatus.HEALTHY);
         bfmContext.setSplitBrainMaster(null);
