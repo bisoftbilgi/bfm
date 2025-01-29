@@ -70,8 +70,8 @@ public class ClusterCheckScheduler {
     @Value("${bfm.ex-master-behavior:rejoin}")
     public String ex_master_behavior;
 
-    int remainingFailCount = (timeoutIgnoranceCount < 1) ? 1 : timeoutIgnoranceCount;
-    int timelineWaitCount = (timeoutIgnoranceCount < 1 ) ? 1 : timeoutIgnoranceCount;
+    int remainingFailCount = (timeoutIgnoranceCount < 3) ? 3 : timeoutIgnoranceCount;
+    int timelineWaitCount = (timeoutIgnoranceCount < 3) ? 3 : timeoutIgnoranceCount;
     int unavailableFailCount = remainingFailCount;
 
     String leaderSlaveLastWalPos = "";
