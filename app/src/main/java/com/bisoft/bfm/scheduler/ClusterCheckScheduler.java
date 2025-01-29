@@ -70,8 +70,8 @@ public class ClusterCheckScheduler {
     @Value("${bfm.ex-master-behavior:rejoin}")
     public String ex_master_behavior;
 
-    int remainingFailCount = (timeoutIgnoranceCount == 0) ? 3 : timeoutIgnoranceCount;
-    int timelineWaitCount = (timeoutIgnoranceCount == 0) ? 3 : timeoutIgnoranceCount;
+    int remainingFailCount = (timeoutIgnoranceCount < 1) ? 1 : timeoutIgnoranceCount;
+    int timelineWaitCount = (timeoutIgnoranceCount < 1 ) ? 1 : timeoutIgnoranceCount;
     int unavailableFailCount = remainingFailCount;
 
     String leaderSlaveLastWalPos = "";
@@ -635,6 +635,7 @@ public class ClusterCheckScheduler {
     }
 
     public void nothealthy(){
+        remainingFailCount--;
         log.info("remainingFailCount:"+remainingFailCount);
         if(remainingFailCount>0){
             this.leaderSlaveLastWalPos = findLeaderSlave().getWalLogPosition();            
@@ -654,14 +655,21 @@ public class ClusterCheckScheduler {
             log.warn(String.format("remaining ignorance count is: %s",String.valueOf(remainingFailCount)));
         }else{
             if (this.bfmContext.getWatch_strategy() != "manual"){
+                String result = "";
                 try {
-                    String result = minipgAccessUtil.startPg(this.bfmContext.getMasterServer());
-                    if (!result.equals("OK")){
+                    result = minipgAccessUtil.startPg(this.bfmContext.getMasterServer());
+                } catch (Exception e) {
+                    log.warn("Master PG Start Error.");
+                }
+                if (!result.equals("OK")){
                         String leaderSlaveCurrentWalPos = findLeaderSlave().getWalLogPosition();
                         // str1.compareTo (str2); 
                         // If str1 is lexicographically less than str2, a negative number will be returned, 
                         // 0 if equal or a positive number if str1 is greater.
-                        if (leaderSlaveCurrentWalPos.compareTo(this.leaderSlaveLastWalPos) > 0){
+                        if (this.leaderSlaveLastWalPos == null){
+                            log.warn("Leader Slave Last Wal Pos is null. Goig to FailOver..");
+                            failover();
+                        } else if (leaderSlaveCurrentWalPos.compareTo(this.leaderSlaveLastWalPos) > 0){
                             log.info("Leader Slave Last Wal Pos:"+ leaderSlaveLastWalPos+ " Leader Slave Current Wal Pos:"+leaderSlaveCurrentWalPos);
                             log.info("Slave Wal Pos is move forwarding..Possibly BFM cant reach Master Server. Ignoring Failover..");
                         } else {
@@ -739,9 +747,6 @@ public class ClusterCheckScheduler {
                             }                 
                         }      
                     }
-                } catch (Exception e) {
-                    log.warn("PG Start Error.");
-                }
 
             } else {
                 this.bfmContext.setClusterStatus(ClusterStatus.NOT_HEALTHY);
@@ -753,7 +758,7 @@ public class ClusterCheckScheduler {
             }
             
         }
-        remainingFailCount--;
+
     }
 
 
