@@ -635,7 +635,6 @@ public class ClusterCheckScheduler {
     }
 
     public void nothealthy(){
-        remainingFailCount--;
         log.info("remainingFailCount:"+remainingFailCount);
         if(remainingFailCount>0){
             this.leaderSlaveLastWalPos = findLeaderSlave().getWalLogPosition();            
@@ -754,7 +753,7 @@ public class ClusterCheckScheduler {
             }
             
         }
-
+        remainingFailCount--;
     }
 
 
