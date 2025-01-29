@@ -22,7 +22,7 @@ public class BfmApplication implements CommandLineRunner {
 	@Bean(destroyMethod = "shutdown")
 	public ThreadPoolTaskScheduler taskScheduler() {
 		ThreadPoolTaskScheduler taskScheduler = new ThreadPoolTaskScheduler();
-		taskScheduler.setPoolSize(10);
+		taskScheduler.setPoolSize(20);
 		return  taskScheduler;
 	}
 

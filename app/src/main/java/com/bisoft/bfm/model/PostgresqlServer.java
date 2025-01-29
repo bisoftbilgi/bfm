@@ -249,9 +249,9 @@ public class PostgresqlServer {
                     this.databaseStatus = DatabaseStatus.MASTER_WITH_NO_SLAVE;
                 }else if (this.isMaster == false && this.hasSlave == false) {
                     this.databaseStatus = DatabaseStatus.SLAVE;
-                    if (this.getHasMasterServer() == Boolean.FALSE){
-                        this.databaseStatus = DatabaseStatus.INACCESSIBLE;
-                    }
+                    // if (this.getHasMasterServer() == Boolean.FALSE){
+                    //     this.databaseStatus = DatabaseStatus.INACCESSIBLE;
+                    // }
                 }else if(this.isMaster == false && this.hasSlave == true) {
                     this.databaseStatus = DatabaseStatus.SLAVE_WITH_SLAVE;
                 }
