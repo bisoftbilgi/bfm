@@ -137,11 +137,15 @@ public class ClusterCheckScheduler {
                                     && server != this.bfmContext.getSplitBrainMaster())
                             .forEach(server -> {
                                 try {
-                                    // if (unavailableFailCount > 0){
-                                    //     unavailableFailCount -= 1;
-                                    //     log.warn("remain Fail Count : " + unavailableFailCount);
-                                    //     return;
-                                    // }
+                                    if (server.getSyncState().equals("sync")){
+                                            log.warn(" INACCESSIBLE Sync Slave Removed from sync names on MASTER");
+                                            try {
+                                                String async_result = minipgAccessUtil.setReplicationToAsync(this.bfmContext.getMasterServer(), server.getApplication_name());
+                                                log.info("Async Op Result : "+ async_result);
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
+                                            }
+                                    }
 
                                     if (this.bfmContext.getWatch_strategy().equals("availability")) {
                                         if (master != null) {
@@ -243,6 +247,7 @@ public class ClusterCheckScheduler {
                 try {
                     checkServer(server);
                 }catch(Exception e){
+                    System.out.println(e);
                     log.error(String.format("Unable to connect to server : %s",server.getServerAddress()));
                     this.bfmContext.setLastCheckLog(this.bfmContext.getLastCheckLog() + 
                     String.format("Unable to connect to server : %s",server.getServerAddress())+ "\n");
@@ -263,33 +268,29 @@ public class ClusterCheckScheduler {
         if (status.equals(DatabaseStatus.MASTER)){
             this.bfmContext.setMasterServer(postgresqlServer);
             
-                String strSyncReplicas = postgresqlServer.getSyncReplicas();
-                if (strSyncReplicas.length() > 3){
-                    strSyncReplicas = strSyncReplicas.substring(strSyncReplicas.indexOf("(")+1,strSyncReplicas.length()-1);
-                    for (String syncReplica : strSyncReplicas.split(",")) {
-                        PostgresqlServer sRep = this.bfmContext.getPgList().stream().filter(r -> (r.getApplication_name() != null ? r.getApplication_name() :"").equals(syncReplica)).findFirst().get();
-                        if (!(this.bfmContext.getSyncReplicas().contains(sRep))){
-                            this.bfmContext.getSyncReplicas().add(sRep);
-                        }                
-                    }
-                }    
-            
-        }
-
-        if (postgresqlServer.getStatus().equals(DatabaseStatus.INACCESSIBLE) 
-            && postgresqlServer.getSyncState().equals("sync")){
-                log.warn("Sync Slave INACCESSIBLE, Removed from sync names on MASTER");
-                try {
-                    String async_result = minipgAccessUtil.setReplicationToAsync(this.bfmContext.getMasterServer(), postgresqlServer.getApplication_name());
-                    log.info("Async Op Result : "+ async_result);
-                } catch (Exception e) {
-                    e.printStackTrace();
+            String strSyncReplicas = postgresqlServer.getSyncReplicas();
+            if (strSyncReplicas.length() > 3){
+                strSyncReplicas = strSyncReplicas.substring(strSyncReplicas.indexOf("(")+1,strSyncReplicas.length()-1);
+                for (String syncReplica : strSyncReplicas.split(",")) {
+                    this.bfmContext.getPgList().stream().forEach(m -> {
+                        if (!(m.getStatus()==null?DatabaseStatus.MASTER:m.getStatus()).equals(DatabaseStatus.MASTER)
+                                && !(m.getStatus()==null?DatabaseStatus.MASTER:m.getStatus()).equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)){
+                                    String appName = (m.getApplication_name()==null ? "" : m.getApplication_name());
+                                    if (appName.equals(syncReplica)){
+                                        if (!(this.bfmContext.getSyncReplicas().contains(m))){
+                                            this.bfmContext.getSyncReplicas().add(m);
+                                        }                            
+                                    }
+                                }
+                        
+                    });
+                    
                 }
-        }
-        // System.out.println(this.bfmContext.getSyncReplicas());
-        if (postgresqlServer.getStatus().equals(DatabaseStatus.SLAVE) 
-            && postgresqlServer.getSyncState().equals("async")){
+            }    
             
+         } else if (status.equals(DatabaseStatus.SLAVE)){
+
+             if ((postgresqlServer.getSyncState()==null ? "" : postgresqlServer.getSyncState()).equals("async")){            
                 if (this.bfmContext.getSyncReplicas().stream().filter(px -> px.getServerAddress().equals(postgresqlServer.getServerAddress())).count() > 0 ){
                     log.warn("async SLAVE getting to SYNC State as previously set");
                     try {
@@ -299,7 +300,9 @@ public class ClusterCheckScheduler {
                         e.printStackTrace();
                     }
                 }
+            }
         }
+        
         
         log.info(String.format("Status of %s is %s",postgresqlServer.getServerAddress(),status));
         this.bfmContext.setLastCheckLog(this.bfmContext.getLastCheckLog() +
