@@ -268,6 +268,7 @@ public class ClusterCheckScheduler {
     public void checkServer(PostgresqlServer postgresqlServer) throws Exception {
         DatabaseStatus status = postgresqlServer.getDatabaseStatus();
         if (status.equals(DatabaseStatus.MASTER)){
+            postgresqlServer.setSyncState("");
             this.bfmContext.setMasterServer(postgresqlServer);
             
             String strSyncReplicas = postgresqlServer.getSyncReplicas();
