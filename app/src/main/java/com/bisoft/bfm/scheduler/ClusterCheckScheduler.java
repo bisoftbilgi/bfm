@@ -1,5 +1,6 @@
 package com.bisoft.bfm.scheduler;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.PrintWriter;
@@ -123,21 +124,21 @@ public class ClusterCheckScheduler {
         } else {
             if (this.bfmContext.isMasterBfm()) {
                 Long masterCount = this.bfmContext.getPgList().stream()
-                            .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE
-                                    || server.getStatus() == DatabaseStatus.MASTER)
+                            .filter(server -> server.getDatabaseStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE
+                                    || server.getDatabaseStatus() == DatabaseStatus.MASTER)
                             .count();
                 if (masterCount > 0){
                     PostgresqlServer master = this.bfmContext.getPgList().stream()
-                            .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE
-                                    || server.getStatus() == DatabaseStatus.MASTER)
+                            .filter(server -> server.getDatabaseStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE
+                                    || server.getDatabaseStatus() == DatabaseStatus.MASTER)
                             .findFirst().get();
 
                     this.bfmContext.getPgList().stream()
-                            .filter(server -> server.getStatus() == DatabaseStatus.INACCESSIBLE
+                            .filter(server -> server.getDatabaseStatus() == DatabaseStatus.INACCESSIBLE
                                     && server != this.bfmContext.getSplitBrainMaster())
                             .forEach(server -> {
                                 try {
-                                    if (server.getSyncState().equals("sync")){
+                                    if ((server.getSyncState()==null ? "": server.getSyncState()).equals("sync")){
                                             log.warn(" INACCESSIBLE Sync Slave Removed from sync names on MASTER");
                                             try {
                                                 String async_result = minipgAccessUtil.setReplicationToAsync(this.bfmContext.getMasterServer(), server.getApplication_name());
@@ -193,6 +194,7 @@ public class ClusterCheckScheduler {
                                         }
                                     }
                                 } catch (Exception e) {
+                                    e.printStackTrace();
                                     log.error(String.format("Unable to rewind %s", server.getServerAddress()));
                                 }
                             });
@@ -369,7 +371,7 @@ public class ClusterCheckScheduler {
                                                 }    
                                             }
                                         } catch (Exception e) {
-                                            log.error(String.format("Unable to rewind %s", pg.getServerAddress()));
+                                            log.error(String.format("Unable to rewind splitted_master %s", pg.getServerAddress()));
                                         }
                                     });
 
@@ -643,7 +645,6 @@ public class ClusterCheckScheduler {
                     log.info("Master Server start result is "+result);
                 } catch (Exception e) {
                     log.info("Error on Master Server start error:");
-                    e.printStackTrace();
                 }
             }
             log.warn(String.format("remaining ignorance count is: %s",String.valueOf(remainingFailCount)));
@@ -662,54 +663,56 @@ public class ClusterCheckScheduler {
                     long diff_hours = 0;
                     long diff_days = 0;
                     Boolean doFailover = Boolean.TRUE;
-                    if ( downMasterLastWalPos == null){                        
-                        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-                        try {
-                            JsonReader reader = new JsonReader(new FileReader("./bfm_status.json"));
-                            ContextStatus cs = gson.fromJson(reader, ContextStatus.class); 
-                            if (cs != null){
-                                String downMasterLastCheck = cs.getClusterServers().stream().filter(s -> s.getDatabaseStatus().equals("MASTER")).findFirst().get().getLastCheck();
-                                downMasterLastWalPos = cs.getClusterServers().stream().filter(s -> s.getDatabaseStatus().equals("MASTER")).findFirst().get().getLastWalPos();
-                                DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                                LocalDateTime downMasterLastCheckDT  = LocalDateTime.parse(downMasterLastCheck, dateFormatter);
-                                diff_hours = java.time.Duration.between(LocalDateTime.now(), downMasterLastCheckDT).toHours(); 
-                                diff_days = java.time.Duration.between(LocalDateTime.now(), downMasterLastCheckDT).toDays();
+                    if ( downMasterLastWalPos == null){
+                        File f = new File("./bfm_status.json");
+                        if(f.exists() && !f.isDirectory()) { 
+                            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                            try {
+                                JsonReader reader = new JsonReader(new FileReader("./bfm_status.json"));
+                                ContextStatus cs = gson.fromJson(reader, ContextStatus.class); 
+                                if (cs != null){
+                                    String downMasterLastCheck = cs.getClusterServers().stream().filter(s -> s.getDatabaseStatus().equals("MASTER")).findFirst().get().getLastCheck();
+                                    downMasterLastWalPos = cs.getClusterServers().stream().filter(s -> s.getDatabaseStatus().equals("MASTER")).findFirst().get().getLastWalPos();
+                                    DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                                    LocalDateTime downMasterLastCheckDT  = LocalDateTime.parse(downMasterLastCheck, dateFormatter);
+                                    diff_hours = java.time.Duration.between(LocalDateTime.now(), downMasterLastCheckDT).toHours(); 
+                                    diff_days = java.time.Duration.between(LocalDateTime.now(), downMasterLastCheckDT).toDays();
+                                } else {
+                                    log.warn("bfm_status.json is empty. Ignore Failover routine. Please manual respond.");
+                                    status_file_expire = "99E";
+                                }  
+                                
+                            } catch (FileNotFoundException e) {
+                                log.warn("Cluster has no Master server, bfm_status.json not found..! Master Server Last Wal Position is null..");
+                            }
+                        
+                            if (status_file_expire.contains("H")){
+                                if (diff_hours > Integer.parseInt(status_file_expire.replace("H", ""))){
+                                    doFailover = Boolean.FALSE;
+                                    log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, "+diff_hours+ " Hours) old..");
+                                    if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
+                                        log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");
+                                        mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                                        "Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");  
+                                    }
+                                }
+                            } else if (status_file_expire.contains("D")){
+                                if (diff_days > Integer.parseInt(status_file_expire.replace("D", ""))){
+                                    doFailover = Boolean.FALSE;
+                                    log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, "+diff_hours+ " Hours) old..");
+                                    if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
+                                        log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");
+                                        mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                                        "Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");  
+                                    }
+                                }
                             } else {
-                                log.warn("bfm_status.json is empty. Ignore Failover routine. Please manual respond.");
-                                status_file_expire = "99E";
-                            }  
-                            
-                        } catch (FileNotFoundException e) {
-                            e.printStackTrace();
-                            log.warn("Cluster has no Master server, bfm_status.json not found..! Master Server Last Wal Position is null..");
-                        }
-                    
-                        if (status_file_expire.contains("H")){
-                            if (diff_hours > Integer.parseInt(status_file_expire.replace("H", ""))){
                                 doFailover = Boolean.FALSE;
-                                log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, "+diff_hours+ " Hours) old..");
-                                if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
-                                    log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");
-                                    mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
-                                    "Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");  
-                                }
+                                if (status_file_expire != "99E"){
+                                    log.warn("status-file-expire parameter error:"+status_file_expire);
+                                }                            
                             }
-                        } else if (status_file_expire.contains("D")){
-                            if (diff_days > Integer.parseInt(status_file_expire.replace("D", ""))){
-                                doFailover = Boolean.FALSE;
-                                log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, "+diff_hours+ " Hours) old..");
-                                if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
-                                    log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");
-                                    mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
-                                    "Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");  
-                                }
-                            }
-                        } else {
-                            doFailover = Boolean.FALSE;
-                            if (status_file_expire != "99E"){
-                                log.warn("status-file-expire parameter error:"+status_file_expire);
-                            }                            
-                        }
+                        } 
 
                     } 
 
@@ -793,17 +796,23 @@ public class ClusterCheckScheduler {
     }
 
     public PostgresqlServer selectNewMaster() {
-
         if(this.bfmContext.getPgList().size() == 2 && 
-        this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0).filter(server -> server.getStatus() == DatabaseStatus.SLAVE).count() == 0){
-            return this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0)
-                    .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE)
-                    .sorted(Comparator.comparingInt(PostgresqlServer::getPriority).reversed())
-                    .findFirst().get();
+            this.bfmContext.getPgList()
+                                .stream()
+                                .filter(s1 -> s1.getPriority()!=0)
+                                .filter(s2 -> s2.getDatabaseStatus().equals(DatabaseStatus.SLAVE)).count() == 0){
+            return this.bfmContext.getPgList()
+                                .stream()
+                                .filter(server -> server.getPriority()!=0)
+                                .filter(server -> server.getDatabaseStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE))
+                                .sorted(Comparator.comparingInt(PostgresqlServer::getPriority).reversed())
+                                .findFirst().get();
         }
 
         if(this.bfmContext.getPgList().size() == 2 &&
-        this.bfmContext.getPgList().stream().filter(server -> server.getPriority()!=0).filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE).count() > 1){
+            this.bfmContext.getPgList().stream()
+                                       .filter(server -> server.getPriority()!=0)
+                                       .filter(server -> server.getDatabaseStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)).count() > 1){
             
             return this.findLeader();
 
