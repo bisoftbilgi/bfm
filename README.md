@@ -14,3 +14,10 @@ It has many advantages over diferrent failover managers.
 
 5. WEB UI : You can manage and monitor your PostgreSQL-Cluster with modern web interface, also you can use command line tool (bfm_ctl).
 
+## Installation
+
+To install BFM, first add the repository and then install the package:
+
+```bash
+sudo dnf install -y https://nexus.bisoft.com.tr/repository/bfm-yum/repo/bisoft-repo-1.0-1.noarch.rpm
+sudo dnf search -y bfm
