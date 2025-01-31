@@ -20,4 +20,4 @@ To install BFM, first add the repository and then install the package:
 
 ```bash
 sudo dnf install -y https://nexus.bisoft.com.tr/repository/bfm-yum/repo/bisoft-repo-1.0-1.noarch.rpm
-sudo dnf search -y bfm
+sudo dnf search bfm*
