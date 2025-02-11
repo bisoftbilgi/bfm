@@ -198,7 +198,6 @@ public class ClusterCheckScheduler {
                                             }
                                         }
                                     } catch (Exception e) {
-                                        e.printStackTrace();
                                         log.error(String.format("Unable to rewind %s", server.getServerAddress()));
                                     }
                                 });
