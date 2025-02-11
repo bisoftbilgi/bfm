@@ -5,20 +5,20 @@
   "watchStrategy": "availability",
   "clusterServers": [
     {
-      "address": "46.101.246.180:5432",
+      "address": "46.101.246.180:5439",
       "databaseStatus": "SLAVE",
-      "lastCheck": "2025-01-29 13:44:33",
-      "lastWalPos": "0/61000060",
+      "lastCheck": "2025-02-11 16:52:56",
+      "lastWalPos": "0/62000150",
       "replayLag": "0",
-      "timeline": 28
+      "timeline": 29
     },
     {
       "address": "46.101.130.251:5432",
       "databaseStatus": "MASTER",
-      "lastCheck": "2025-01-29 13:44:33",
-      "lastWalPos": "0/61000060",
+      "lastCheck": "2025-02-11 16:52:56",
+      "lastWalPos": "0/62000150",
       "replayLag": "0",
-      "timeline": 28
+      "timeline": 29
     }
   ]
 }

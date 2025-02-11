@@ -322,9 +322,7 @@
 
         function encryptPlainText(){
             document.getElementById("overlay").style.display = 'block';
-            var active_bfm = document.getElementById("active_bfm").innerText;
-            var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/encrypt/'+document.getElementById("txt_plain_password").value;
-            console.log(bfmUrl);
+            var bfmUrl = '/bfm/encrypt/'+document.getElementById("txt_plain_password").value;
             $.ajax({
                 url: bfmUrl,
                 type: "POST",
@@ -353,14 +351,12 @@
             document.getElementById("slave_options").disabled = !isChecked;
             document.querySelector(".btn-bfm[onclick='ask_switch_confirm();']").disabled = !isChecked;
             document.querySelector(".btn-bfm[onclick='ask_reinit();']").disabled = !isChecked;
-
-            var active_bfm = document.getElementById("active_bfm").innerText
             document.getElementById("overlay").style.display = 'block';
             var bfmUrl = '';
             if (document.getElementById("cb_check").checked == false){
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/check-pause';
+                var bfmUrl = '/bfm/check-pause';
             } else if (document.getElementById("cb_check").checked == true){
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/check-resume';
+                var bfmUrl = '/bfm/check-resume';
             } else {
                 var bfmUrl = '#';
             }
@@ -385,13 +381,13 @@
         }
 
         function set_mail_notification(){
-            var active_bfm = document.getElementById("active_bfm").innerText
+            
             document.getElementById("overlay").style.display = 'block';
             var bfmUrl = '';
             if (document.getElementById("cb_mail").checked == true){
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/mail-resume';
+                var bfmUrl = '/bfm/mail-resume';
             } else if (document.getElementById("cb_mail").checked == false){
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/mail-pause';
+                var bfmUrl = '/bfm/mail-pause';
             } else {
                 var bfmUrl = '#';
             }
@@ -416,12 +412,12 @@
         }
 
         function set_watch_strategy(){
-            var active_bfm = document.getElementById("active_bfm").innerText
+            
             document.getElementById("overlay").style.display = 'block';
             if (document.getElementById("cb_watch").checked == true){
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/watch-strategy/A';
+                var bfmUrl = '/bfm/watch-strategy/A';
             } else if (document.getElementById("cb_watch").checked == false){
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/watch-strategy/M';
+                var bfmUrl = '/bfm/watch-strategy/M';
             } else {
                 var bfmUrl = '#'
             }            
@@ -453,7 +449,7 @@
         }
         function start_reinit(){
             $('#confirmModal').modal('hide');
-            var active_bfm = document.getElementById("active_bfm").innerText
+            
             var bfmUrl = '';
             var targetPg = document.getElementById("slave_options").value;
             if (targetPg.length < 5 ){
@@ -463,7 +459,7 @@
                 // $.growl.warning({ message: "The kitten is ugly!" });
             } else {
                 document.getElementById("overlay").style.display = 'block';
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/reinit/'+targetPg;            
+                var bfmUrl = '/bfm/reinit/'+targetPg;            
                 $.ajax({
                     url: bfmUrl,
                     type: "POST",
@@ -541,7 +537,7 @@
 
         function start_switch(){
             $('#confirmModal').modal('hide');
-            const active_bfm = document.getElementById("active_bfm").innerText
+            
             let targetPg = document.getElementById("slave_options").value;
             var bfmUrl = '';            
             if (targetPg.length < 5 ){
@@ -552,8 +548,7 @@
             } else {
                 document.getElementById("overlay").style.display = 'block';
                 //var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/switchover/'+targetPg;
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/switchover/'+targetPg;
-                console.log(bfmUrl);
+                var bfmUrl = '/bfm/switchover/'+targetPg;
                 $.ajax({
                     url: bfmUrl,
                     type: "POST",
@@ -580,8 +575,7 @@
         (function () {
             function getLogs() {
                 const focusedElement = document.activeElement;
-                var active_bfm = document.getElementById("active_bfm").innerText;
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getLogs';
+                var bfmUrl = '/bfm/getLogs';
 
                 $.ajax({
                         url: bfmUrl,
@@ -606,8 +600,7 @@
     <script>
         (function () {
             function getStatus(runOnce) {
-                var active_bfm = document.getElementById("active_bfm").innerText;
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getClsStatus';
+                var bfmUrl = '/bfm/getClsStatus';
 
                 if (document.getElementById('cb_refresh').checked == true || runOnce == true){
                     $.ajax({
@@ -647,9 +640,7 @@
     </script> 
     <script>
         function getSlaveRows(){
-            
-            var active_bfm = document.getElementById("active_bfm").innerText;
-            var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getSlvRows';
+            var bfmUrl = '/bfm/getSlvRows';
             $.ajax({
             url: bfmUrl,
             context: document.body
@@ -662,8 +653,7 @@
         };
 
         function getRows(runOnce) {
-                var active_bfm = document.getElementById("active_bfm").innerText;
-                var bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/getClsRows';
+                var bfmUrl = '/bfm/getClsRows';
                 if (document.getElementById('cb_refresh').checked == true || runOnce == true){
                     $.ajax({
                     url: bfmUrl,
@@ -707,8 +697,7 @@
             //document.getElementById('cb_refresh').removeAttribute('checked');
             document.getElementById('cb_refresh').checked = false;
             document.getElementById("overlay").style.display = 'block';
-            var active_bfm = document.getElementById("active_bfm").innerText;
-            let bfmUrl = window.location.protocol +'//' + active_bfm ;
+            let bfmUrl;
             if (document.getElementById('cb_sync_'+slave_appname).checked == true){
                 bfmUrl += '/bfm/setsync/' + slave_appname;
             } else {
@@ -765,8 +754,7 @@
             }
 
             document.getElementById("overlay").style.display = 'block';
-            const active_bfm = document.getElementById("active_bfm").innerText;
-            let bfmUrl = window.location.protocol +'//' + active_bfm + '/bfm/setpriority/'+serverAddress+'/'+newPriority;
+            let bfmUrl = '/bfm/setpriority/'+serverAddress+'/'+newPriority;
             $.ajax({
                     url: bfmUrl,
                     type: "POST",
