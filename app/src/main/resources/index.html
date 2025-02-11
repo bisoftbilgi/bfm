@@ -697,11 +697,11 @@
             //document.getElementById('cb_refresh').removeAttribute('checked');
             document.getElementById('cb_refresh').checked = false;
             document.getElementById("overlay").style.display = 'block';
-            let bfmUrl;
+            let bfmUrl = ""
             if (document.getElementById('cb_sync_'+slave_appname).checked == true){
-                bfmUrl += '/bfm/setsync/' + slave_appname;
+                bfmUrl = '/bfm/setsync/' + slave_appname;
             } else {
-                bfmUrl += '/bfm/setasync/' + slave_appname;
+                bfmUrl = '/bfm/setasync/' + slave_appname;
             }
             $.ajax({
                     url: bfmUrl,
