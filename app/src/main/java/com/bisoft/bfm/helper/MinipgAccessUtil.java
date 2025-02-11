@@ -191,7 +191,7 @@ public class MinipgAccessUtil {
 
     public String vipDown(PostgresqlServer postgresqlServer) throws Exception{
         //log.info("username : "+username+", password : "+password);
-        log.info("vip down sent to "+postgresqlServer.getServerAddress());
+        // log.info("vip down sent to "+postgresqlServer.getServerAddress());
         final String serverAddress = postgresqlServer.getServerAddress().split(":")[0];
         String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
         final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
@@ -242,27 +242,38 @@ public class MinipgAccessUtil {
 
     }
 
-    public String checkpoint(PostgresqlServer postgresqlServer) throws JsonProcessingException {
+    public String checkpoint(PostgresqlServer postgresqlServer) throws Exception {
         //log.info("username : "+username+", password : "+password);
         final String serverAddress = postgresqlServer.getServerAddress().split(":")[0];
         final String serverPort = postgresqlServer.getServerAddress().split(":")[1];
         String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
         final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
-
-        //CheckPointDTO cpdto = CheckPointDTO.builder().user(serverAddress).port(serverPort).password().build();
-
-        ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
-        //String json = ow.writeValueAsString(cpdto);
-
         credsProvider.setCredentials(
                 new AuthScope(serverAddress, port),
                 new UsernamePasswordCredentials(username, password.toCharArray()));
+    
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                    SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                    NoopHostnameVerifier.INSTANCE);
+    
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                    .setSSLSocketFactory(scsf)
+                    .build();
+    
 
         try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
                 .setDefaultCredentialsProvider(credsProvider)
                 .build()) {
 
             HttpGet httpGet = new HttpGet(minipgUrl+"/minipg/checkpoint");
+            //timeout if server is shutdown
+            RequestConfig requestConfig = RequestConfig.custom()
+                    .setConnectTimeout(Timeout.of(5, TimeUnit.SECONDS))
+                    .setConnectionRequestTimeout(Timeout.of(5, TimeUnit.SECONDS))
+                    .build();
+
+            httpGet.setConfig(requestConfig);
 
             try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
                 // log.info(response1.getCode() + " " + response1.getReasonPhrase());
@@ -270,17 +281,20 @@ public class MinipgAccessUtil {
                 // do something useful with the response body
                 // and ensure it is fully consumed
                 String result = (EntityUtils.toString(response1.getEntity()));
-                return result;
+                //return result;
+                return "OK";
             }catch (Exception e){
                 log.error("Unable perform checkpoint in server "+postgresqlServer.getServerAddress());
+                return null;
             }
 
 
         } catch (IOException e) {
             log.error("Unable perform checkpoint in server "+postgresqlServer.getServerAddress());
+            return null;
         }
 
-        return "OK";
+        // return "OK";
 
     }
 
@@ -802,6 +816,53 @@ public class MinipgAccessUtil {
             }
         } catch (IOException e) {
             log.error("Unable post set-application-name to server "+targetSlave.getServerAddress());
+        }
+        return "OK";
+    }
+
+    public String fixApplicationName(PostgresqlServer targetSlave)throws Exception {
+        log.info("application_name fix to hostname started for server :"+targetSlave.getServerAddress());
+        final String serverAddress = targetSlave.getServerAddress().split(":")[0];
+        final String serverPort = targetSlave.getServerAddress().split(":")[1];
+        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                NoopHostnameVerifier.INSTANCE);
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(scsf)
+                .build();
+
+        credsProvider.setCredentials(
+                new AuthScope(serverAddress, port),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+
+        try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credsProvider)
+                .build()) {
+            
+            HttpGet httpGet = new HttpGet(minipgUrl+"/minipg/fixappname");
+            
+            //timeout if server is shutdown
+            RequestConfig requestConfig = RequestConfig.custom()
+                    .setConnectTimeout(Timeout.of(5, TimeUnit.SECONDS))
+                    .setConnectionRequestTimeout(Timeout.of(5, TimeUnit.SECONDS))
+                    .build();
+
+            httpGet.setConfig(requestConfig);
+            try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
+                HttpEntity entity1 = (HttpEntity) response1.getEntity();
+                // do something useful with the response body
+                // and ensure it is fully consumed
+                String result = (EntityUtils.toString(response1.getEntity()));
+                return result;
+            }catch (Exception e){
+                log.error("Unable to fix application-name for server "+targetSlave.getServerAddress());
+            }
+        } catch (IOException e) {
+            log.error("Unable to fix application-name for server "+targetSlave.getServerAddress());
         }
         return "OK";
     }
