@@ -127,15 +127,11 @@ public class ClusterCheckScheduler {
                                                                     .filter(server -> server.getDatabaseStatus().equals(DatabaseStatus.INACCESSIBLE))
                                                                     .count();
                 if (Long.valueOf(inaccessibleCount) > 0){
-                    Long masterCount = this.bfmContext.getPgList().stream()
-                    .filter(server -> server.getDatabaseStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)
-                            || server.getDatabaseStatus().equals(DatabaseStatus.MASTER))
-                    .count();
-                    if (masterCount > 0){
-                        PostgresqlServer master = this.bfmContext.getPgList().stream()
-                                .filter(server -> server.getDatabaseStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)
-                                        || server.getDatabaseStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE))
-                                .findFirst().get();
+                    
+                    this.bfmContext.getPgList().stream()
+                    .filter(server -> (server.getDatabaseStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)
+                                        || server.getDatabaseStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)))
+                    .findFirst().ifPresent(master -> {
 
                         this.bfmContext.getPgList().stream()
                                 .filter(server -> server.getDatabaseStatus().equals(DatabaseStatus.INACCESSIBLE)
@@ -202,7 +198,8 @@ public class ClusterCheckScheduler {
                                     }
                                 });
 
-                    }
+                    });        
+                    
                 }
             }
         }
