@@ -121,23 +121,10 @@ public class BfmController {
     @RequestMapping(path = "/get-active-bfm",method = RequestMethod.GET)
     public @ResponseBody String getActiveBfm(){
         if(bfmContext.isMasterBfm() == true){
-            ArrayList<String> serverIPAddress = new ArrayList<String>();
-
-            try {
-                Enumeration<NetworkInterface> b = NetworkInterface.getNetworkInterfaces();
-                while( b.hasMoreElements()){
-                    for ( InterfaceAddress f : b.nextElement().getInterfaceAddresses())
-                        if ( f.getAddress().toString().contains(".") && f.getAddress().toString() !="127.0.0.1")
-                        serverIPAddress.add(f.getAddress().toString().replace("/",""));
-                }
-            } catch (SocketException e) {
-                e.printStackTrace();
-            }
-
-            String bfmIpStr = this.bfmContext.getPgList().stream().filter(s -> (serverIPAddress.contains(s.getServerAddress().split(":")[0]))).findFirst().get().getServerAddress();
-            return ((bfmIpStr.split(":")[0])+":"+cluster_port);
+            return "T";
+        } else {
+            return "F";
         }
-        return bfmPair;
     }
 
     @RequestMapping(path = "/check-pause",method = RequestMethod.GET)
