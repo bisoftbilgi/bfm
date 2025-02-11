@@ -30,5 +30,4 @@
 		<module>rpm</module>
 		<module>deb</module>
 	</modules>
-
 </project>

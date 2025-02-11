@@ -13,3 +13,15 @@ It has many advantages over diferrent failover managers.
 4. Self - HA  : You can prefer to use 2 seperate BFM instances to manage the PostgreSQL cluster. If one BFM is down the other will take control.
 
 5. WEB UI : You can manage and monitor your PostgreSQL-Cluster with modern web interface, also you can use command line tool (bfm_ctl).
+
+## Installation
+
+To install BFM, first add the repository and then install the package:
+
+```bash
+sudo dnf install -y https://nexus.bisoft.com.tr/repository/bfm-yum/repo/bisoft-repo-1.0-1.noarch.rpm
+sudo dnf install -y bfm-rpm-package
+
+
+sudo yum install -y https://nexus.bisoft.com.tr/repository/bfm-yum/repo/bisoft-repo-1.0-1.noarch.rpm
+sudo yum install -y bfm-rpm-package
