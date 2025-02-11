@@ -123,7 +123,7 @@ public class BfmController {
         if(bfmContext.isMasterBfm() == true){
             return "T";
         } else {
-            return "F";
+            return this.bfmPair;
         }
     }
 

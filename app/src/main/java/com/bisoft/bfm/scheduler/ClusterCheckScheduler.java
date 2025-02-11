@@ -260,7 +260,6 @@ public class ClusterCheckScheduler {
             isClusterHealthy();
 
             log.info(String.format("Cluster Status is %s ",this.bfmContext.getClusterStatus()));
-            log.info(String.format("remain ignore count is %s ",this.remainingFailCount));
             this.bfmContext.setLastCheckLog(this.bfmContext.getLastCheckLog() +
                                             String.format("Cluster Status is %s ",this.bfmContext.getClusterStatus())+ "\n");
         }
