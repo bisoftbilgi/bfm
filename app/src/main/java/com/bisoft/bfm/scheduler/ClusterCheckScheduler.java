@@ -596,27 +596,33 @@ public class ClusterCheckScheduler {
     }
 
     public PostgresqlServer findLeaderSlave(){
-        this.bfmContext.getPgList().stream()
-        .filter(server -> server.getStatus().equals(DatabaseStatus.SLAVE))
-        .forEach( s -> {
-            try{
-                s.checkTimeLineId();
-                s.getWalPosition();
-            }
-            catch(Exception e){
-                s.setWalLogPosition(null);
-                s.setTimeLineId(-1);
-            }
-        } );
-
-        PostgresqlServer leaderSlave = this.bfmContext.getPgList().stream()
-            .filter(server -> server.getStatus().equals(DatabaseStatus.SLAVE))
-            .sorted(Comparator.<PostgresqlServer, Integer>comparing(server -> server.getTimeLineId() , Comparator.reverseOrder())
-            .thenComparing(server -> server.getWalLogPosition(), Comparator.reverseOrder()))
-            .findFirst().get();            
+        if (this.bfmContext.getPgList().stream()
+            .filter(server -> server.getStatus().equals(DatabaseStatus.SLAVE)).count() > 0){
+                this.bfmContext.getPgList().stream()
+                .filter(server -> server.getStatus().equals(DatabaseStatus.SLAVE))
+                .forEach( s -> {
+                    try{
+                        s.checkTimeLineId();
+                        s.getWalPosition();
+                    }
+                    catch(Exception e){
+                        s.setWalLogPosition(null);
+                        s.setTimeLineId(-1);
+                    }
+                } );
         
-        log.info("leader Slave is "+ leaderSlave.getServerAddress());
-        return leaderSlave;
+                PostgresqlServer leaderSlave = this.bfmContext.getPgList().stream()
+                    .filter(server -> server.getStatus().equals(DatabaseStatus.SLAVE))
+                    .sorted(Comparator.<PostgresqlServer, Integer>comparing(server -> server.getTimeLineId() , Comparator.reverseOrder())
+                    .thenComparing(server -> server.getWalLogPosition(), Comparator.reverseOrder()))
+                    .findFirst().get();            
+                
+                log.info("leader Slave is "+ leaderSlave.getServerAddress());
+                return leaderSlave;
+            } else {
+                return null;
+            }
+        
     }
 
     public void healthy(){
