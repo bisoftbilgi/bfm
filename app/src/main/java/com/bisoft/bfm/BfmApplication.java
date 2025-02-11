@@ -1,5 +1,7 @@
 package com.bisoft.bfm;
 
+import java.util.Properties;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -20,7 +22,7 @@ public class BfmApplication implements CommandLineRunner {
 	@Bean(destroyMethod = "shutdown")
 	public ThreadPoolTaskScheduler taskScheduler() {
 		ThreadPoolTaskScheduler taskScheduler = new ThreadPoolTaskScheduler();
-		taskScheduler.setPoolSize(10);
+		taskScheduler.setPoolSize(20);
 		return  taskScheduler;
 	}
 
@@ -34,7 +36,21 @@ public class BfmApplication implements CommandLineRunner {
 
 
 	public static void main(String[] args) {
-		SpringApplication.run(BfmApplication.class, args);
+		// SpringApplication.run(BfmApplication.class, args);
+		SpringApplication bfm = new SpringApplication(BfmApplication.class);
+        Properties properties = new Properties();
+        properties.put("management.endpoint.restart.enabled", Boolean.TRUE);
+		properties.put("management.endpoints.web.exposure.include", "restart");
+		properties.put("logging.pattern.console","%d %-22.22logger{0} : %m%n%wEx");
+		properties.put("logging.file.name","log/app.log");
+		properties.put("logging.pattern.file","%d : %m%n%wEx");
+		properties.put("logging.file.max-size","10MB");
+		properties.put("logging.file.max-history","5");
+		properties.put("logging.file.total-size-cap","5GB");
+		properties.put("spring.profiles.active", "@spring.profiles.active@");
+
+        bfm.setDefaultProperties(properties);
+		bfm.run(args);
 	}
 
 	@Override
