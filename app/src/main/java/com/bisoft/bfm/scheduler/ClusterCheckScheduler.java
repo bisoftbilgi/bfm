@@ -129,7 +129,7 @@ public class ClusterCheckScheduler {
                 if (Long.valueOf(inaccessibleCount) > 0){
                     
                     this.bfmContext.getPgList().stream()
-                    .filter(server -> (server.getDatabaseStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)
+                    .filter(server -> (server.getDatabaseStatus().equals(DatabaseStatus.MASTER)
                                         || server.getDatabaseStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)))
                     .findFirst().ifPresent(master -> {
 
