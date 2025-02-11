@@ -203,13 +203,8 @@ public class ClusterCheckScheduler {
                                     }
                                 });
 
-                    } else {
-                        return;
                     }
-                } else {
-                    log.info("Check Unavilable Completed...");
                 }
-                
             }
         }
     }
