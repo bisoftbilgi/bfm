@@ -129,7 +129,15 @@ public class ClusterCheckScheduler {
                 if (Long.valueOf(inaccessibleCount) == 0){
                     return;
                 }
-                    
+                
+                Long masterOrmasterWithNoSlaveCount = this.bfmContext.getPgList().stream()
+                                                                                .filter(server -> (server.getDatabaseStatus().equals(DatabaseStatus.MASTER)
+                                                                                                    || server.getDatabaseStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE))).count();
+                if (Long.valueOf(masterOrmasterWithNoSlaveCount) == 0){
+                    log.warn("Master or MasterWithNoSlave not found in cluster.");
+                    return;
+                }
+
                 PostgresqlServer master = this.bfmContext.getPgList().stream()
                                                                     .filter(server -> (server.getDatabaseStatus().equals(DatabaseStatus.MASTER)
                                                                                         || server.getDatabaseStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)))
