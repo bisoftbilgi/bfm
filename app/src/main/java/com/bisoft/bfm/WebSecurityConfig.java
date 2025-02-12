@@ -12,6 +12,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -34,15 +37,27 @@ public class WebSecurityConfig {
     @Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
+		// http
+		// 	.authorizeHttpRequests((requests) -> requests
+		// 		.requestMatchers("/", "/bfm").permitAll()
+		// 		.anyRequest().authenticated()
+		// 	)
+		// 	.formLogin((form) -> form
+		// 		.loginPage("/bfm/login")
+		// 		.permitAll()
+		// 	)
+		// 	.logout((logout) -> logout.permitAll());
+
+		// return http.build();
+
 		http
-		.authorizeHttpRequests(authorize -> authorize
-			.anyRequest().authenticated()
-		)
-		.csrf(csrf -> csrf.disable())
-		.formLogin(Customizer.withDefaults())
-		.httpBasic(Customizer.withDefaults());
+			.authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
+			.csrf(csrf -> csrf.disable())
+			.formLogin(form -> form
+				.successHandler(authenticationSuccessHandler()))
+			.httpBasic(Customizer.withDefaults());
 		
-	return http.build();
+		return http.build();
 	}
 
 	@Bean
@@ -64,5 +79,13 @@ public class WebSecurityConfig {
 
 		return new InMemoryUserDetailsManager(user);
 	}
+
+	@Bean
+    public AuthenticationSuccessHandler authenticationSuccessHandler() {
+        SimpleUrlAuthenticationSuccessHandler successHandler = new SimpleUrlAuthenticationSuccessHandler();
+        successHandler.setDefaultTargetUrl("/bfm/index.html"); // Redirect to /home after login
+        successHandler.setAlwaysUseDefaultTargetUrl(true); // Always use the default target URL
+        return successHandler;
+    }
 
 }
