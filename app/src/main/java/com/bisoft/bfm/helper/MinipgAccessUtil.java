@@ -355,13 +355,6 @@ public class MinipgAccessUtil {
     }
 
     public String rewind(PostgresqlServer postgresqlServer,PostgresqlServer newMaster) throws Exception {
-        //log.info("username : "+username+", password : "+password);
-        log.info("rewind sent to "+postgresqlServer.getServerAddress()+" for master "+newMaster.getServerAddress());
-        // String targetMiniPGstatus = minipgStatus(postgresqlServer);
-        // log.info(postgresqlServer.getServerAddress() + " minipg status :"+ targetMiniPGstatus);
-
-        // String masterMiniPGstatus = minipgStatus(newMaster);
-        // log.info(newMaster.getServerAddress() + " minipg status :"+ masterMiniPGstatus);
 
         final String serverAddress = postgresqlServer.getServerAddress().split(":")[0];
         final String serverPort = postgresqlServer.getServerAddress().split(":")[1];
