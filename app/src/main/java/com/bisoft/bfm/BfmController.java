@@ -77,6 +77,14 @@ public class BfmController {
     @Value("${bfm.basebackup-slave-join:false}")
     public boolean basebackup_slave_join;
 
+    // @RequestMapping(path = "/login",method = RequestMethod.GET)
+    // public @ResponseBody
+    // String login(){
+    //     ResourceLoader resourceLoader = new DefaultResourceLoader();
+    //     Resource resource = resourceLoader.getResource("classpath:login.html");
+    //     return asString(resource);
+    // }
+
     @RequestMapping(path = "/status",method = RequestMethod.GET)
     public @ResponseBody
     List<PostgresqlServer> status(){
