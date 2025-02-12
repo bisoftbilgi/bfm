@@ -248,13 +248,15 @@ else
         export bfmProtocol='http'
     fi
 
-    pair_active=$(curl -k -s $bfmProtocol://$bfmPair/bfm/get-active-bfm -u $clsUser:$clsPwd)
+    export pair_active=$(curl -k -s $bfmProtocol://$bfmPair/bfm/get-active-bfm -u $clsUser:$clsPwd)
+    #echo $pair_active
 
-    if [ $pair_active=="T" ]; then
+    if [ ! -z $pair_active ] && [ $pair_active == "T" ]; then
         export active_bfm=$bfmPair
-    else 
+    else
         export active_bfm="127.0.0.1:"$bfmPort
     fi
+
     echo -e "\nActive BFM :"$active_bfm
     if [ ! -z $clsCommand ] && [ $clsCommand == "status" ]; then
         curl -k -X GET $bfmProtocol://$active_bfm/bfm/cluster-status -u $clsUser:$clsPwd        
@@ -273,7 +275,7 @@ else
     elif [ ! -z $clsCommand ] && [ $clsCommand == "reinit" ]; then
         curl -k -X POST  $bfmProtocol://$active_bfm/bfm/reinit/$targetSlave -u $clsUser:$clsPwd     
     elif [ ! -z $clsCommand ] && [ $clsCommand == "encrypt" ]; then
-        curl -k -X POST  $bfmProtocol://$bfmPair/bfm/encrypt/$clearStr -u $clsUser:$clsPwd
+        curl -k -X POST  $bfmProtocol://$active_bfm/bfm/encrypt/$clearStr -u $clsUser:$clsPwd
     else
         echo "command not found..."$clsCommand
     fi
