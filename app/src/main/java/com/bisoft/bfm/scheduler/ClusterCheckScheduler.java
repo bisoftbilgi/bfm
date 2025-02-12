@@ -617,14 +617,14 @@ public class ClusterCheckScheduler {
                         .filter(server -> server.getStatus().equals(DatabaseStatus.SLAVE))
                         .sorted(Comparator.<PostgresqlServer, Integer>comparing(server -> server.getTimeLineId() , Comparator.reverseOrder())
                         .thenComparing(server -> server.getWalLogPosition(), Comparator.reverseOrder()))
-                        .findFirst().orElseThrow();  
+                        .findFirst().get();  
                     log.info("leader Slave is "+ leaderSlave.getServerAddress());
                     return leaderSlave;
                 } else {
                     PostgresqlServer leaderSlave = this.bfmContext.getPgList().stream()
                                 .filter(server -> server.getStatus().equals(DatabaseStatus.SLAVE))
                                 .findFirst()
-                                .orElseThrow();  
+                                .get();  
                     log.info("leader Slave is "+ leaderSlave.getServerAddress());
                     return leaderSlave;
                 }

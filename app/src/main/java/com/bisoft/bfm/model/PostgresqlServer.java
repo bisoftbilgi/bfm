@@ -237,6 +237,7 @@ public class PostgresqlServer {
     }
     public DatabaseStatus getDatabaseStatus(){
         this.setLastCheckDateTime(LocalDateTime.now());
+        DatabaseStatus lastState = this.databaseStatus;
         try {
             if (this.getServerConnection() != null){
                 this.hasSlaveServer();
@@ -265,7 +266,7 @@ public class PostgresqlServer {
                 this.databaseStatus = DatabaseStatus.TIMEOUT;
             }
         } catch (Exception e) {
-            this.databaseStatus = DatabaseStatus.TIMEOUT;
+            this.databaseStatus = lastState;
         }
         
         return this.databaseStatus;
