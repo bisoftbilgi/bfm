@@ -816,15 +816,20 @@ public class ClusterCheckScheduler {
                     filter(server -> !server.getServerAddress().equals(newMaster.getServerAddress()))
                     .forEach(pg -> {
                                         try {
-                                            String rewind_result = minipgAccessUtil.rewind(pg, newMaster);
-                                            if (! rewind_result.equals("OK")){
-                                                log.info("MiniPG rewind was FAILED.");
-                                                if (basebackup_slave_join == true){
-                                                    log.info("Server "+ pg.getServerAddress()+" Rejoin to cluster with pg_basebackup started..");            
-                                                    String rejoin_result = minipgAccessUtil.rebaseUp(pg, newMaster);
-                                                    log.info("Server "+ pg.getServerAddress()+ " rejoin result :"+rejoin_result);
+                                            if (pg.getRewindStarted().equals(Boolean.FALSE)){
+                                                pg.setRewindStarted(Boolean.TRUE);
+                                                String rewind_result = minipgAccessUtil.rewind(pg, newMaster);
+                                                if (! rewind_result.equals("OK")){
+                                                    log.info("MiniPG rewind was FAILED.");
+                                                    if (basebackup_slave_join == true){
+                                                        log.info("Server "+ pg.getServerAddress()+" Rejoin to cluster with pg_basebackup started..");            
+                                                        String rejoin_result = minipgAccessUtil.rebaseUp(pg, newMaster);
+                                                        log.info("Server "+ pg.getServerAddress()+ " rejoin result :"+rejoin_result);
+                                                    }
                                                 }
-                                            }     
+                                                pg.setRewindStarted(Boolean.FALSE); 
+                                            }
+                                                
                                         } catch (Exception e) {
                                             e.printStackTrace();
                                         }
