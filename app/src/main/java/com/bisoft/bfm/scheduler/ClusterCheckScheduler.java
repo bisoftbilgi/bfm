@@ -991,7 +991,6 @@ public class ClusterCheckScheduler {
             .forEach(slave -> {
                try {
                 String res = this.minipgAccessUtil.cleanOldBackupOnSlaves(slave);
-                log.info("Clean Old backup result :"+ res);
             } catch (Exception e) {
                 log.error("error occurred on Clean old backups ", e);
             }
