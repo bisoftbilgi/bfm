@@ -658,6 +658,7 @@ public class ClusterCheckScheduler {
         bfmContext.setSplitBrainMaster(null);
         checkReplayLag();
         checkTimelines();
+        cleanOldBackupsFromSlaves();
     }
 
     public void warning(){
@@ -975,6 +976,23 @@ public class ClusterCheckScheduler {
             log.error(e.getMessage());
         }
         }        
+    }
+
+    public void cleanOldBackupsFromSlaves(){
+        PostgresqlServer masterServer = this.bfmContext.getMasterServer();
+        if (masterServer != null){
+            this.bfmContext.getPgList().stream()
+            .filter(s -> s.getStatus().equals(DatabaseStatus.SLAVE))
+            .forEach(slave -> {
+               try {
+                String res = this.minipgAccessUtil.cleanOldBackupOnSlaves(slave);
+                log.info("Clean Old backup result :"+ res);
+            } catch (Exception e) {
+                log.error("error occurred on Clean old backups ", e);
+            }
+                
+            }); 
+        }
     }
 
     @Scheduled(fixedDelay = 11000)
