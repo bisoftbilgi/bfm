@@ -343,10 +343,14 @@ public class ClusterCheckScheduler {
         }
 
         long masterCount = this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.MASTER)).count();
-
         long masterWithNoslaveCount = this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)).count();
+        long inaccessibleMemberCount = this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.INACCESSIBLE)).count();
 
-        if (masterCount ==  1L && masterWithNoslaveCount == 0){            
+
+        if (clusterCount > 1 && masterCount ==  1L && inaccessibleMemberCount > 0){
+            this.bfmContext.setClusterStatus(ClusterStatus.WARNING);
+        }
+        else if (masterCount ==  1L && masterWithNoslaveCount == 0){            
             // log.info("Cluster has a master node");
             this.bfmContext.setClusterStatus(ClusterStatus.HEALTHY);
             healthy();
@@ -392,6 +396,7 @@ public class ClusterCheckScheduler {
                                     });
 
         }else if (masterCount ==  1L && masterWithNoslaveCount > 0){
+            this.bfmContext.setClusterStatus(ClusterStatus.WARNING);
             log.warn("Cluster has a master but, there is one or more master_with_no_slave server in cluster.");
             this.bfmContext.getPgList().stream().filter(s -> (s.getStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)))
                                                 .forEach(server -> {
