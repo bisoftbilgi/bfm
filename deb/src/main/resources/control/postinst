@@ -2,5 +2,6 @@
 
 # Ensure our service is enabled
 mv /etc/bfm/bfmwatcher/bfm-app*.jar /etc/bfm/bfmwatcher/bfm-app.jar
+chmod +x /etc/bfm/bfmwatcher/bfmctl
 systemctl enable bfm.service >/dev/null 2>&1
 
