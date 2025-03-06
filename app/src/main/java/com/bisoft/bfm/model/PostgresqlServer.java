@@ -173,7 +173,7 @@ public class PostgresqlServer {
                 if (rs.getString("usesuper").equals("f")){
                     log.error("User " + username + " is not SUPERUSER. Please grant superuser to "+ username);
                 }
-                ps = con.prepareStatement("select client_addr, replay_lag, application_name, sync_state from pg_stat_replication;");
+                ps = con.prepareStatement("select client_addr, TO_CHAR(replay_lag, 'HH24:MI:SS') as replay_lag, application_name, sync_state from pg_stat_replication;");
                 ps.executeQuery();
                 rs = ps.getResultSet();
                 while(rs.next()){
