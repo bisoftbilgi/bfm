@@ -1,1 +1,12 @@
-New documentation
+#############
+What is BFM
+#############
+
+
+#############
+Installation
+#############
+
+#############
+Configuration
+#############
