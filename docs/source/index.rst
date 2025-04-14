@@ -20,11 +20,11 @@ Quick Start
 ===========
 .. code-block:: bash
 
-   # Install BFM on RHEL/CentOS/Rocky Linux
+ 
    sudo dnf install -y https://nexus.bisoft.com.tr/repository/bfm-yum/repo/bisoft-repo-1.0-1.noarch.rpm
    sudo dnf install -y bfm-rpm-package
 
-   # Configure and start the service
+  
    sudo systemctl enable bfm
    sudo systemctl start bfm
 

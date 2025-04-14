@@ -22,30 +22,29 @@ Installation Process
 
 .. code-block:: bash
 
-   # Add the BFM repository
+   
    sudo dnf install -y https://nexus.bisoft.com.tr/repository/bfm-yum/repo/bisoft-repo-1.0-1.noarch.rpm
-   # Install BFM package
+  
    sudo dnf install -y bfm-rpm-package
 
-   # For older systems
+   
    sudo yum install -y https://nexus.bisoft.com.tr/repository/bfm-yum/repo/bisoft-repo-1.0-1.noarch.rpm
    sudo yum install -y bfm-rpm-package
 
-2. Source Code Deployment (Development)
+1. Source Code Deployment (Development)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
-   # Clone the repository
+   
    git clone https://github.com/bisoftbilgi/bfm.git
    cd bfm
 
-   # Skip the branch checkout step, focus on default setup
 
-   # Run the build if necessary (requires Maven)
+
    ./mvnw clean package
 
-3. Configuration Setup
+1. Configuration Setup
 ~~~~~~~~~~~~~~~~~~~~~~
 
 Edit ``/etc/bfm/config/application.properties``:
@@ -55,7 +54,7 @@ Edit ``/etc/bfm/config/application.properties``:
    # Core Configuration
    bfm.use-tls = false                 # Set to 'false' for testing without certificates
    bfm.user-crypted = false            # Set to 'true' if using encrypted passwords
-   server.pgpassword = StrongPassword  # Change this to your PostgreSQL password
+   server.pgpassword = StrongPassword  # PostgreSQL password
 
    # Network Configuration
    server.port = 8080                  # Web UI and API port
@@ -78,23 +77,23 @@ Edit ``/etc/bfm/config/application.properties``:
    bfm.ha-mode = true                  # Enable dual BFM instances
    bfm.ha-partner = 192.168.1.150      # Partner BFM address
 
-4. Launch BFM Service
+1. Launch BFM Service
 ~~~~~~~~~~~~~~~~~~~~~
 
 **System Service (Linux)**
 
 .. code-block:: bash
 
-   # Enable and start the service
+  
    sudo systemctl enable bfm
    sudo systemctl start bfm
-   sudo systemctl status bfm  # Check service status
+   sudo systemctl status bfm  
 
 **Docker Container**
 
 .. code-block:: bash
 
-   # Run in container with mounted configuration
+   
    docker run -d --name bfm \
      -p 8080:8080 \
      -v /path/to/config:/etc/bfm/config \
@@ -105,10 +104,10 @@ Edit ``/etc/bfm/config/application.properties``:
 
 .. code-block:: bash
 
-   # Run directly from JAR
+
    java -jar /etc/bfm/bfmwatcher/bfm-app.jar
 
-5. Verify Installation
+1. Verify Installation
 ~~~~~~~~~~~~~~~~~~~~~~
 
 1. **Check for successful startup messages**:
@@ -147,13 +146,6 @@ Troubleshooting
 | Service won't start    | Check logs for missing dependencies or permission errors  |
 +------------------------+-----------------------------------------------------------+
 
-**Logs Analysis**
-~~~~~~~~~~~~~~~~~
 
-Look for:
-
-- ``ERROR`` entries: Configuration or connection issues  
-- ``FAILOVER INITIATED``: Failover started  
-- ``PROMOTED NODE``: New master node promotion  
 
 
