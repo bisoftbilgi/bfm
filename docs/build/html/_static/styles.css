@@ -1,0 +1,37 @@
+/* Sağ sidebar için düzenleme */
+.sphinxsidebar-right {
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: 250px;
+    height: 100%;
+    background-color: #343a40; /* Koyu arka plan */
+    color: white; /* Beyaz yazı rengi */
+    padding: 20px;
+    box-shadow: -2px 0px 10px rgba(0, 0, 0, 0.1); /* Gölgeleme efekti */
+    z-index: 1000; /* Sayfanın önünde görünmesi için */
+    overflow-y: auto; /* Eğer içerik fazla olursa kaydırma çubuğu ekle */
+}
+
+/* Sağ sidebar bağlantı stil */
+.sphinxsidebar-right a {
+    color: white;
+    padding: 10px;
+    display: block;
+    text-decoration: none;
+    font-size: 16px;
+    transition: 0.3s ease;
+}
+
+.sphinxsidebar-right a:hover {
+    background-color: #007bff; /* Hover efektinde mavi */
+    color: white;
+    padding-left: 15px; /* Hoverda sağa kayma efekti */
+}
+
+/* Sağ sidebar başlık stil */
+.sphinxsidebar-right h2 {
+    font-size: 20px;
+    margin-bottom: 10px;
+    color: #ffffff; /* Başlık beyaz */
+}

@@ -1,0 +1,90 @@
+
+Application Properties
+======================
+
+This page explains the configuration parameters in the ``application.properties`` file used by BFM.
+
+----
+
+**app.bfm-hc-clustername**
+    - *Description:* Name of the cluster. Must be the same on all BFM instances.
+    - *Default:* None
+    - *If empty:* Cluster will not form; failover decisions may be inconsistent.
+
+**server.pguser**
+    - *Description:* PostgreSQL username for authentication.
+    - *Default:* None
+    - *If empty:* Database connection will fail.
+
+**server.pgpassword**
+    - *Description:* Password for the PostgreSQL user. Must match the ``server.pguser`` account.
+    - *Default:* None
+    - *If empty:* Authentication will fail.
+    - *Note:* If ``bfm.user-crypted=true``, this value must be encrypted.
+
+**server.pglist**
+    - *Description:* Comma-separated list of PostgreSQL instances with host and port.
+    - *Example:* ``192.168.1.10:5432,192.168.1.11:5432``
+
+**bfm.user-crypted**
+    - *Description:* Indicates if passwords in the config file are encrypted.
+    - *Default:* true
+    - *If set to false:* Use plaintext passwords.
+    - *If left out:* Treated as true (secure by default).
+
+**bfm.use-tls**
+    - *Description:* Enables TLS communication between components.
+    - *Default:* true
+    - *If false:* Communication is not encrypted.
+    - *If left empty:* TLS is expected, and BFM will fail to start without certificates.
+
+**minipg.use-tls**
+    - *Description:* Whether to use TLS for internal MiniPG component.
+    - *Default:* true
+    - *If false:* MiniPG communicates without encryption.
+
+**watcher.cluster-port**
+    - *Description:* Port used for communication between BFM nodes in the same cluster.
+    - *Default:* 9994
+    - *If changed:* Ensure it does not conflict with other services.
+
+**watcher.cluster-pair**
+    - *Description:* Address of the paired BFM instance (IP:PORT format).
+    - *Example:* ``192.168.1.20:9994``
+
+**app.timeout-ignorance-count**
+    - *Description:* Number of missed heartbeats before BFM considers a node unresponsive.
+    - *Default:* 2
+
+**heartbeat.interval**
+    - *Description:* Interval between heartbeat checks, in seconds.
+    - *Default:* 10
+
+**heartbeat.query**
+    - *Description:* SQL query used to validate that the PostgreSQL node is alive.
+    - *Default:* ``SELECT 1``
+
+**bfm.ex-master-behavior**
+    - *Description:* Behavior of the old master after failover. Can be ``rejoin`` or ``stop``.
+    - *Default:* rejoin
+
+**bfm.basebackup-slave-join**
+    - *Description:* Whether a new slave should use basebackup from the master to rejoin.
+    - *Default:* true
+
+**bfm.data-loss-tolerance**
+    - *Description:* Acceptable level of data loss during failover. Format: 120K, 10M, 1G
+    - *Default:* 120K
+
+**bfm.status-file-expire**
+    - *Description:* How long BFM keeps status files before expiration.
+    - *Format:* ``3H`` (3 hours), ``1D`` (1 day)
+    - *Default:* 1H
+
+**bfm.mail-notification-enabled**
+    - *Description:* Enables email notifications on events.
+    - *Default:* false
+
+**spring.mail.* (group)**
+    - *Description:* SMTP email configuration settings.
+    - *Only needed if notifications are enabled.*
