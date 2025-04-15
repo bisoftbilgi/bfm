@@ -6,21 +6,28 @@ This section explains the overall architectural layout of BFM (Bidirectional Fai
 Purpose
 -------
 BFM’s architecture is designed to ensure high availability and robust failover management for PostgreSQL clusters. This section details:
- 
+
 - The network communication among components.
 - The specific roles of each component.
 - A step-by-step workflow of the failover process.
 
 Network Diagrams
 ----------------
-The diagram below illustrates the BFM network architecture, including the failover process and component communication.
+The diagrams below illustrate the BFM network architecture, including the failover process and component communication.
 
-.. figure:: _static/bfm_network_diagram.png
-   :alt: BFM Network Diagram
+.. figure:: _static/normal_scenario.png
+   :alt: BFM Normal Scenario
    :align: center
    :width: 80%
 
-   **Figure 1:** BFM Network Diagram – Shows how components like the BFM Watcher, API Server, and VIP Manager interact with the PostgreSQL cluster.
+   **Figure 1:** BFM Normal Scenario – In a healthy state, the master node streams WAL logs to the standby node, and the VIP always routes SQL requests to the master. BFM only monitors health status.
+
+.. figure:: _static/failover_scenario.png
+   :alt: BFM Failover Scenario
+   :align: center
+   :width: 80%
+
+   **Figure 2:** BFM Failover Scenario – When the master node fails, BFM promotes the standby node to master, redirects the VIP, and reconfigures the old master as a standby after recovery.
 
 Component Roles
 ---------------

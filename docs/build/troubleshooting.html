@@ -1,0 +1,191 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Troubleshooting and FAQ &mdash; BFM 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="_static/styles.css" />
+
+  
+      <script src="_static/jquery.js"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+      <script src="_static/doctools.js"></script>
+      <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="API Reference" href="api-reference.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BFM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="setup-guide.html">BFM Setup Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extended-architecture.html">Extended Architectural Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="application-properties.html">Application Properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api-reference.html">API Reference</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Troubleshooting and FAQ</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#purpose">Purpose</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#common-issues-and-resolutions">Common Issues and Resolutions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-by-step-troubleshooting-guide">Step-by-Step Troubleshooting Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BFM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Troubleshooting and FAQ</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/troubleshooting.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="troubleshooting-and-faq">
+<h1>Troubleshooting and FAQ<a class="headerlink" href="#troubleshooting-and-faq" title="Permalink to this heading"></a></h1>
+<section id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this heading"></a></h2>
+<p>This guide aims to help users quickly identify and resolve common issues encountered when using BFM (Bidirectional Failover Manager). It covers connection problems, certificate and TLS errors, authorization issues, as well as log analysis methods and explanations of common error messages.</p>
+</section>
+<section id="common-issues-and-resolutions">
+<h2>Common Issues and Resolutions<a class="headerlink" href="#common-issues-and-resolutions" title="Permalink to this heading"></a></h2>
+<ol class="arabic">
+<li><p><strong>Connection Problems</strong></p>
+<p><em>Issue:</em> Inability to connect to PostgreSQL or the BFM service.</p>
+<p><em>Possible Causes:</em></p>
+<ul class="simple">
+<li><p>Firewall rules blocking required ports.</p></li>
+<li><p>Incorrect IP addresses or port numbers in the configuration.</p></li>
+<li><p>Network connectivity problems.</p></li>
+</ul>
+<p><em>Resolution:</em></p>
+<ol class="arabic simple">
+<li><p>Verify that your firewall settings allow traffic on the necessary ports.</p></li>
+<li><p>Check the values in your <em>application.properties</em> file to ensure IP addresses and ports are correct.</p></li>
+</ol>
+</li>
+<li><p><strong>Certificate and TLS Errors</strong></p>
+<p><em>Issue:</em> TLS handshake failures or certificate verification errors during secure communications.</p>
+<p><em>Possible Causes:</em></p>
+<ul class="simple">
+<li><p>Incorrect TLS settings in the configuration (e.g., <cite>bfm.use-tls</cite> or <cite>minipg.use-tls</cite>).</p></li>
+<li><p>Missing or mislocated keystore files (e.g., <cite>bfm.p12</cite>).</p></li>
+<li><p>Mismatched or improperly configured TLS secret values.</p></li>
+</ul>
+<p><em>Resolution:</em></p>
+<ol class="arabic simple">
+<li><p>Ensure that both <cite>bfm.use-tls</cite> and <cite>minipg.use-tls</cite> are set to <cite>true</cite> if TLS is required.</p></li>
+<li><p>Verify that the keystore file (<cite>bfm.p12</cite>) is placed in the correct directory.</p></li>
+<li><p>Review your TLS secret (<cite>bfm.tls-secret</cite>) and certificate configuration for consistency.</p></li>
+<li><p>Examine the log files for detailed error messages related to TLS failures.</p></li>
+</ol>
+</li>
+<li><p><strong>Authorization Issues</strong></p>
+<p><em>Issue:</em> Authentication failures when connecting to PostgreSQL.</p>
+<p><em>Possible Causes:</em></p>
+<ul class="simple">
+<li><p>Mismatch between the credentials provided in <em>application.properties</em> and those configured on the PostgreSQL server.</p></li>
+<li><p>Incorrect settings for <cite>server.pguser</cite> or <cite>server.pgpassword</cite>.</p></li>
+</ul>
+<p><em>Resolution:</em></p>
+<ol class="arabic simple">
+<li><p>Confirm that the credentials in your <em>application.properties</em> file are accurate.</p></li>
+<li><p>Verify that the PostgreSQL <cite>pg_hba.conf</cite> file is configured to allow connections from the BFM user.</p></li>
+<li><p>Check the PostgreSQL logs for specific authentication errors.</p></li>
+</ol>
+</li>
+<li><p><strong>Troubleshooting Guide</strong></p></li>
+</ol>
+</section>
+<section id="step-by-step-troubleshooting-guide">
+<h2>Step-by-Step Troubleshooting Guide<a class="headerlink" href="#step-by-step-troubleshooting-guide" title="Permalink to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Identify the Issue:</strong>
+Review error messages and log files to determine the root cause.</p></li>
+<li><p><strong>Consult this Troubleshooting Guide:</strong>
+Refer to the relevant section corresponding to the identified error.</p></li>
+<li><p><strong>Apply the Recommended Fix:</strong>
+Follow the step-by-step instructions provided in this guide.</p></li>
+<li><p><strong>Test the Solution:</strong>
+After applying changes, reattempt the operation to ensure the issue is resolved.</p></li>
+<li><p><strong>Seek Further Help if Needed:</strong>
+If the problem persists, collect detailed log output and consult the support community or project maintainers.</p></li>
+</ol>
+</section>
+<section id="conclusion">
+<h2>Conclusion<a class="headerlink" href="#conclusion" title="Permalink to this heading"></a></h2>
+<p>This FAQ and Troubleshooting Guide is designed to assist you in resolving common issues encountered with BFM. Regularly reviewing log files and keeping your configuration consistent with the guidelines provided will help maintain a stable and secure system.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="api-reference.html" class="btn btn-neutral float-left" title="API Reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, bfm.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

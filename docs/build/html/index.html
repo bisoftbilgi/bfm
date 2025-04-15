@@ -7,7 +7,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BFM - Bidirectional Failover Manager &mdash; BFM 1.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="_static/styles.css?v=b58cda65" />
 
@@ -47,6 +47,7 @@
 <li class="toctree-l1"><a class="reference internal" href="setup-guide.html">BFM Setup Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="extended-architecture.html">Extended Architectural Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="application-properties.html">Application Properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api-reference.html">API Reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting and FAQ</a></li>
 </ul>
 
@@ -93,11 +94,10 @@
 </section>
 <section id="quick-start">
 <h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install BFM on RHEL/CentOS/Rocky Linux</span>
-sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>https://nexus.bisoft.com.tr/repository/bfm-yum/repo/bisoft-repo-1.0-1.noarch.rpm
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>https://nexus.bisoft.com.tr/repository/bfm-yum/repo/bisoft-repo-1.0-1.noarch.rpm
 sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>bfm-rpm-package
 
-<span class="c1"># Configure and start the service</span>
+
 sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>bfm
 sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>bfm
 </pre></div>
@@ -118,6 +118,16 @@ sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="application-properties.html">Application Properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api-reference.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api-reference.html#cluster-monitoring">Cluster Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api-reference.html#failover-control">Failover Control</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api-reference.html#operational-toggles">Operational Toggles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api-reference.html#encryption-credentials">Encryption &amp; Credentials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api-reference.html#web-interface-endpoints">Web Interface Endpoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api-reference.html#advanced-monitoring-ajax-compatible">Advanced Monitoring (AJAX-compatible)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api-reference.html#replication-configuration">Replication Configuration</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting and FAQ</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#purpose">Purpose</a></li>
 <li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#common-issues-and-resolutions">Common Issues and Resolutions</a></li>
@@ -126,8 +136,6 @@ sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w
 </ul>
 </li>
 </ul>
-</div>
-<div class="toctree-wrapper compound">
 </div>
 </section>
 </section>

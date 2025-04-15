@@ -1,0 +1,152 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Extended Architectural Overview &mdash; BFM 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="_static/styles.css" />
+
+  
+      <script src="_static/jquery.js"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+      <script src="_static/doctools.js"></script>
+      <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Application Properties" href="application-properties.html" />
+    <link rel="prev" title="BFM Setup Guide" href="setup-guide.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BFM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="setup-guide.html">BFM Setup Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Extended Architectural Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#purpose">Purpose</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#network-diagrams">Network Diagrams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#component-roles">Component Roles</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="application-properties.html">Application Properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api-reference.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting and FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BFM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Extended Architectural Overview</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/extended-architecture.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="extended-architectural-overview">
+<h1>Extended Architectural Overview<a class="headerlink" href="#extended-architectural-overview" title="Permalink to this heading"></a></h1>
+<p>This section explains the overall architectural layout of BFM (Bidirectional Failover Manager), the roles of its key components, and the failover process using visual diagrams and step-by-step explanations.</p>
+<section id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this heading"></a></h2>
+<p>BFM’s architecture is designed to ensure high availability and robust failover management for PostgreSQL clusters. This section details:</p>
+<ul class="simple">
+<li><p>The network communication among components.</p></li>
+<li><p>The specific roles of each component.</p></li>
+<li><p>A step-by-step workflow of the failover process.</p></li>
+</ul>
+</section>
+<section id="network-diagrams">
+<h2>Network Diagrams<a class="headerlink" href="#network-diagrams" title="Permalink to this heading"></a></h2>
+<p>The diagram below illustrates the BFM network architecture, including the failover process and component communication.</p>
+<figure class="align-center" id="id1">
+<a class="reference internal image-reference" href="_static/bfm_network_diagram.png"><img alt="BFM Network Diagram" src="_static/bfm_network_diagram.png" style="width: 80%;" /></a>
+<figcaption>
+<p><span class="caption-text"><strong>Figure 1:</strong> BFM Network Diagram – Shows how components like the BFM Watcher, API Server, and VIP Manager interact with the PostgreSQL cluster.</span><a class="headerlink" href="#id1" title="Permalink to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="component-roles">
+<h2>Component Roles<a class="headerlink" href="#component-roles" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>BFM Watcher:</strong>
+Continuously monitors the health of PostgreSQL nodes by tracking heartbeat signals. If a node fails to respond, it triggers the failover sequence.</p></li>
+<li><p><strong>API Server:</strong>
+Handles management requests and provides system status updates. It also plays a key role in deciding which standby node should be promoted during a failover, offering a set of RESTful endpoints for administration.</p></li>
+<li><p><strong>VIP Manager:</strong>
+Manages the Virtual IP (VIP) during failover, ensuring that applications remain continuously connected by redirecting the VIP to the new primary node.</p></li>
+<li><p><strong>PostgreSQL Nodes:</strong>
+Represent the data servers. Typically, one node acts as the primary (master) while the others serve as backups (standby) that can be promoted if failure is detected.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="setup-guide.html" class="btn btn-neutral float-left" title="BFM Setup Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="application-properties.html" class="btn btn-neutral float-right" title="Application Properties" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, bfm.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

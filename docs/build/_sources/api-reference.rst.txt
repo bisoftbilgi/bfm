@@ -1,0 +1,116 @@
+API Reference
+=============
+
+This section provides a detailed reference for the REST API endpoints exposed by BFM (Bidirectional Failover Manager). These endpoints allow you to monitor the cluster, control failover behavior, and perform administrative actions via HTTP requests.
+
+.. note::
+   All endpoints are prefixed with ``/bfm`` and support basic authentication if security is enabled.
+
+---
+
+Cluster Monitoring
+------------------
+
+**GET** ``/bfm/status``  
+Returns a list of PostgreSQL nodes and their current state.
+
+**GET** ``/bfm/is-alive``  
+Returns ``Active`` or ``Passive`` depending on whether this instance is the master BFM.
+
+**GET** ``/bfm/get-active-bfm``  
+Returns the active BFM node or ``T`` if the current instance is active.
+
+**GET** ``/bfm/cluster-status``  
+Returns cluster-wide status, including each node's WAL position, timeline, replay lag, and last check time.
+
+**GET** ``/bfm/getLogs``  
+Returns the last lines of the BFM application logs.
+
+---
+
+Failover Control
+----------------
+
+**POST** ``/bfm/switchover/{target}``  
+Promotes a given standby PostgreSQL node to master.  
+*Example:* ``/bfm/switchover/192.168.1.11:5432``
+
+**POST** ``/bfm/reinit/{target}``  
+Reinitializes a failed standby node by using pg_rewind or pg_basebackup.  
+*Example:* ``/bfm/reinit/192.168.1.12:5432``
+
+**POST** ``/bfm/watch-strategy/{strategy}``  
+Sets the watch strategy. Accepted values: ``A`` for availability, ``M`` for manual.
+
+---
+
+Operational Toggles
+-------------------
+
+**GET** ``/bfm/check-pause``  
+Pauses cluster monitoring temporarily.
+
+**GET** ``/bfm/check-resume``  
+Resumes cluster monitoring.
+
+**GET** ``/bfm/mail-pause``  
+Disables email notifications.
+
+**GET** ``/bfm/mail-resume``  
+Re-enables email notifications.
+
+---
+
+Encryption & Credentials
+------------------------
+
+**POST** ``/bfm/encrypt/{clearStr}``  
+Encrypts a given plaintext string using the system’s symmetric encryption method.
+
+---
+
+Web Interface Endpoints
+-----------------------
+
+**GET** ``/bfm/clusterstatus.html``  
+Returns HTML-based cluster monitoring dashboard.
+
+**GET** ``/bfm/index.html``  
+Returns default web dashboard view.
+
+---
+
+Advanced Monitoring (AJAX-compatible)
+-------------------------------------
+
+**GET** ``/bfm/getClsStatus``  
+Returns a compact string status of the cluster.
+
+**GET** ``/bfm/getClsRows``  
+Returns an HTML table of all cluster nodes, including sync state and priority controls.
+
+**GET** ``/bfm/getSlvRows``  
+Returns an HTML dropdown of available standby nodes.
+
+---
+
+Replication Configuration
+-------------------------
+
+**POST** ``/bfm/setsync/{target}``  
+Marks a standby node as synchronous.  
+*Example:* ``/bfm/setsync/replica01``
+
+**POST** ``/bfm/setasync/{target}``  
+Removes a standby from the synchronous replica list.  
+*Example:* ``/bfm/setasync/replica01``
+
+**POST** ``/bfm/setpriority/{target}/{priority}``  
+Changes the promotion priority of a standby node.  
+*Example:* ``/bfm/setpriority/192.168.1.11:5432/90``
+
+---
+
+.. warning::
+   Make sure to use these API endpoints from the active BFM node. Some operations are only valid on the master node.
+

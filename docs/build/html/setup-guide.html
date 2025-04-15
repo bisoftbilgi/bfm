@@ -7,7 +7,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BFM Setup Guide &mdash; BFM 1.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="_static/styles.css?v=b58cda65" />
 
@@ -20,7 +20,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Application Properties" href="application-properties.html" />
+    <link rel="next" title="Extended Architectural Overview" href="extended-architecture.html" />
     <link rel="prev" title="BFM - Bidirectional Failover Manager" href="index.html" /> 
 </head>
 
@@ -43,29 +43,28 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">BFM Setup Guide</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#installation-process">Installation Process</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#repository-setup-installation">1. Repository Setup &amp; Installation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#source-code-deployment-development">2. Source Code Deployment (Development)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#configuration-setup">3. Configuration Setup</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#launch-bfm-service">4. Launch BFM Service</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#verify-installation">5. Verify Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#source-code-deployment-development">1. Source Code Deployment (Development)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuration-setup">1. Configuration Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#launch-bfm-service">1. Launch BFM Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#verify-installation">1. Verify Installation</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#common-issues"><strong>Common Issues</strong></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#logs-analysis"><strong>Logs Analysis</strong></a></li>
 </ul>
 </li>
 </ul>
 </li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">Configuration</span></p>
-<ul>
+<li class="toctree-l1"><a class="reference internal" href="extended-architecture.html">Extended Architectural Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="application-properties.html">Application Properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api-reference.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting and FAQ</a></li>
 </ul>
 
         </div>
@@ -110,37 +109,34 @@
 <section id="repository-setup-installation">
 <h3>1. Repository Setup &amp; Installation<a class="headerlink" href="#repository-setup-installation" title="Link to this heading"></a></h3>
 <p><strong>Linux (RockyLinux/CentOS/RHEL)</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Add the BFM repository</span>
-sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>https://nexus.bisoft.com.tr/repository/bfm-yum/repo/bisoft-repo-1.0-1.noarch.rpm
-<span class="c1"># Install BFM package</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>https://nexus.bisoft.com.tr/repository/bfm-yum/repo/bisoft-repo-1.0-1.noarch.rpm
+
 sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>bfm-rpm-package
 
-<span class="c1"># For older systems</span>
+
 sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>https://nexus.bisoft.com.tr/repository/bfm-yum/repo/bisoft-repo-1.0-1.noarch.rpm
 sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>bfm-rpm-package
 </pre></div>
 </div>
 </section>
 <section id="source-code-deployment-development">
-<h3>2. Source Code Deployment (Development)<a class="headerlink" href="#source-code-deployment-development" title="Link to this heading"></a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Clone the repository</span>
-git<span class="w"> </span>clone<span class="w"> </span>https://github.com/bisoftbilgi/bfm.git
+<h3>1. Source Code Deployment (Development)<a class="headerlink" href="#source-code-deployment-development" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/bisoftbilgi/bfm.git
 <span class="nb">cd</span><span class="w"> </span>bfm
 
-<span class="c1"># Skip the branch checkout step, focus on default setup</span>
 
-<span class="c1"># Run the build if necessary (requires Maven)</span>
+
 ./mvnw<span class="w"> </span>clean<span class="w"> </span>package
 </pre></div>
 </div>
 </section>
 <section id="configuration-setup">
-<h3>3. Configuration Setup<a class="headerlink" href="#configuration-setup" title="Link to this heading"></a></h3>
+<h3>1. Configuration Setup<a class="headerlink" href="#configuration-setup" title="Link to this heading"></a></h3>
 <p>Edit <code class="docutils literal notranslate"><span class="pre">/etc/bfm/config/application.properties</span></code>:</p>
 <div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="c1"># Core Configuration</span>
 <span class="na">bfm.use-tls</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">false</span><span class="w">                 </span><span class="c1"># Set to &#39;false&#39; for testing without certificates</span>
 <span class="na">bfm.user-crypted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">false</span><span class="w">            </span><span class="c1"># Set to &#39;true&#39; if using encrypted passwords</span>
-<span class="na">server.pgpassword</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">StrongPassword</span><span class="w">  </span><span class="c1"># Change this to your PostgreSQL password</span>
+<span class="na">server.pgpassword</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">StrongPassword</span><span class="w">  </span><span class="c1"># PostgreSQL password</span>
 
 <span class="c1"># Network Configuration</span>
 <span class="na">server.port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">8080</span><span class="w">                  </span><span class="c1"># Web UI and API port</span>
@@ -166,17 +162,15 @@ git<span class="w"> </span>clone<span class="w"> </span>https://github.com/bisof
 </div>
 </section>
 <section id="launch-bfm-service">
-<h3>4. Launch BFM Service<a class="headerlink" href="#launch-bfm-service" title="Link to this heading"></a></h3>
+<h3>1. Launch BFM Service<a class="headerlink" href="#launch-bfm-service" title="Link to this heading"></a></h3>
 <p><strong>System Service (Linux)</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Enable and start the service</span>
-sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>bfm
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>bfm
 sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>bfm
-sudo<span class="w"> </span>systemctl<span class="w"> </span>status<span class="w"> </span>bfm<span class="w">  </span><span class="c1"># Check service status</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>status<span class="w"> </span>bfm
 </pre></div>
 </div>
 <p><strong>Docker Container</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run in container with mounted configuration</span>
-docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>--name<span class="w"> </span>bfm<span class="w"> </span><span class="se">\</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>--name<span class="w"> </span>bfm<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-p<span class="w"> </span><span class="m">8080</span>:8080<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-v<span class="w"> </span>/path/to/config:/etc/bfm/config<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--restart<span class="w"> </span>unless-stopped<span class="w"> </span><span class="se">\</span>
@@ -184,13 +178,12 @@ docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </sp
 </pre></div>
 </div>
 <p><strong>Manual Execution</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run directly from JAR</span>
-java<span class="w"> </span>-jar<span class="w"> </span>/etc/bfm/bfmwatcher/bfm-app.jar
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>java<span class="w"> </span>-jar<span class="w"> </span>/etc/bfm/bfmwatcher/bfm-app.jar
 </pre></div>
 </div>
 </section>
 <section id="verify-installation">
-<h3>5. Verify Installation<a class="headerlink" href="#verify-installation" title="Link to this heading"></a></h3>
+<h3>1. Verify Installation<a class="headerlink" href="#verify-installation" title="Link to this heading"></a></h3>
 <ol class="arabic">
 <li><p><strong>Check for successful startup messages</strong>:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Tomcat started on port(s): 8080 (http)
@@ -236,15 +229,6 @@ BFM is now managing PostgreSQL cluster
 </tbody>
 </table>
 </section>
-<section id="logs-analysis">
-<h3><strong>Logs Analysis</strong><a class="headerlink" href="#logs-analysis" title="Link to this heading"></a></h3>
-<p>Look for:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">ERROR</span></code> entries: Configuration or connection issues</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">FAILOVER</span> <span class="pre">INITIATED</span></code>: Failover started</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">PROMOTED</span> <span class="pre">NODE</span></code>: New master node promotion</p></li>
-</ul>
-</section>
 </section>
 </section>
 
@@ -253,7 +237,7 @@ BFM is now managing PostgreSQL cluster
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="index.html" class="btn btn-neutral float-left" title="BFM - Bidirectional Failover Manager" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="application-properties.html" class="btn btn-neutral float-right" title="Application Properties" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="extended-architecture.html" class="btn btn-neutral float-right" title="Extended Architectural Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
