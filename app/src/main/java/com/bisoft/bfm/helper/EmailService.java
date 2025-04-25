@@ -59,7 +59,7 @@ public class EmailService {
     @Async
     public void sendMailWithAttachment(ArrayList<String> mailTOList, String subject, String text, ArrayList<String> pathToAttachmentList) {
         if (javaMailSender == null) {
-            System.out.println("📭 Mail sender not configured. Attachment mail skipped.");
+            System.out.println("Mail sender not configured. Attachment mail skipped.");
             return;
         }
 
