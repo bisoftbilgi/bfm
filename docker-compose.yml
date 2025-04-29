@@ -9,20 +9,16 @@ services:
       dockerfile: Dockerfile.pg16
     ports:
       - "9995:9995"  
-  
     environment:
-      
       - BFM_SERVER_HOST=minipg-node
       - BFM_SERVER_PORT=5432
       - BFM_SERVER_USERNAME=postgres
       - BFM_SERVER_PASSWORD=postgres
       - MINIPG_SECONDARY_HOST=minipg-node-slave
-      - MINIPG_SECONDARY_PORT=5432  
+      - MINIPG_SECONDARY_PORT=5432
       - MINIPG_SECONDARY_USERNAME=postgres
       - MINIPG_SECONDARY_PASSWORD=postgres
       - SPRING_JACKSON_SERIALIZATION_FAIL_ON_EMPTY_BEANS=false
-     
-      - POSTGRES_INITDB_ARGS="--data-checksums"
     networks:
       - bfm-net
     depends_on:
@@ -36,11 +32,19 @@ services:
       context: /home/ekonak/mini-pg/app
       dockerfile: Dockerfile.pg16
     ports:
-      - "5433:5432"   
-      - "9998:9998"   
+      - "5433:5432"
+      - "9998:9998"
     environment:
       - ROLE=primary
-      
+      - BFM_SERVER_HOST=minipg-node
+      - BFM_SERVER_PORT=5432
+      - MINIPG_SECONDARY_HOST=minipg-node-slave
+      - MINIPG_SECONDARY_PORT=5432
+      - BFM_SERVER_USERNAME=postgres
+      - BFM_SERVER_PASSWORD=postgres
+      - MINIPG_SECONDARY_USERNAME=postgres
+      - MINIPG_SECONDARY_PASSWORD=postgres
+      - SPRING_JACKSON_SERIALIZATION_FAIL_ON_EMPTY_BEANS=false
       - POSTGRES_INITDB_ARGS="--data-checksums"
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_CONFIGS=wal_level=replica,max_wal_senders=10,wal_keep_size=1GB,archive_mode=on,archive_command='test ! -f /archive/%f && cp %p /archive/%f',wal_log_hints=on,max_wal_size=2GB,min_wal_size=1GB
@@ -57,11 +61,19 @@ services:
       context: /home/ekonak/mini-pg/app
       dockerfile: Dockerfile.pg16
     ports:
-      - "5434:5432"   
-      - "9997:9997"   
+      - "5434:5432"
+      - "9997:9997"
     environment:
       - ROLE=slave
-
+      - BFM_SERVER_HOST=minipg-node
+      - BFM_SERVER_PORT=5432
+      - MINIPG_SECONDARY_HOST=minipg-node-slave
+      - MINIPG_SECONDARY_PORT=5432
+      - BFM_SERVER_USERNAME=postgres
+      - BFM_SERVER_PASSWORD=postgres
+      - MINIPG_SECONDARY_USERNAME=postgres
+      - MINIPG_SECONDARY_PASSWORD=postgres
+      - SPRING_JACKSON_SERIALIZATION_FAIL_ON_EMPTY_BEANS=false
       - POSTGRES_INITDB_ARGS="--data-checksums"
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_CONFIGS=wal_level=replica,max_wal_senders=10,wal_keep_size=1GB,hot_standby=on,wal_log_hints=on,max_wal_size=2GB,min_wal_size=1GB
