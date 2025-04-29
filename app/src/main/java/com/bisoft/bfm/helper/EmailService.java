@@ -1,18 +1,37 @@
 package com.bisoft.bfm.helper;
-import java.io.File; import java.util.ArrayList; import java.util.Objects;
-import jakarta.mail.MessagingException; import jakarta.mail.internet.MimeMessage;
-import org.springframework.beans.factory.annotation.Autowired; import org.springframework.beans.factory.annotation.Value; import org.springframework.core.io.FileSystemResource; import org.springframework.mail.SimpleMailMessage; import org.springframework.mail.javamail.JavaMailSender; import org.springframework.mail.javamail.MimeMessageHelper; import org.springframework.scheduling.annotation.Async; import org.springframework.stereotype.Service; import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Objects;
+
 @Service
 public class EmailService {
-    @Value("${bfm.notification-mail-receivers:redmine@bisoft.com.tr}")
-    public String notification_mail_receivers;
+
+    public String notificationMailReceivers;
+    public String notificationMailSender;
 
     private final JavaMailSender javaMailSender;
 
     public EmailService(@Autowired(required = false) JavaMailSender javaMailSender) {
         this.javaMailSender = javaMailSender;
-    }
 
+        
+        Map<String, String> env = System.getenv();
+        this.notificationMailReceivers = env.getOrDefault("NOTIFICATION_MAIL_RECEIVERS", "admin@example.com");
+        this.notificationMailSender = env.getOrDefault("NOTIFICATION_MAIL_SENDER", "noreply@example.com");
+    }
 
     @Async
     public void sendMail(String subject, String message) {
@@ -22,16 +41,15 @@ public class EmailService {
         }
 
         SimpleMailMessage mailMessage = new SimpleMailMessage();
-        if (notification_mail_receivers.contains(",")) {
-            mailMessage.setTo(notification_mail_receivers.split(","));
+        if (notificationMailReceivers.contains(",")) {
+            mailMessage.setTo(notificationMailReceivers.split(","));
         } else {
-            mailMessage.setTo(notification_mail_receivers);
+            mailMessage.setTo(notificationMailReceivers);
         }
         mailMessage.setSubject(subject);
         mailMessage.setText(message);
         javaMailSender.send(mailMessage);
     }
-
 
     @Async
     public void sendMailWithAttachment(ArrayList<String> mailTOList, String subject, String text, ArrayList<String> pathToAttachmentList) throws MessagingException {
@@ -43,7 +61,7 @@ public class EmailService {
         MimeMessage message = javaMailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
-        helper.setFrom("info@bisoft.com.tr");
+        helper.setFrom(notificationMailSender);
         for (String mailTO : mailTOList) {
             helper.setTo(mailTO);
         }
