@@ -1034,8 +1034,9 @@ public class ClusterCheckScheduler {
                         if (slv.getApplication_name() == null 
                             || slv.getApplication_name() == " " 
                             || slv.getApplication_name().equals("walreceiver")
-                            || slv.getApplication_name().contains("main")){
+                            || slv.getApplication_name().equals("main")){
                             try {
+                                log.info("Server "+slv.getServerAddress() + " application_name is :"+slv.getApplication_name());
                                 minipgAccessUtil.fixApplicationName(slv);
                             } catch (Exception e) {
                                 // TODO Auto-generated catch block
