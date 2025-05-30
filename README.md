@@ -25,3 +25,5 @@ sudo dnf install -y bfm-rpm-package
 
 sudo yum install -y https://nexus.bisoft.com.tr/repository/bfm-yum/repo/bisoft-repo-1.0-1.noarch.rpm
 sudo yum install -y bfm-rpm-package
+
+

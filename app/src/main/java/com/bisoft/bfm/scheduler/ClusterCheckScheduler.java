@@ -239,7 +239,7 @@ public class ClusterCheckScheduler {
                 this.bfmContext.setMasterBfm(false);
                 try {
                     Gson gson = new GsonBuilder().setPrettyPrinting().create();
-                    String last_saved_status = bfmAccessUtil.getLastSavedStatus();
+                    String last_saved_status = bfmAccessUtil.getLastSavedStatus(); // last_saved_status
                     if (last_saved_status != "Unreachable"){
                         try {
                             PrintWriter out = new PrintWriter("./bfm_status.json");
@@ -719,7 +719,7 @@ public class ClusterCheckScheduler {
                                 if(f.exists() && !f.isDirectory()) { 
                                     Gson gson = new GsonBuilder().setPrettyPrinting().create();
                                     try {
-                                        JsonReader reader = new JsonReader(new FileReader("./bfm_status.json"));
+                                        JsonReader reader = new JsonReader(new FileReader("./bfm_status.json")); //read "./bfm_status.json" object
                                         ContextStatus cs = gson.fromJson(reader, ContextStatus.class); 
                                         if (cs != null){
                                             String downMasterLastCheck = cs.getClusterServers().stream().filter(s -> s.getDatabaseStatus().equals("MASTER")).findFirst().get().getLastCheck();

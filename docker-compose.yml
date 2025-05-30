@@ -1,98 +1,95 @@
-version: '3.8'
-
 services:
-  bfm-app:
-    image: bfm-app:latest
-    container_name: bfm-app
+  minipg-node1:
     build:
-      context: /home/ekonak/bfm
-      dockerfile: Dockerfile.pg16
+      context: ../minipg
+      dockerfile: Dockerfile
+    container_name: minipg-node1
     ports:
-      - "9995:9995"  
+      - "5432:5432"
+      - "7779:7779"
     environment:
-      - BFM_SERVER_HOST=minipg-node
-      - BFM_SERVER_PORT=5432
-      - BFM_SERVER_USERNAME=postgres
-      - BFM_SERVER_PASSWORD=postgres
-      - MINIPG_SECONDARY_HOST=minipg-node-slave
-      - MINIPG_SECONDARY_PORT=5432
-      - MINIPG_SECONDARY_USERNAME=postgres
-      - MINIPG_SECONDARY_PASSWORD=postgres
-      - SPRING_JACKSON_SERIALIZATION_FAIL_ON_EMPTY_BEANS=false
+      PGPASSFILE: /config/.pgpass
+      PGPASSWORD: postgres  
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/pgsql/16/data
+      MINIPG_USE_TLS: "false"
+      MINIPG_TLS_KEY_STORE: ""
+      MINIPG_REPLICATION_NODES: ""  # birinci düğüm (master)
+      PGAPPNAME=minipg-node1: 
+    volumes:
+      - minipg1_data:/var/lib/pgsql/16/data
+      - ../minipg:/config:ro
     networks:
-      - bfm-net
-    depends_on:
-      - minipg-node
-      - minipg-node-slave
+      bfm-net:
+        aliases:
+          - minipg-node1
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -h localhost -p 5432 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
 
-  minipg-node:
-    image: minipg-pg16:latest
-    container_name: minipg-node
+  minipg-node2:
     build:
-      context: /home/ekonak/mini-pg/app
-      dockerfile: Dockerfile.pg16
+      context: ../minipg
+      dockerfile: Dockerfile
+    container_name: minipg-node2
     ports:
       - "5433:5432"
-      - "9998:9998"
+      - "7780:7779"
     environment:
-      - ROLE=primary
-      - BFM_SERVER_HOST=minipg-node
-      - BFM_SERVER_PORT=5432
-      - MINIPG_SECONDARY_HOST=minipg-node-slave
-      - MINIPG_SECONDARY_PORT=5432
-      - BFM_SERVER_USERNAME=postgres
-      - BFM_SERVER_PASSWORD=postgres
-      - MINIPG_SECONDARY_USERNAME=postgres
-      - MINIPG_SECONDARY_PASSWORD=postgres
-      - SPRING_JACKSON_SERIALIZATION_FAIL_ON_EMPTY_BEANS=false
-      - POSTGRES_INITDB_ARGS="--data-checksums"
-      - POSTGRES_HOST_AUTH_METHOD=trust
-      - POSTGRES_CONFIGS=wal_level=replica,max_wal_senders=10,wal_keep_size=1GB,archive_mode=on,archive_command='test ! -f /archive/%f && cp %p /archive/%f',wal_log_hints=on,max_wal_size=2GB,min_wal_size=1GB
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/pgsql/16/data
+      PGPASSWORD: postgres
+      PGPASSFILE: /config/.pgpass
+      PGAPPNAME: minipg-node2
+      MINIPG_USE_TLS: "false"
+      MINIPG_TLS_KEY_STORE: ""
+      MINIPG_REPLICATION_NODES: "minipg-node1:5432"
+      MINIPG_REPLICATION_USER: "postgres"
+      MINIPG_REPLICATION_PASSWORD: "postgres"
     volumes:
-      - pg_primary_data:/var/lib/pgsql/data
-      - pg_archive:/archive
+      - minipg2_data:/var/lib/pgsql/16/data
+      - ../minipg:/config:ro
     networks:
-      - bfm-net
-
-  minipg-node-slave:
-    image: minipg-pg16:latest
-    container_name: minipg-node-slave
+      bfm-net:
+        aliases:
+          - minipg-node2
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -h localhost -p 5432 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+  bfm:
     build:
-      context: /home/ekonak/mini-pg/app
-      dockerfile: Dockerfile.pg16
+      context: .
+      dockerfile: Dockerfile
+    container_name: bfm
+    depends_on:
+      minipg-node1:
+        condition: service_healthy
+      minipg-node2:
+        condition: service_healthy
     ports:
-      - "5434:5432"
-      - "9997:9997"
+      - "9994:9994"
     environment:
-      - ROLE=slave
-      - BFM_SERVER_HOST=minipg-node
-      - BFM_SERVER_PORT=5432
-      - MINIPG_SECONDARY_HOST=minipg-node-slave
-      - MINIPG_SECONDARY_PORT=5432
-      - BFM_SERVER_USERNAME=postgres
-      - BFM_SERVER_PASSWORD=postgres
-      - MINIPG_SECONDARY_USERNAME=postgres
-      - MINIPG_SECONDARY_PASSWORD=postgres
-      - SPRING_JACKSON_SERIALIZATION_FAIL_ON_EMPTY_BEANS=false
-      - POSTGRES_INITDB_ARGS="--data-checksums"
-      - POSTGRES_HOST_AUTH_METHOD=trust
-      - POSTGRES_CONFIGS=wal_level=replica,max_wal_senders=10,wal_keep_size=1GB,hot_standby=on,wal_log_hints=on,max_wal_size=2GB,min_wal_size=1GB
-      - PRIMARY_HOST=minipg-node
-      - PRIMARY_PORT=5432
-      - RESTORE_COMMAND='cp /archive/%f %p'
+      WATCHER_CLUSTER_PORT: "9994"
+      MINIPG_PORT: "7779"
     volumes:
-      - pg_secondary_data:/var/lib/pgsql/data
-      - pg_archive:/archive:ro
+      - ./application.properties:/app/application.properties:ro
     networks:
       - bfm-net
-    depends_on:
-      - minipg-node
+    restart: unless-stopped
+
+volumes:
+  minipg1_data:
+  minipg2_data:
 
 networks:
   bfm-net:
     driver: bridge
 
-volumes:
-  pg_primary_data:
-  pg_secondary_data:
-  pg_archive:
