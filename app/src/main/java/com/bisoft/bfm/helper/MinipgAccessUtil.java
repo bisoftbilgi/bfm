@@ -11,8 +11,10 @@ import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import com.bisoft.bfm.model.BfmContext;
 import jakarta.annotation.PostConstruct;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -79,6 +81,9 @@ public class MinipgAccessUtil {
 
     @Value("${bfm.user-crypted:false}")
     public boolean isEncrypted;
+
+    @Value("${application.connection-mode:vip}")
+    private String connectionMode;
 
     private SSLContext sslContext;
 
@@ -148,7 +153,11 @@ public class MinipgAccessUtil {
 
     public String vipUp(PostgresqlServer postgresqlServer) throws Exception{
         //log.info("username : "+username+", password : "+password);
-        log.info("vip up sent to "+postgresqlServer.getServerAddress());
+        if (Objects.equals(connectionMode, "vip")) {
+            log.info("vip up sent to " + postgresqlServer.getServerAddress());
+        } else if (Objects.equals(connectionMode, "proxy")) {
+            log.info("Proxy update sent to " + postgresqlServer.getServerAddress());
+        }
         final String serverAddress = postgresqlServer.getServerAddress().split(":")[0];
         String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
         final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
@@ -177,12 +186,20 @@ public class MinipgAccessUtil {
                 String result = (EntityUtils.toString(response1.getEntity()));
                 return result;
             }catch (Exception e){
-                log.error("Unable set vip to server "+postgresqlServer.getServerAddress());
+                if (Objects.equals(connectionMode, "vip")) {
+                    log.error("Unable set vip to server "+postgresqlServer.getServerAddress());
+                } else if (Objects.equals(connectionMode, "proxy")) {
+                    log.error("Unable to update proxy, server: "+postgresqlServer.getServerAddress());
+                }
             }
 
 
         } catch (IOException e) {
-            log.error("Unable set vip to server "+postgresqlServer.getServerAddress());
+            if (Objects.equals(connectionMode, "vip")) {
+                log.error("Unable set vip to server "+postgresqlServer.getServerAddress());
+            } else if (Objects.equals(connectionMode, "proxy")) {
+                log.error("Unable to update proxy, server: "+postgresqlServer.getServerAddress());
+            }
         }
 
         return "OK";

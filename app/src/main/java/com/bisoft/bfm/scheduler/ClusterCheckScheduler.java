@@ -6,10 +6,7 @@ import java.io.FileReader;
 import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -805,17 +802,19 @@ public class ClusterCheckScheduler {
         try {
             PostgresqlServer newMaster = selectNewMaster();
             log.info(String.format("New master server is %s",newMaster.getServerAddress()));
-            bfmContext.getPgList().stream().
-                    filter(server -> !server.getServerAddress().equals(newMaster.getServerAddress()))
-                    .forEach(
-                    server -> {
-                        try {
-                            minipgAccessUtil.vipDown(server);
-                        } catch (Exception e) {
-                           log.error(String.format("Unable to down vip in server %s",server.getServerAddress()));
-                        }
-                    }
-            );
+            if (Objects.equals(bfmContext.getConnectionMode(), "vip")) {
+                bfmContext.getPgList().stream().
+                        filter(server -> !server.getServerAddress().equals(newMaster.getServerAddress()))
+                        .forEach(
+                                server -> {
+                                    try {
+                                        minipgAccessUtil.vipDown(server);
+                                    } catch (Exception e) {
+                                        log.error(String.format("Unable to down vip in server %s", server.getServerAddress()));
+                                    }
+                                }
+                        );
+            }
             minipgAccessUtil.promote(newMaster);
             minipgAccessUtil.vipUp(newMaster);
             bfmContext.getPgList().stream().
@@ -1001,23 +1000,32 @@ public class ClusterCheckScheduler {
 
     @Scheduled(fixedDelay = 11000)
     public void checkMasterVIPNetwork(){
+        String connection_mode = bfmContext.getConnectionMode();
         if (this.bfmContext.isCheckPaused() == Boolean.FALSE &&
             this.bfmContext.isMasterBfm() == Boolean.TRUE &&
             (this.bfmContext.getPgList().stream().filter(pg -> pg.getStatus() == DatabaseStatus.MASTER).count()) > 0){
             try {
                 String result = minipgAccessUtil.checkMasterVIPNetwork(this.bfmContext.getMasterServer());
-                this.bfmContext.getPgList().stream()
-                                            .filter(sp -> sp.getDatabaseStatus().equals(DatabaseStatus.SLAVE))
-                                            .forEach(rep -> {
-                                                try {
-                                                    minipgAccessUtil.vipDown(rep);
-                                                } catch (Exception e) {
-                                                    log.warn("Error occurred when vip removimg from replica server :"+rep.getServerAddress());
-                                                }
-                                            });
-                log.info("VIP Network Check result:"+ result);
+                if (Objects.equals(connection_mode, "vip")) {
+                    this.bfmContext.getPgList().stream()
+                            .filter(sp -> sp.getDatabaseStatus().equals(DatabaseStatus.SLAVE))
+                            .forEach(rep -> {
+                                try {
+                                    minipgAccessUtil.vipDown(rep);
+                                } catch (Exception e) {
+                                    log.warn("Error occurred when vip removing from replica server :" + rep.getServerAddress());
+                                }
+                            });
+                }
+                log.info((Objects.equals(connection_mode, "vip") ? ("VIP Check result: " + result) : (Objects.equals(connection_mode, "proxy") ? ("PROXY Check result: " + result) : ("UNSUPPORTED MODE: " + connection_mode))));
             } catch (Exception e) {
-                log.error("Error on Master Server VIP-Network check:", e);
+                if (Objects.equals(connection_mode, "vip")) {
+                    log.error("Error on Master Server VIP-Network check:", e);
+                } else if (Objects.equals(connection_mode, "proxy")) {
+                    log.error("Error on Master Server PROXY check:", e);
+                } else {
+                    log.error("UNSUPPORTED MODE: ", e);
+                }
             }        
         }
     }
