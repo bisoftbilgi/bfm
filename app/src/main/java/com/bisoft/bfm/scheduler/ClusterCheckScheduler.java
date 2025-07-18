@@ -50,7 +50,7 @@ public class ClusterCheckScheduler {
     private String bfmPair;
 
     @Value("${app.bfm-hc-clustername:BFMCluster}")
-    private Integer clusterName;
+    private String clusterName;
 
     @Value("${app.timeout-ignorance-count:3}")
     int timeoutIgnoranceCount;
