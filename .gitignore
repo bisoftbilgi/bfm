@@ -23,3 +23,40 @@
 hs_err_pid*
 target/
 .idea/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon files
+Icon?
+
+# Thumbnails
+._*
+
+# Spotlight files
+.Spotlight-V100
+
+# Trash folder which might appear on external drives
+.Trashes
+
+# macOS folder attributes
+*.AppleDouble
+.DS_Store?
+
+# macOS quarantine metadata
+*.qlgenerator
+.com.apple.timemachine.donotpresent
+.fseventsd
+.metadata_never_index
+.VolumeIcon.icns
+
+# iCloud and macOS file locking
+~$*

@@ -42,6 +42,9 @@ public class BfmContext {
     
     @Value("${bfm.mail-notification-enabled:false}")
     public boolean mail_notification_enabled;
+
+    @Value("${application.connection-mode:vip}")
+    private String connectionMode;
     
     boolean isMasterBfm;
 
