@@ -10,10 +10,10 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.annotation.PostConstruct;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -44,10 +44,10 @@ import com.bisoft.bfm.dto.PromoteDTO;
 import com.bisoft.bfm.dto.ReBaseUpDTO;
 import com.bisoft.bfm.dto.RewindDTO;
 import com.bisoft.bfm.model.PostgresqlServer;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
+import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -992,6 +992,51 @@ public class MinipgAccessUtil {
             }
         } catch (IOException e) {
             log.error("Unable get set-async-replication to server "+master_server.getServerAddress());
+        }
+        return "OK";
+    }
+
+    public String updatePGPAss(PostgresqlServer master_server, ArrayList<String> pgpassStr)throws Exception {
+        log.info("Setting Async replication on master :" + master_server.getServerAddress());
+        final String serverAddress = master_server.getServerAddress().split(":")[0];
+        final String serverPort = master_server.getServerAddress().split(":")[1];
+        String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+
+        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+                SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(),
+                NoopHostnameVerifier.INSTANCE);
+        final HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(scsf)
+                .build();
+
+        credsProvider.setCredentials(
+                new AuthScope(serverAddress, port),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+
+        try (CloseableHttpClient httpclient = HttpClients.custom()
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credsProvider)
+                .build()) {
+            
+            HttpPost request = new HttpPost(minipgUrl+"/minipg/updatepgpass");
+            request.setHeader("Accept", "application/json");
+            request.setHeader("Content-type", "application/json");
+
+            final StringEntity entity = new StringEntity(String.join(",", pgpassStr));
+            request.setEntity(entity);
+
+            try (CloseableHttpResponse response1 = httpclient.execute(request)) {
+                HttpEntity entity1 = (HttpEntity) response1.getEntity();
+                // do something useful with the response body
+                // and ensure it is fully consumed
+                String result = (EntityUtils.toString(response1.getEntity()));
+                return result;
+            }catch (Exception e){
+                log.error("Unable update pgpass on server "+master_server.getServerAddress());
+            }
+        } catch (IOException e) {
+            log.error("Unable update pgpass on server "+master_server.getServerAddress());
         }
         return "OK";
     }

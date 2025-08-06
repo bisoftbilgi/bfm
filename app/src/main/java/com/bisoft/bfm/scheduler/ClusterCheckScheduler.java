@@ -1025,6 +1025,28 @@ public class ClusterCheckScheduler {
         }
     }
 
+    @Scheduled(fixedDelay = 30000)
+    public void updatePGPass(){
+        if (this.bfmContext.isCheckPaused() == Boolean.FALSE &&
+            this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            ArrayList<String> pgpassStr = new ArrayList<>();
+
+            this.bfmContext.getPgList().stream()
+                                        .forEach(pg -> {
+                                            pgpassStr.add(pg.getServerAddress()+":*:"+pgUsername+":"+pgPassword);
+                                        });
+            this.bfmContext.getPgList().stream()
+                                        .forEach(pg -> {
+                                            try {
+                                                minipgAccessUtil.updatePGPAss(pg, pgpassStr);
+                                            } catch (Exception e) {
+                                                log.error("minipg call error on pgpass update");
+                                            }
+                                        });
+            
+        }
+    }
+
     @Scheduled(fixedDelay = 6000)
     public void checkSlavesApplicationNames(){
         if (this.bfmContext.isCheckPaused() == Boolean.FALSE &&
