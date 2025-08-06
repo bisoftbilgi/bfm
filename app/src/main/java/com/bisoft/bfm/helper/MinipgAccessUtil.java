@@ -997,7 +997,7 @@ public class MinipgAccessUtil {
     }
 
     public String updatePGPAss(PostgresqlServer master_server, ArrayList<String> pgpassStr)throws Exception {
-        log.info("Setting Async replication on master :" + master_server.getServerAddress());
+        log.info(".pgpass check & update started on server :" + master_server.getServerAddress());
         final String serverAddress = master_server.getServerAddress().split(":")[0];
         final String serverPort = master_server.getServerAddress().split(":")[1];
         String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
