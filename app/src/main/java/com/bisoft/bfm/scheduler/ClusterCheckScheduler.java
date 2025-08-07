@@ -21,6 +21,7 @@ import com.bisoft.bfm.dto.DatabaseStatus;
 import com.bisoft.bfm.helper.BfmAccessUtil;
 import com.bisoft.bfm.helper.EmailService;
 import com.bisoft.bfm.helper.MinipgAccessUtil;
+import com.bisoft.bfm.helper.SymmetricEncryptionUtil;
 import com.bisoft.bfm.model.BfmContext;
 import com.bisoft.bfm.model.ContextServer;
 import com.bisoft.bfm.model.ContextStatus;
@@ -40,6 +41,7 @@ public class ClusterCheckScheduler {
     private final BfmContext bfmContext;
     private  final MinipgAccessUtil minipgAccessUtil;
     private final BfmAccessUtil bfmAccessUtil;
+    private final SymmetricEncryptionUtil symmetricEncryptionUtil;
 
     @Autowired
     private EmailService mailService;
@@ -51,6 +53,9 @@ public class ClusterCheckScheduler {
 
     @Value("${app.bfm-hc-clustername:BFMCluster}")
     private String clusterName;
+
+    @Value("${bfm.user-crypted:false}")
+    public boolean isEncrypted;
 
     @Value("${app.timeout-ignorance-count:3}")
     int timeoutIgnoranceCount;
@@ -1033,6 +1038,9 @@ public class ClusterCheckScheduler {
 
             this.bfmContext.getPgList().stream()
                                         .forEach(pg -> {
+                                            if(isEncrypted) {
+                                                pgPassword = (symmetricEncryptionUtil.decrypt(pgPassword));
+                                            } 
                                             pgpassStr.add(pg.getServerAddress()+":*:"+pgUsername+":"+pgPassword);
                                         });
             this.bfmContext.getPgList().stream()
