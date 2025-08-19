@@ -313,6 +313,8 @@
                 document.querySelector(".btn-bfm[onclick='ask_switch_confirm();']").disabled = true;
                 document.querySelector(".btn-bfm[onclick='ask_reinit();']").disabled = true;
             }
+            
+            document.getElementById('cb_refresh').checked = true;
         });
         
         $("#encryptModal").on("hide.bs.modal", function () {
