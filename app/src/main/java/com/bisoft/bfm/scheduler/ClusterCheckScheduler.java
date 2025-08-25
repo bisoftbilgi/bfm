@@ -21,6 +21,7 @@ import com.bisoft.bfm.dto.DatabaseStatus;
 import com.bisoft.bfm.helper.BfmAccessUtil;
 import com.bisoft.bfm.helper.EmailService;
 import com.bisoft.bfm.helper.MinipgAccessUtil;
+import com.bisoft.bfm.helper.SymmetricEncryptionUtil;
 import com.bisoft.bfm.model.BfmContext;
 import com.bisoft.bfm.model.ContextServer;
 import com.bisoft.bfm.model.ContextStatus;
@@ -40,6 +41,7 @@ public class ClusterCheckScheduler {
     private final BfmContext bfmContext;
     private  final MinipgAccessUtil minipgAccessUtil;
     private final BfmAccessUtil bfmAccessUtil;
+    private final SymmetricEncryptionUtil symmetricEncryptionUtil;
 
     @Autowired
     private EmailService mailService;
@@ -48,6 +50,12 @@ public class ClusterCheckScheduler {
 
     @Value("${watcher.cluster-pair:no-pair}")
     private String bfmPair;
+
+    @Value("${app.bfm-hc-clustername:BFMCluster}")
+    private String clusterName;
+
+    @Value("${bfm.user-crypted:false}")
+    public boolean isEncrypted;
 
     @Value("${app.timeout-ignorance-count:3}")
     int timeoutIgnoranceCount;
@@ -203,10 +211,10 @@ public class ClusterCheckScheduler {
                                                                     log.info("Rewind or ReBaseUp ignoring..BFM watch strategy is:" + this.bfmContext.getWatch_strategy());
                                                                     if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE) {
                                                                         mailService.sendMail(
-                                                                                String.format("BFM Cluster in %s Status",
+                                                                                String.format("%s in %s Status",clusterName,
                                                                                         String.valueOf(this.bfmContext.getClusterStatus())),
                                                                                 "This is an automatic mail notification."
-                                                                                        + "\nBFM Cluster Status is:"
+                                                                                        + "\n"+ clusterName+" Status is:"
                                                                                         + this.bfmContext.getClusterStatus()
                                                                                         + "\nWatch Strategy is MANUAL. SLAVE JOIN (Rewind or Rebase) ignoring. Please manual respond to failure...Selected Master Server : "
                                                                                         + master.getServerAddress());
@@ -384,8 +392,8 @@ public class ClusterCheckScheduler {
                                             } else {
                                                 log.info("Rewind or ReBaseUp ignoring..BFM watch strategy is:"+this.bfmContext.getWatch_strategy());
                                                 if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
-                                                    mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
-                                                    "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
+                                                    mailService.sendMail(String.format("%s in %s Status",clusterName,String.valueOf(this.bfmContext.getClusterStatus())), 
+                                                    "This is an automatic mail notification."+"\n"+ clusterName+" Status is:"+this.bfmContext.getClusterStatus() 
                                                     + "\nWatch Strategy is MANUAL. SLAVE JOIN (Rewind or Rebase) ignoring. Please manual respond to failure...Selected Master Server : " 
                                                     + leaderMaster.getServerAddress());
                                                 }    
@@ -425,8 +433,8 @@ public class ClusterCheckScheduler {
             warning();
             checkSlaves();
             if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE && this.isWarningMailSended == Boolean.FALSE){
-                mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
-                    "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
+                mailService.sendMail(String.format("%s in %s Status",clusterName,String.valueOf(this.bfmContext.getClusterStatus())), 
+                    "This is an automatic mail notification."+"\n"+ clusterName+" Status is:"+this.bfmContext.getClusterStatus() 
                     + "\nMaster (With No Slave) Server:"+ this.bfmContext.getPgList().stream()
                                                         .filter(s -> s.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE)
                                                         .findFirst().get());
@@ -475,8 +483,8 @@ public class ClusterCheckScheduler {
                         e.printStackTrace();
                     }
                     if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
-                        mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
-                            "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus()
+                        mailService.sendMail(String.format("%s in %s Status",clusterName,String.valueOf(this.bfmContext.getClusterStatus())), 
+                            "This is an automatic mail notification."+"\n"+clusterName+" Status is:"+this.bfmContext.getClusterStatus()
                             +"\nCluster has more than one MASTER server. Leader Master is :"+leaderPg.getServerAddress()  
                             + "\nServer:"+ pg.getServerAddress()+ " was STOPPED. Please check cluster.");
                     } 
@@ -490,8 +498,8 @@ public class ClusterCheckScheduler {
                                             .findFirst().get());
             warning();
             if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
-                mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
-                    "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus()
+                mailService.sendMail(String.format("%s in %s Status",clusterName, String.valueOf(this.bfmContext.getClusterStatus())), 
+                    "This is an automatic mail notification."+"\n"+clusterName +" Status is:"+this.bfmContext.getClusterStatus()
                     +"\nCluster has only one MASTER server. Master is :"+this.bfmContext.getMasterServer().getServerAddress()  
                     );
             } 
@@ -513,8 +521,8 @@ public class ClusterCheckScheduler {
                     }
                 }
                 if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
-                    mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
-                    "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
+                    mailService.sendMail(String.format("%s in %s Status",clusterName,String.valueOf(this.bfmContext.getClusterStatus())), 
+                    "This is an automatic mail notification."+"\n"+ clusterName +" Status is:"+this.bfmContext.getClusterStatus() 
                     + "\nCluster has NO Master Server. Slave Server Adddresses : "+ slaveServerAddresses);
                 }
             }        
@@ -743,7 +751,7 @@ public class ClusterCheckScheduler {
                                             log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, "+diff_hours+ " Hours) old..");
                                             if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
                                                 log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");
-                                                mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                                                mailService.sendMail(String.format("%s in %s Status",clusterName,String.valueOf(this.bfmContext.getClusterStatus())), 
                                                 "Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");  
                                             }
                                         }
@@ -753,7 +761,7 @@ public class ClusterCheckScheduler {
                                             log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, "+diff_hours+ " Hours) old..");
                                             if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
                                                 log.warn("Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");
-                                                mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                                                mailService.sendMail(String.format("%s in %s Status",clusterName,String.valueOf(this.bfmContext.getClusterStatus())), 
                                                 "Master Server Last Wal Position:"+ downMasterLastWalPos +".Ignoring failover Because this data not updated, " + diff_hours + " Hours) old..");  
                                             }
                                         }
@@ -776,7 +784,7 @@ public class ClusterCheckScheduler {
                                 + ".Data loss size calculated as " + Double.toString(data_loss_size) + " between Leader Slave Wal Position and Master Last Wal Position."
                                 + "Failover ignored.. Please manual respond to failure.. ");
                                 if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
-                                    mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
+                                    mailService.sendMail(String.format("%s in %s Status",clusterName,String.valueOf(this.bfmContext.getClusterStatus())), 
                                     "Data Loss Tolerance is:"+ getDoubleFromString(data_loss_tolerance) + " doFailover flag is:"+ doFailover 
                                     + ".Data loss size calculated as " + Double.toString(data_loss_size) + " between Leader Slave Wal Position and Master Last Wal Position."
                                     + "Failover ignored.. Please manual respond to failure.. ");                                    
@@ -788,8 +796,8 @@ public class ClusterCheckScheduler {
             } else {
                 this.bfmContext.setClusterStatus(ClusterStatus.NOT_HEALTHY);
                 if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
-                    mailService.sendMail(String.format("BFM Cluster in %s Status",String.valueOf(this.bfmContext.getClusterStatus())), 
-                    "This is an automatic mail notification."+"\nBFM Cluster Status is:"+this.bfmContext.getClusterStatus() 
+                    mailService.sendMail(String.format("%s in %s Status",clusterName,String.valueOf(this.bfmContext.getClusterStatus())), 
+                    "This is an automatic mail notification."+"\n"+clusterName+" Status is:"+this.bfmContext.getClusterStatus() 
                     + "\nAutomatic Failover is OFF. Please manual respond to failure...Master Server : " + this.bfmContext.getMasterServer().getServerAddress());    
                 }
             }
@@ -1019,6 +1027,31 @@ public class ClusterCheckScheduler {
             } catch (Exception e) {
                 log.error("Error on Master Server VIP-Network check:", e);
             }        
+        }
+    }
+
+    @Scheduled(fixedDelay = 30000)
+    public void updatePGPass(){
+        if (this.bfmContext.isCheckPaused() == Boolean.FALSE &&
+            this.bfmContext.isMasterBfm() == Boolean.TRUE){
+            ArrayList<String> pgpassStr = new ArrayList<>();
+
+            this.bfmContext.getPgList().stream()
+                                        .forEach(pg -> {
+                                            if(isEncrypted) {
+                                                pgPassword = (symmetricEncryptionUtil.decrypt(pgPassword));
+                                            } 
+                                            pgpassStr.add(pg.getServerAddress()+":*:"+pgUsername+":"+pgPassword);
+                                        });
+            this.bfmContext.getPgList().stream()
+                                        .forEach(pg -> {
+                                            try {
+                                                minipgAccessUtil.updatePGPAss(pg, pgpassStr);
+                                            } catch (Exception e) {
+                                                log.error("minipg call error on pgpass update");
+                                            }
+                                        });
+            
         }
     }
 

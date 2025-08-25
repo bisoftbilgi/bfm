@@ -313,6 +313,8 @@
                 document.querySelector(".btn-bfm[onclick='ask_switch_confirm();']").disabled = true;
                 document.querySelector(".btn-bfm[onclick='ask_reinit();']").disabled = true;
             }
+
+            document.getElementById('cb_refresh').checked = true;
         });
         
         $("#encryptModal").on("hide.bs.modal", function () {
@@ -559,10 +561,9 @@
                     beforeSend: function (xhr) {
                         xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
                     },
-                    success: async function (data) {
-                        await new Promise(r => setTimeout(r, 7000));
+                    success: function (data) {
                         document.getElementById("overlay").style.display = 'none';
-                        window.location.reload();                  
+                        document.getElementById('cb_refresh').checked = true;                  
                     },
                     error: function (error) {
                         console.log(`Error ${error}`);
@@ -714,8 +715,9 @@
                         xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
                     },
                     success: async function (data) {
-                        await new Promise(r => setTimeout(r, 7000));
+                        await new Promise(r => setTimeout(r, 3000));
                         getRows(true);
+                        document.getElementById('cb_refresh').checked = true;
                         document.getElementById("overlay").style.display = 'none';
                         //window.location.reload();                    
                     },
