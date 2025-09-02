@@ -6,19 +6,19 @@
   "clusterServers": [
     {
       "address": "46.101.246.180:5439",
-      "databaseStatus": "SLAVE",
-      "lastCheck": "2025-02-18 07:34:22",
-      "lastWalPos": "0/F2000350",
+      "databaseStatus": "MASTER",
+      "lastCheck": "2025-09-02 06:52:31",
+      "lastWalPos": "C/76000438",
       "replayLag": "0",
-      "timeline": 38
+      "timeline": 61
     },
     {
       "address": "46.101.130.251:5439",
-      "databaseStatus": "MASTER",
-      "lastCheck": "2025-02-18 07:34:23",
-      "lastWalPos": "0/F2000350",
+      "databaseStatus": "SLAVE",
+      "lastCheck": "2025-09-02 06:52:31",
+      "lastWalPos": "C/76000438",
       "replayLag": "0",
-      "timeline": 38
+      "timeline": 61
     }
   ]
 }

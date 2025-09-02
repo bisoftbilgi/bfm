@@ -8,14 +8,9 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.UncheckedIOException;
-import java.net.InterfaceAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
@@ -76,6 +71,10 @@ public class BfmController {
 
     @Value("${bfm.basebackup-slave-join:false}")
     public boolean basebackup_slave_join;
+
+    @Value("${app.custom-logo-path:no-file}")
+    public String custom_logo_path;
+    
 
     // @RequestMapping(path = "/login",method = RequestMethod.GET)
     // public @ResponseBody
@@ -607,7 +606,12 @@ public class BfmController {
     
             retval = retval.replace("{{ USERNAME }}", username);
             retval = retval.replace("{{ PASSWORD }}", password);
-    
+            if (custom_logo_path.equals("no-file") || custom_logo_path.trim().equals("")){
+                retval = retval.replace("{{ CUSTOM_LOGO }}", " ");
+            } else {
+                retval = retval.replace("{{ CUSTOM_LOGO }}", "<div class=\"d-flex justify-content-end\"><img class=\"custom-logo\" src=\""+custom_logo_path+"\" alt=\"custom-logo\"></div>");
+            }
+            
             if (this.bfmContext.getClusterStatus() == null){
                 retval = retval.replace("{{ CHECK_STATUS }}", "");
                 retval = retval.replace("{{ MAIL_ENABLED }}", "");
