@@ -1049,10 +1049,11 @@ public class ClusterCheckScheduler {
 
             this.bfmContext.getPgList().stream()
                                         .forEach(pg -> {
+                                            String myPwdStr = pgPassword;
                                             if(isEncrypted) {
-                                                pgPassword = (symmetricEncryptionUtil.decrypt(pgPassword));
+                                                myPwdStr = (symmetricEncryptionUtil.decrypt(pgPassword));
                                             } 
-                                            pgpassStr.add(pg.getServerAddress()+":*:"+pgUsername+":"+pgPassword);
+                                            pgpassStr.add(pg.getServerAddress()+":*:"+pgUsername+":"+myPwdStr);
                                         });
             this.bfmContext.getPgList().stream()
                                         .forEach(pg -> {

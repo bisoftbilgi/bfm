@@ -46,6 +46,13 @@ body {
     margin: -57%  0 0 2% ;
 }
 
+.custom-logo {
+    width: 160px;
+    height: 100px;
+    position: relative;
+    margin: -56%  2% 0 2% ;
+}
+
 h3 {
     color: rgba(54, 80, 101, 0.85) !important;
     position: relative;
