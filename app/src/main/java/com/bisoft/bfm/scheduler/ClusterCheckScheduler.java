@@ -327,6 +327,17 @@ public class ClusterCheckScheduler {
                     }
                 }
             }
+        } else if (status.equals(DatabaseStatus.INACCESSIBLE)){
+            if ((postgresqlServer.getSyncState()==null ? "": postgresqlServer.getSyncState()).equals("sync")){
+                                            log.warn(" INACCESSIBLE Sync Replica removed from sync names on MASTER");
+                                            try {
+                                                String async_result = minipgAccessUtil.setReplicationToAsync(this.bfmContext.getMasterServer(), postgresqlServer.getApplication_name());
+                                                log.info("Async Op Result : "+ async_result);
+                                                postgresqlServer.setSyncState("async");
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
+                                            }
+                                    }
         }
         
         
