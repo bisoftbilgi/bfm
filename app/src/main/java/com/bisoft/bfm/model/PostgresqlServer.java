@@ -276,11 +276,18 @@ public class PostgresqlServer {
         try {
             List<String> result = new ArrayList<>();
             Statement statement = this.getServerConnection().createStatement();
-            ResultSet rs = statement.executeQuery(sql);
-            while(rs.next()){
-                result.add(rs.getString(1));
+            boolean hasResultSet = statement.execute(sql);
+            if (hasResultSet) {
+                try (ResultSet rs = statement.getResultSet()) {
+                    while(rs.next()){
+                        result.add(rs.getString(1));
+                    }
+                    return result;
+                }
+            } else {
+                int updateCount = statement.getUpdateCount();
             }
-            return result;
+
         }catch (Exception e){
             log.error(e.getMessage());
             e.printStackTrace();

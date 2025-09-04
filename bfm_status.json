@@ -6,27 +6,27 @@
   "clusterServers": [
     {
       "address": "46.101.246.180:5439",
-      "databaseStatus": "SLAVE",
-      "lastCheck": "2025-09-04 21:52:03",
-      "lastWalPos": "C/78000438",
+      "databaseStatus": "MASTER",
+      "lastCheck": "2025-09-04 22:06:27",
+      "lastWalPos": "C/7C000438",
       "replayLag": "0",
-      "timeline": 63
+      "timeline": 67
     },
     {
       "address": "46.101.130.251:5439",
       "databaseStatus": "SLAVE",
-      "lastCheck": "2025-09-04 21:52:03",
-      "lastWalPos": "C/78000438",
+      "lastCheck": "2025-09-04 22:06:27",
+      "lastWalPos": "C/7C000438",
       "replayLag": "0",
-      "timeline": 63
+      "timeline": 67
     },
     {
       "address": "64.226.101.90:5439",
-      "databaseStatus": "MASTER",
-      "lastCheck": "2025-09-04 21:52:03",
-      "lastWalPos": "C/78000438",
+      "databaseStatus": "SLAVE",
+      "lastCheck": "2025-09-04 22:06:27",
+      "lastWalPos": "C/7C000438",
       "replayLag": "0",
-      "timeline": 63
+      "timeline": 67
     }
   ]
 }
