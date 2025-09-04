@@ -7,24 +7,24 @@
     {
       "address": "46.101.246.180:5439",
       "databaseStatus": "SLAVE",
-      "lastCheck": "2025-09-04 22:55:02",
-      "lastWalPos": "C/7E03D810",
+      "lastCheck": "2025-09-04 23:38:48",
+      "lastWalPos": "C/7E03D8F8",
       "replayLag": "0",
       "timeline": 69
     },
     {
       "address": "46.101.130.251:5439",
       "databaseStatus": "MASTER",
-      "lastCheck": "2025-09-04 22:55:02",
-      "lastWalPos": "C/7E03D810",
+      "lastCheck": "2025-09-04 23:38:48",
+      "lastWalPos": "C/7E03D8F8",
       "replayLag": "0",
       "timeline": 69
     },
     {
       "address": "64.226.101.90:5439",
       "databaseStatus": "SLAVE",
-      "lastCheck": "2025-09-04 22:55:02",
-      "lastWalPos": "C/7E03D810",
+      "lastCheck": "2025-09-04 23:38:48",
+      "lastWalPos": "C/7E03D8F8",
       "replayLag": "0",
       "timeline": 69
     }
