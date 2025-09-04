@@ -358,7 +358,8 @@ public class BfmController {
 
                                 minipgAccessUtil.vipUp(switchOverToPG);
                                 switchOverToPG.setApplication_name("");
-                                switchOverToPG.setSyncState("");                    
+                                switchOverToPG.setSyncState("");
+                                this.bfmContext.getSyncReplicas().remove(switchOverToPG);                    
                                 
                                 this.bfmContext.getPgList().stream().filter(s -> (!s.getServerAddress().equals(switchOverToPG.getServerAddress())))
                                                                     .forEach(pg -> {
@@ -368,6 +369,7 @@ public class BfmController {
                                                                             if (rewind_result.equals("OK")){
                                                                                 pg.executeStatement("alter system set synchronous_standby_names to '';");
                                                                                 pg.executeStatement("select pg_reload_conf();");
+                                                                                this.bfmContext.getSyncReplicas().remove(pg);
                                                                             } else {
                                                                                 log.info("on SwitchOver pg_rewind was FAILED. Response is : "+rewind_result+" Slave Target:" + pg.getServerAddress());
                                                                                 if (basebackup_slave_join == Boolean.TRUE){
