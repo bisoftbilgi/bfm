@@ -366,7 +366,7 @@ public class BfmController {
                                                                             pg.setRewindStarted(Boolean.TRUE);
                                                                             String rewind_result = minipgAccessUtil.rewind(pg, switchOverToPG);
                                                                             if (rewind_result.equals("OK")){
-                                                                                pg.executeStatement("ALTER SYSTEM set alter system set synchronous_standby_names to '';");
+                                                                                pg.executeStatement("alter system set synchronous_standby_names to '';");
                                                                                 pg.executeStatement("select pg_reload_conf();");
                                                                             } else {
                                                                                 log.info("on SwitchOver pg_rewind was FAILED. Response is : "+rewind_result+" Slave Target:" + pg.getServerAddress());
