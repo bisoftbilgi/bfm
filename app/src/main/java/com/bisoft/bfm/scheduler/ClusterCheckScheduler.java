@@ -541,9 +541,12 @@ public class ClusterCheckScheduler {
 
         }
 
-        if (clusterCount > 1 && masterCount > 0 && slave_with_slave_count > 0){
-            checkSlaves();
-        }
+        if (clusterCount > 1 && masterCount > 0){
+            if (slave_with_slave_count > 0){
+                checkSlaves();
+            }
+            checkReplayLag();
+        } 
     }
 
     public void checkLastWalPositions(){
@@ -685,14 +688,12 @@ public class ClusterCheckScheduler {
         isWarningMailSended = Boolean.FALSE;
         bfmContext.setClusterStatus(ClusterStatus.HEALTHY);
         bfmContext.setSplitBrainMaster(null);
-        checkReplayLag();
         checkTimelines();
         cleanOldBackupsFromSlaves();
     }
 
     public void warning(){
         bfmContext.setClusterStatus(ClusterStatus.WARNING);
-        checkReplayLag();
     }
 
     public void nothealthy(){
