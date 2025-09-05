@@ -364,6 +364,7 @@ public class ClusterCheckScheduler {
         long masterCount = this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.MASTER)).count();
         long masterWithNoslaveCount = this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)).count();
         long inaccessibleMemberCount = this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.INACCESSIBLE)).count();
+        long slave_with_slave_count = this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.SLAVE_WITH_SLAVE)).count();
 
 
         if (clusterCount > 1 && masterCount ==  1L && inaccessibleMemberCount > 0){
@@ -538,6 +539,10 @@ public class ClusterCheckScheduler {
                 }
             }        
 
+        }
+
+        if (clusterCount > 1 && masterCount > 0 && slave_with_slave_count > 0){
+            checkSlaves();
         }
     }
 
