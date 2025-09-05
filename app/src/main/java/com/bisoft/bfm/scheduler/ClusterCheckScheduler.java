@@ -1136,4 +1136,21 @@ public class ClusterCheckScheduler {
             }
     }
 
+    @Scheduled(fixedDelay = 3 * 60 * 60 * 1000, initialDelay = 9000)
+    public void clearPGAutoConfFiles(){
+        if (this.bfmContext.isCheckPaused() == Boolean.FALSE &&
+            this.bfmContext.isMasterBfm() == Boolean.TRUE){
+
+                this.bfmContext.getPgList().stream()
+                .forEach(pg -> {
+                            try {
+                                log.info("postgresql.auto.conf clean started on "+pg.getServerAddress());
+                                minipgAccessUtil.clearPGAutoConf(pg);
+                            } catch (Exception e) {
+                                log.error("Error on access minipg on "+ pg.getServerAddress());
+                            }
+                        });
+            }
+    }
+
 }
