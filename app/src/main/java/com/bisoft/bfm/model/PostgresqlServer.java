@@ -276,11 +276,18 @@ public class PostgresqlServer {
         try {
             List<String> result = new ArrayList<>();
             Statement statement = this.getServerConnection().createStatement();
-            ResultSet rs = statement.executeQuery(sql);
-            while(rs.next()){
-                result.add(rs.getString(1));
+            boolean hasResultSet = statement.execute(sql);
+            if (hasResultSet) {
+                try (ResultSet rs = statement.getResultSet()) {
+                    while(rs.next()){
+                        result.add(rs.getString(1));
+                    }
+                    return result;
+                }
+            } else {
+                int updateCount = statement.getUpdateCount();
             }
-            return result;
+
         }catch (Exception e){
             log.error(e.getMessage());
             e.printStackTrace();
@@ -305,6 +312,37 @@ public class PostgresqlServer {
             this.databaseStatus = DatabaseStatus.INACCESSIBLE;
         }
         return hasMaster;
+    }
+
+    public String getMasterServerInfo(){
+        try {
+            Statement statement = this.getServerConnection().createStatement();
+            ResultSet rs = statement.executeQuery("SELECT conninfo FROM pg_stat_wal_receiver");
+
+            String masterHost = null;
+            String masterPort = null;
+
+            while (rs.next()) {
+                String conninfo = rs.getString("conninfo");
+                if (conninfo != null) {
+                    // host= ve port= bilgisini parse edelim
+                    for (String token : conninfo.split(" ")) {
+                        if (token.startsWith("host=")) {
+                            masterHost = token.substring("host=".length());
+                        } else if (token.startsWith("port=")) {
+                            masterPort = token.substring("port=".length());
+                        }
+                    }
+                }
+            }
+
+            if (masterHost != null && masterPort != null) {
+                return masterHost + ":" + masterPort;
+            }
+        }catch (Exception e){
+            this.databaseStatus = DatabaseStatus.INACCESSIBLE;
+        }
+        return "";
     }
 
 }

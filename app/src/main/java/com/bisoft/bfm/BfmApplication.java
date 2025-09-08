@@ -48,10 +48,9 @@ public class BfmApplication implements CommandLineRunner {
 		properties.put("logging.file.max-history","5");
 		properties.put("logging.file.total-size-cap","5GB");
 		properties.put("spring.profiles.active", "@spring.profiles.active@");
-        String customLogo = System.getProperty("app.custom-logo", "");
-        properties.put("spring.web.resources.static-locations","classpath:/static/,file:" + customLogo);
-
-        bfm.setDefaultProperties(properties);
+		String customLogo = System.getProperty("app.custom-logo-path", "");
+    properties.put("spring.web.resources.static-locations","classpath:/static/,file:" + customLogo);
+    bfm.setDefaultProperties(properties);
 		bfm.run(args);
 	}
 
