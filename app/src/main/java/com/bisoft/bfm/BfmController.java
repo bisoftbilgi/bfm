@@ -616,7 +616,7 @@ public class BfmController {
             } else {
                 retval = retval.replace("{{ CUSTOM_LOGO }}", "<div class=\"d-flex justify-content-end\"><img class=\"custom-logo\" src=\""+custom_logo_path+"\" alt=\"custom-logo\"></div>");
             }
-    
+
             if (this.bfmContext.getClusterStatus() == null){
                 retval = retval.replace("{{ CHECK_STATUS }}", "");
                 retval = retval.replace("{{ MAIL_ENABLED }}", "");

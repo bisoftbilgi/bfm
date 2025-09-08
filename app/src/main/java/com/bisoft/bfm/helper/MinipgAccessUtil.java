@@ -501,7 +501,6 @@ public class MinipgAccessUtil {
                 log.error("Cannot connect minipg on "+pgServer.getServerAddress()+ " for stopPg.");
             }
 
-
         } catch (IOException e) {
             log.error("Error on stop db. Server: "+pgServer.getServerAddress()+" is unreacable");
             log.error("Cannot connect minipg.Error on Stop DB:"+pgServer.getServerAddress());
@@ -546,8 +545,8 @@ public class MinipgAccessUtil {
                 String result = (EntityUtils.toString(response1.getEntity()));
                 return result;
             }catch (Exception e){
-                log.error("Error on Stop DB:"+pgServer.getServerAddress());
-                // log.error(e.getMessage);
+                log.error("Cannot connect minipg.Error on Stop DB:"+pgServer.getServerAddress());
+                e.printStackTrace();
             }
 
 
