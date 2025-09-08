@@ -74,7 +74,6 @@ public class BfmController {
 
     @Value("${app.custom-logo-path:no-file}")
     public String custom_logo_path;
-    
 
     // @RequestMapping(path = "/login",method = RequestMethod.GET)
     // public @ResponseBody
@@ -357,14 +356,19 @@ public class BfmController {
 
                                 minipgAccessUtil.vipUp(switchOverToPG);
                                 switchOverToPG.setApplication_name("");
-                                switchOverToPG.setSyncState("");                    
+                                switchOverToPG.setSyncState("");
+                                this.bfmContext.getSyncReplicas().remove(switchOverToPG);                    
                                 
                                 this.bfmContext.getPgList().stream().filter(s -> (!s.getServerAddress().equals(switchOverToPG.getServerAddress())))
                                                                     .forEach(pg -> {
                                                                         try {
                                                                             pg.setRewindStarted(Boolean.TRUE);
                                                                             String rewind_result = minipgAccessUtil.rewind(pg, switchOverToPG);
-                                                                            if (! rewind_result.equals("OK")){
+                                                                            if (rewind_result.equals("OK")){
+                                                                                pg.executeStatement("alter system set synchronous_standby_names to '';");
+                                                                                pg.executeStatement("select pg_reload_conf();");
+                                                                                this.bfmContext.getSyncReplicas().remove(pg);
+                                                                            } else {
                                                                                 log.info("on SwitchOver pg_rewind was FAILED. Response is : "+rewind_result+" Slave Target:" + pg.getServerAddress());
                                                                                 if (basebackup_slave_join == Boolean.TRUE){
                                                                                     String rejoin_result = minipgAccessUtil.rebaseUp(pg, switchOverToPG);
@@ -606,12 +610,13 @@ public class BfmController {
     
             retval = retval.replace("{{ USERNAME }}", username);
             retval = retval.replace("{{ PASSWORD }}", password);
+
             if (custom_logo_path.equals("no-file") || custom_logo_path.trim().equals("")){
                 retval = retval.replace("{{ CUSTOM_LOGO }}", " ");
             } else {
                 retval = retval.replace("{{ CUSTOM_LOGO }}", "<div class=\"d-flex justify-content-end\"><img class=\"custom-logo\" src=\""+custom_logo_path+"\" alt=\"custom-logo\"></div>");
             }
-            
+
             if (this.bfmContext.getClusterStatus() == null){
                 retval = retval.replace("{{ CHECK_STATUS }}", "");
                 retval = retval.replace("{{ MAIL_ENABLED }}", "");
@@ -781,9 +786,14 @@ public class BfmController {
             .filter(server -> server.getStatus() == DatabaseStatus.MASTER ).findFirst().get();                    
             try {
                 String sync_result = minipgAccessUtil.setReplicationToSync(master_server, targetAppName);
-                PostgresqlServer syncReplica = this.bfmContext.getPgList().stream().filter(r -> (r.getApplication_name() != null ? r.getApplication_name() :"").equals(targetAppName)).findFirst().get();
-                syncReplica.setSyncState("sync");
-                this.bfmContext.getSyncReplicas().add(syncReplica);
+                if (sync_result.equals("OK")){
+                    PostgresqlServer syncReplica = this.bfmContext.getPgList().stream().filter(r -> (r.getApplication_name() != null ? r.getApplication_name() :"").equals(targetAppName)).findFirst().get();
+                    syncReplica.setSyncState("sync");
+                    this.bfmContext.getSyncReplicas().add(syncReplica);
+                } else {
+                    log.error("Replica "+targetAppName+"set to SYNC failed :"+sync_result );
+                }
+                
             } catch (Exception e) {
                 e.printStackTrace();
             }

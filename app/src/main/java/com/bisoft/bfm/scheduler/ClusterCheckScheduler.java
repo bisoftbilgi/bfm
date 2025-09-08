@@ -327,6 +327,17 @@ public class ClusterCheckScheduler {
                     }
                 }
             }
+        } else if (status.equals(DatabaseStatus.INACCESSIBLE)){
+            if ((postgresqlServer.getSyncState()==null ? "": postgresqlServer.getSyncState()).equals("sync")){
+                                            log.warn(" INACCESSIBLE Sync Replica removed from sync names on MASTER");
+                                            try {
+                                                String async_result = minipgAccessUtil.setReplicationToAsync(this.bfmContext.getMasterServer(), postgresqlServer.getApplication_name());
+                                                log.info("Async Op Result : "+ async_result);
+                                                postgresqlServer.setSyncState("async");
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
+                                            }
+                                    }
         }
         
         
@@ -353,6 +364,7 @@ public class ClusterCheckScheduler {
         long masterCount = this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.MASTER)).count();
         long masterWithNoslaveCount = this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)).count();
         long inaccessibleMemberCount = this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.INACCESSIBLE)).count();
+        long slave_with_slave_count = this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.SLAVE_WITH_SLAVE)).count();
 
 
         if (clusterCount > 1 && masterCount ==  1L && inaccessibleMemberCount > 0){
@@ -528,6 +540,13 @@ public class ClusterCheckScheduler {
             }        
 
         }
+
+        if (clusterCount > 1 && masterCount > 0){
+            if (slave_with_slave_count > 0){
+                checkSlaves();
+            }
+            checkReplayLag();
+        } 
     }
 
     public void checkLastWalPositions(){
@@ -669,14 +688,12 @@ public class ClusterCheckScheduler {
         isWarningMailSended = Boolean.FALSE;
         bfmContext.setClusterStatus(ClusterStatus.HEALTHY);
         bfmContext.setSplitBrainMaster(null);
-        checkReplayLag();
         checkTimelines();
         cleanOldBackupsFromSlaves();
     }
 
     public void warning(){
         bfmContext.setClusterStatus(ClusterStatus.WARNING);
-        checkReplayLag();
     }
 
     public void nothealthy(){
@@ -893,7 +910,7 @@ public class ClusterCheckScheduler {
 
     public void checkSlaves(){
             this.bfmContext.getPgList().stream()
-            .filter(s -> (s.getStatus() == DatabaseStatus.SLAVE))
+            .filter(s -> (s.getStatus() == DatabaseStatus.SLAVE) || (s.getStatus() == DatabaseStatus.SLAVE_WITH_SLAVE))
             .forEach(server ->
                     {
                         // log.info("server: "+ server.getServerAddress()+" status :"+ server.getDatabaseStatus()+ " hasMaster:"+ server.getHasMasterServer());
@@ -935,10 +952,49 @@ public class ClusterCheckScheduler {
                                 server.setRewindStarted(Boolean.FALSE);
                             }
                              
+                        } else if (! (server.getMasterServerInfo().equals(this.bfmContext.getMasterServer().getServerAddress()))){
+
+                            if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){    
+                                mailService.sendMail("Replica Server "+server.getServerAddress()+" has WRONG PRIMARY",
+                                "Replica server :"+ server.getServerAddress()+" has WRONG PRIMARY.");
+                            }
+
+                            if (server.getRewindStarted().equals(Boolean.FALSE)){
+                                server.setRewindStarted(Boolean.TRUE);
+                                if (this.bfmContext.getWatch_strategy() == "manual"){
+                                    log.info("BFM is in"+ this.bfmContext.getWatch_strategy()+". Please manual respond to incident..");
+                                    if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
+                                        mailService.sendMail("Slave Server "+server.getServerAddress()+" Out Of CLuster",
+                                        "Slave server :"+ server.getServerAddress()+" has NO MASTER. Replication could be down..."
+                                        + "BFM is in"+ this.bfmContext.getWatch_strategy()+". Please manual respond to incident..");
+                                    }
+                                } else {
+                                    PostgresqlServer master = this.bfmContext.getPgList().stream()
+                                    .filter(s -> s.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE || s.getStatus() == DatabaseStatus.MASTER ).findFirst().get();
+
+                                    try {
+                                        String rewind_result = minipgAccessUtil.rewind(server, master);
+                                        if (! rewind_result.equals("OK")){
+                                            log.info("slave pg_rewind FAILED. rewind_result:"+rewind_result);
+                                            if (basebackup_slave_join == true){
+                                                log.info("Rejoin to cluster Wtih pg_basebackup started..");            
+                                                String rejoin_result = minipgAccessUtil.rebaseUp(server, master);
+                                                log.info("Rejoin to result is : "+rejoin_result);            
+                                            }
+                                        }                            
+                                    } catch (Exception e) {
+                                        log.warn("Slave Server "+ server.getServerAddress()+ " rewind / rejoin failed...");
+                                    }                                         
+        
+                                }
+                                server.setRewindStarted(Boolean.FALSE);
+                            }
+
                         }
                         
                     });         
     }
+    
     public void checkReplayLag(){
         PostgresqlServer masterServer = this.bfmContext.getMasterServer();
         if (masterServer != null){
@@ -1078,6 +1134,23 @@ public class ClusterCheckScheduler {
                             }
                         }
                 });
+            }
+    }
+
+    @Scheduled(fixedDelay = 3 * 60 * 60 * 1000, initialDelay = 9000)
+    public void clearPGAutoConfFiles(){
+        if (this.bfmContext.isCheckPaused() == Boolean.FALSE &&
+            this.bfmContext.isMasterBfm() == Boolean.TRUE){
+
+                this.bfmContext.getPgList().stream()
+                .forEach(pg -> {
+                            try {
+                                log.info("postgresql.auto.conf clean started on "+pg.getServerAddress());
+                                minipgAccessUtil.clearPGAutoConf(pg);
+                            } catch (Exception e) {
+                                log.error("Error on access minipg on "+ pg.getServerAddress());
+                            }
+                        });
             }
     }
 
