@@ -744,13 +744,23 @@ public class BfmController {
                 server_rows = server_rows +  "<td>"+formattedDate+"</td>";
                 server_rows = server_rows +  "<td>"+(pg.getApplication_name() == null ? "" : pg.getApplication_name()) +"</td>";
                 server_rows = server_rows +  "<td>"+(pg.getSyncState() == null ? "" : pg.getSyncState())+"</td>";
-                if (pg.getStatus() == DatabaseStatus.SLAVE){
-                    server_rows = server_rows +  "<td>";
-                    server_rows = server_rows +  "<label class=\"switch-sm\">";
-                    server_rows = server_rows +  "<input id=\"cb_sync_"+(pg.getApplication_name() == null ? "" : pg.getApplication_name()) +"\" type=\"checkbox\" "+ (pg.getSyncState() == null ? "async" : (pg.getSyncState()).equals("sync") ? "checked" : ((pg.getSyncState()).equals("potential") ? "checked" : "")) + " onchange=\"setSyncAsync('"+ (pg.getApplication_name() == null ? "" : pg.getApplication_name()) +"');\">";
-                    server_rows = server_rows +  "<span class=\"slider-sm round\"></span>";
-                    server_rows = server_rows +  "</label>";                                           
-                    server_rows = server_rows +  "</td>";
+
+
+                if (pg.getStatus() == DatabaseStatus.SLAVE ){
+                    try {
+                        String miniPGStatus = minipgAccessUtil.minipgStatus(pg);
+                        if ((miniPGStatus == null ? " " : miniPGStatus).equals("OK")){
+                            server_rows = server_rows +  "<td>";
+                            server_rows = server_rows +  "<label class=\"switch-sm\">";
+                            server_rows = server_rows +  "<input id=\"cb_sync_"+pg.getServerAddress().split(":")[0]+"\" type=\"checkbox\" "+ (pg.getSyncState() == null ? "async" : (pg.getSyncState()).equals("sync") ? "checked" : ((pg.getSyncState()).equals("potential") ? "checked" : "")) + " onchange=\"setSyncAsync('"+ pg.getServerAddress().split(":")[0] +"','" + (pg.getApplication_name() == null ? "" : pg.getApplication_name()) +"');\">";
+                            server_rows = server_rows +  "<span class=\"slider-sm round\"></span>";
+                            server_rows = server_rows +  "</label>";                                           
+                            server_rows = server_rows +  "</td>";
+                        } 
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    
                 }
                 
                 server_rows = server_rows + "</tr>";
@@ -767,8 +777,15 @@ public class BfmController {
         if (this.bfmContext.isMasterBfm() == Boolean.TRUE){            
             String slave_rows = "<option value=\"\" selected>Select Slave</option>";
             for(PostgresqlServer pg : this.bfmContext.getPgList()){
-                if (pg.getStatus() == DatabaseStatus.SLAVE){                    
-                    slave_rows += "<option value=\""+pg.getServerAddress()+"\">"+pg.getServerAddress()+"</option>";
+                if (pg.getStatus() == DatabaseStatus.SLAVE || pg.getStatus() == DatabaseStatus.SLAVE_WITH_SLAVE){    
+                    try {
+                        String miniPGStatus = minipgAccessUtil.minipgStatus(pg);
+                        if ((miniPGStatus == null ? " " : miniPGStatus).equals("OK")){                
+                            slave_rows += "<option value=\""+pg.getServerAddress()+"\">"+pg.getServerAddress()+"</option>";
+                            } 
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 } 
             }
             return slave_rows;
@@ -777,6 +794,20 @@ public class BfmController {
             return "Requesting";
         }
     }
+
+    @RequestMapping(path = "/getMiniPGStatus/{target}",method = RequestMethod.POST)
+    public @ResponseBody String getMiniPGStatus(@PathVariable(value = "target") String targetSrv){
+        String retval ="";       
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){                   
+            try {
+                PostgresqlServer pg = this.bfmContext.getPgList().stream().filter(server -> server.getServerAddress().equals(targetSrv)).findFirst().get();
+                return minipgAccessUtil.minipgStatus(pg);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } 
+        return retval;
+    }    
 
     @RequestMapping(path = "/setsync/{target}",method = RequestMethod.POST)
     public @ResponseBody String setSync(@PathVariable(value = "target") String targetAppName){
