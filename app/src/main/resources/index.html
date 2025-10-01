@@ -486,11 +486,25 @@
             
         }
 
-        function ask_switch_confirm(){
+        async function ask_switch_confirm(){
 
             document.getElementById('cb_refresh').checked = false;
             
             let targetPg = document.getElementById("slave_options").value;
+            var bfmUrl = '/bfm/getMiniPGStatus/'+targetPg; 
+            let minipgStatus= "";
+            const response = await $.ajax({
+                                                url: bfmUrl,
+                                                type: "POST",
+                                                headers: {
+                                                    'Access-Control-Allow-Origin': '*'
+                                                },
+                                                crossDomain: true,                
+                                                beforeSend: function (xhr) {
+                                                    xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                                                },
+                                            });
+            minipgStatus = response;
             let table = document.getElementById("tbl_pglist");
             let master_replay_lag;
             let master_timeline_id;
@@ -530,6 +544,11 @@
 
             if (target_replay_lag != "0"){
                 $.growl.error({ message: "Switch Over Cancelled.<br> Target replay lag is not zero(0)!" });
+                return;
+            }
+
+            if (minipgStatus == ''){
+                $.growl.error({ message: "Switch Over Cancelled.<br> MiniPG not running on target!" });
                 return;
             }
 
@@ -695,12 +714,12 @@
         })();
     </script>
     <script>
-        function setSyncAsync(slave_appname){
+        function setSyncAsync(server_address,slave_appname){
             //document.getElementById('cb_refresh').removeAttribute('checked');
             document.getElementById('cb_refresh').checked = false;
             document.getElementById("overlay").style.display = 'block';
             let bfmUrl = ""
-            if (document.getElementById('cb_sync_'+slave_appname).checked == true){
+            if (document.getElementById('cb_sync_'+server_address).checked == true){
                 bfmUrl = '/bfm/setsync/' + slave_appname;
             } else {
                 bfmUrl = '/bfm/setasync/' + slave_appname;
