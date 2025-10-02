@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/css/bootstrap.min.css">
     <link rel="stylesheet" href="/fa/css/font-awesome.min.css">
 
-    <title>BFM Cluster Overview</title>
+    <title>{{ CLUSTER_NAME }} Overview</title>
     <link rel="icon" type="image/x-icon"
         href="/images/icon_BFM.ico">
     <link rel="stylesheet" href="/css/style.css">
@@ -26,11 +26,11 @@
         </div>
         {{ CUSTOM_LOGO }}
         <h3>Welcome!</h3>        
-        <h1>Cluster Overview</h1>
+        <h1>{{ CLUSTER_NAME }} Overview</h1>
         <div class="state-div">
             <i class="fa fa-circle" style="color: #7CB039;"></i>
             <label id="lbl_state" style="font-size: 15pt;">
-                Active
+                Active Pair
             </label>            
         </div>
         <div class="refresh-wrap">
@@ -693,6 +693,7 @@
                             strTable += '<th>Last Check Timestamp</th>'
                             strTable += '<th>Application Name</th>'
                             strTable += '<th colspan="2">Sync State</th>'
+                            strTable += '<th>MiniPG Status</th>'
                             strTable += '</thead>'
                             strTable += '<tbody>'               
                             strTable += data

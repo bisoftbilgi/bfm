@@ -75,6 +75,9 @@ public class BfmController {
     @Value("${app.custom-logo-path:no-file}")
     public String custom_logo_path;
 
+    @Value("${app.bfm-hc-clustername:BFM Cluster}")
+    public String cluster_name;    
+
     // @RequestMapping(path = "/login",method = RequestMethod.GET)
     // public @ResponseBody
     // String login(){
@@ -195,7 +198,11 @@ public class BfmController {
                                 "\t" + 
                                 String.format("%-10s", "Timeline :") +
                                 "\t" + 
-                                String.format("%-20s", "Last Check Time :");
+                                String.format("%-20s", "Last Check Time :")+
+                                "\t" + 
+                                String.format("%-20s", "Application Name :")+
+                                "\t" + 
+                                String.format("%-20s", "Sync State :");
             retval = retval + "\n"+ 
                                 "_".repeat(25) + 
                                 "\t" + 
@@ -206,6 +213,10 @@ public class BfmController {
                                 "_".repeat(12) +
                                 "\t" + 
                                 "_".repeat(10) +
+                                "\t" + 
+                                "_".repeat(20) +
+                                "\t" + 
+                                "_".repeat(20) +
                                 "\t" + 
                                 "_".repeat(20);
             for(PostgresqlServer pg : this.bfmContext.getPgList()){
@@ -228,7 +239,11 @@ public class BfmController {
                                 "\t" + 
                                 String.format("%10s", timeLineStr)+
                                 "\t" + 
-                                String.format("%-20s", formattedDate);
+                                String.format("%-20s", formattedDate)+
+                                "\t" + 
+                                String.format("%20s", (pg.getApplication_name()==null ? "" : pg.getApplication_name()))+
+                                "\t" + 
+                                String.format("%20s", pg.getSyncState());
             }
             retval = retval+ "\n\nLast Check Log: \n"+ this.bfmContext.getLastCheckLog() +"\n";
         } else {
@@ -610,6 +625,7 @@ public class BfmController {
     
             retval = retval.replace("{{ USERNAME }}", username);
             retval = retval.replace("{{ PASSWORD }}", password);
+            retval = retval.replace("{{ CLUSTER_NAME }}", cluster_name);
 
             if (custom_logo_path.equals("no-file") || custom_logo_path.trim().equals("")){
                 retval = retval.replace("{{ CUSTOM_LOGO }}", " ");
@@ -744,7 +760,7 @@ public class BfmController {
                 server_rows = server_rows +  "<td>"+formattedDate+"</td>";
                 server_rows = server_rows +  "<td>"+(pg.getApplication_name() == null ? "" : pg.getApplication_name()) +"</td>";
                 server_rows = server_rows +  "<td>"+(pg.getSyncState() == null ? "" : pg.getSyncState())+"</td>";
-
+                
 
                 if (pg.getStatus() == DatabaseStatus.SLAVE ){
                     try {
@@ -761,8 +777,18 @@ public class BfmController {
                         e.printStackTrace();
                     }
                     
+                } else {
+                    server_rows = server_rows +  "<td></td>";
                 }
-                
+
+                String minipgStatus ="";
+                try {
+                    minipgStatus = minipgAccessUtil.minipgStatus(pg);
+                    minipgStatus = (minipgStatus == null ?" ":minipgStatus);
+                } catch (Exception e) {
+                    log.info("minipg status get error");
+                }
+                server_rows = server_rows +  "<td>"+minipgStatus+"</td>";
                 server_rows = server_rows + "</tr>";
             }
             return server_rows;
