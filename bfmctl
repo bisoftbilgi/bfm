@@ -5,6 +5,7 @@ if [ ! -z $1 ] && [ $1 == "-h" ]; then
     echo "-h help"
     echo "-u username"
     echo "-p password"
+    echo "-version show bfmctl version"
     echo "-status show cluster status"
     echo "-pause cluster check pause"
     echo "-resume cluster check resume"
@@ -22,6 +23,10 @@ fi
 
 if [ ! -z $1 ] && [ ! -z $2 ] && [ $1 == "-p" ]; then
     export clsPwd=$2
+fi
+
+if [ ! -z $1 ] && [ $1 == "-version" ]; then
+    export clsCommand="version"
 fi
 
 if [ ! -z $1 ] && [ $1 == "-status" ]; then
@@ -77,6 +82,10 @@ if [ ! -z $2 ] && [ ! -z $3 ] && [ $2 == "-p" ]; then
     export clsPwd=$3
 fi
 
+if [ ! -z $2 ] && [ $2 == "-version" ]; then
+    export clsCommand="version"
+fi
+
 if [ ! -z $2 ] && [ $2 == "-status" ]; then
     export clsCommand="status"
 fi
@@ -130,6 +139,10 @@ if [ ! -z $3 ] && [ ! -z $4 ] && [ $3 == "-p" ]; then
     export clsPwd=$4
 fi
 
+if [ ! -z $3 ] && [ $3 == "-version" ]; then
+    export clsCommand="version"
+fi
+
 if [ ! -z $3 ] && [ $3 == "-status" ]; then
     export clsCommand="status"
 fi
@@ -178,6 +191,11 @@ fi
 if [ ! -z $3 ]  && [ ! -z $4 ] && [ $3 == "-async" ]; then
     export clsCommand="async"
     export targetSlave=$4
+fi
+
+
+if [ ! -z $4 ] && [ $4 == "-version" ]; then
+    export clsCommand="version"
 fi
 
 if [ ! -z $4 ] && [ $4 == "-status" ]; then
@@ -230,6 +248,10 @@ if [ ! -z $4 ]  && [ ! -z $5 ] && [ $4 == "-async" ]; then
     export targetSlave=$5
 fi
 
+if [ ! -z $5 ] && [ $5 == "-version" ]; then
+    export clsCommand="version"
+fi
+
 if [ ! -z $5 ] && [ $5 == "-status" ]; then
     export clsCommand="status"
 fi
@@ -278,6 +300,11 @@ fi
 if [ ! -z $5 ]  && [ ! -z $6 ] && [ $5 == "-async" ]; then
     export clsCommand="async"
     export targetSlave=$6
+fi
+
+if [ ! -z $clsCommand ] && [ $clsCommand == "version" ]; then
+        echo -e "v3.1.7"
+        exit
 fi
 
 if [ -z $clsUser ] || [ -z $clsPwd ]; then
