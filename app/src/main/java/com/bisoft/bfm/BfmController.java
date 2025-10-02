@@ -772,6 +772,8 @@ public class BfmController {
                             server_rows = server_rows +  "<span class=\"slider-sm round\"></span>";
                             server_rows = server_rows +  "</label>";                                           
                             server_rows = server_rows +  "</td>";
+                        } else {
+                            server_rows = server_rows +  "<td></td>";
                         } 
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -785,10 +787,11 @@ public class BfmController {
                 try {
                     minipgStatus = minipgAccessUtil.minipgStatus(pg);
                     minipgStatus = (minipgStatus == null ?" ":minipgStatus);
+                    minipgStatus = (minipgStatus.trim().equals("OK") ? "<i class=\"fa fa-circle\" style=\"color: #7CB039;\"></i>" : "<i class=\"fa fa-circle\" style=\"color: #f10808ff;\"");
                 } catch (Exception e) {
                     log.info("minipg status get error");
                 }
-                server_rows = server_rows +  "<td>"+minipgStatus+"</td>";
+                server_rows = server_rows +  "<td style=\"text-align: center;\">"+minipgStatus+"</td>";
                 server_rows = server_rows + "</tr>";
             }
             return server_rows;
