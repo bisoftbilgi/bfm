@@ -21,7 +21,7 @@ public class EmailService {
     @Value("${bfm.notification-mail-receivers:redmine@bisoft.com.tr}")
     public String notification_mail_receivers;
 
-    @Value("${bfm.user-mailx:false}")
+    @Value("${bfm.use-mailx:false}")
     public boolean use_mailx;
 
     // @Autowired
@@ -30,7 +30,7 @@ public class EmailService {
 
     @Async
     public void sendMail(String subject, String message){
-        if (use_mailx == Boolean.TRUE){
+        if (use_mailx == Boolean.FALSE){
             JavaMailSender javaMailSender = new JavaMailSenderImpl();
             SimpleMailMessage mailMessage = new SimpleMailMessage();
             if (notification_mail_receivers.contains(",")){

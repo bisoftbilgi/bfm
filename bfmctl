@@ -12,8 +12,8 @@ if [ ! -z $1 ] && [ $1 == "-h" ]; then
     echo "-switchOver 192.168.1.22:5432 switch to selected slave"
     echo "-reinit 192.168.1.22:5432 re-initialize selected slave with pg_rewind or pg_basebackup"
     echo "-encrypt clearString  encrpyt the clear string for use encrypted bfm password function"
-    echo "-sync change replication type async to sync on selected slave"
-    echo "-async change replication type sync to async on selected slave"
+    echo "-sync change replication type async to sync on selected slave (use slave application name instead of ip addr)"
+    echo "-async change replication type sync to async on selected slave (use slave application name instead of ip addr)"
 fi
 
 if [ ! -z $1 ] && [ ! -z $2 ] && [ $1 == "-u" ]; then
@@ -334,7 +334,7 @@ else
     elif [ ! -z $clsCommand ] && [ $clsCommand == "sync" ]; then
         curl -k -X POST  $bfmProtocol://$active_bfm/bfm/setsync/$targetSlave -u $clsUser:$clsPwd
     elif [ ! -z $clsCommand ] && [ $clsCommand == "async" ]; then
-        curl -k -X POST  $bfmProtocol://$active_bfm/bfm/setAsync/$targetSlave -u $clsUser:$clsPwd        
+        curl -k -X POST  $bfmProtocol://$active_bfm/bfm/setasync/$targetSlave -u $clsUser:$clsPwd        
     else
         echo "command not found..."$clsCommand
     fi
