@@ -492,7 +492,7 @@
             
             let targetPg = document.getElementById("slave_options").value;
             var bfmUrl = '/bfm/getMiniPGStatus/'+targetPg; 
-            let minipgStatus= "";
+            let targetMinipgStatus= "";
             const response = await $.ajax({
                                                 url: bfmUrl,
                                                 type: "POST",
@@ -504,8 +504,9 @@
                                                     xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
                                                 },
                                             });
-            minipgStatus = response;
+            targetMinipgStatus = response;
             let table = document.getElementById("tbl_pglist");
+            let masterPG = "";
             let master_replay_lag;
             let master_timeline_id;
             let target_replay_lag;
@@ -522,10 +523,26 @@
                 }
 
                 if (row.cells[1].innerText == "MASTER"){
+                    masterPG = row.cells[0].innerText;
                     master_replay_lag = row.cells[4].innerText;
                     master_timeline_id = row.cells[5].innerText;
                 }
             }
+
+            let masterMinipgStatus= "";
+            var bfmUrl = '/bfm/getMiniPGStatus/'+masterPG;
+            const response_master = await $.ajax({
+                                                url: bfmUrl,
+                                                type: "POST",
+                                                headers: {
+                                                    'Access-Control-Allow-Origin': '*'
+                                                },
+                                                crossDomain: true,                
+                                                beforeSend: function (xhr) {
+                                                    xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                                                },
+                                            });
+            masterMinipgStatus = response_master;
  
             if (target_sync_state == "async"){
                 $.growl.error({ message: "Switch Over Cancelled. <br> Selected Slave is async !" });
@@ -547,8 +564,13 @@
                 return;
             }
 
-            if (minipgStatus == ''){
+            if (targetMinipgStatus == ''){
                 $.growl.error({ message: "Switch Over Cancelled.<br> MiniPG not running on target!" });
+                return;
+            }
+
+            if (masterMinipgStatus == ''){
+                $.growl.error({ message: "Switch Over Cancelled.<br> MiniPG not running on master!" });
                 return;
             }
 
