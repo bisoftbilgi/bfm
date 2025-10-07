@@ -1,282 +1,168 @@
-if [ ! -z $1 ] && [ $1 == "-h" ]; then
-    echo "-h help"
-    echo "-u username"
-    echo "-p password"
-    echo "-status show cluster status"
-    echo "-pause cluster check pause"
-    echo "-resume cluster check resume"
-    echo "-watchMode [A|M] set watch strategy  A:availability, M:manual"
-    echo "-switchOver 192.168.1.22:5432 switch to selected slave"
-    echo "-reinit 192.168.1.22:5432 re-initialize selected slave with pg_rewind or pg_basebackup"
-    echo "-encrypt clearString  encrpyt the clear string for use encrypted bfm password function"
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+VERSION="v3.1.7"
+
+usage() {
+  cat <<'EOF'
+Usage: bfmctl [command] [options]
+
+Commands (one at a time):
+  -version                      Show bfmctl version
+  -status                       Show cluster status
+  -pause                        Pause cluster check
+  -resume                       Resume cluster check
+  -mailPause                    Pause mail notifications
+  -mailResume                   Resume mail notifications
+  -watchMode [A|M]              Set watch strategy  A:availability, M:manual
+  -switchOver <ip:port>         Switchover to selected slave
+  -reinit <ip:port>             Re-initialize selected slave with pg_rewind/basebackup
+  -encrypt <clearString>        Encrypt a clear string for BFM password function
+  -sync <appName>               Change replication to sync on selected slave (use application name)
+  -async <appName>              Change replication to async on selected slave (use application name)
+
+Options:
+  -u <username>                 Username for basic auth
+  -h | --help                   Show this help
+
+Notes:
+  * Password is read interactively; the -p option is NOT allowed.
+EOF
+}
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  usage
+  exit 0
 fi
 
-if [ ! -z $1 ] && [ ! -z $2 ] && [ $1 == "-u" ]; then
-    export clsUser=$2
+prop_file=""
+if [[ -f "$SCRIPT_DIR/application.properties" ]]; then
+  prop_file="$SCRIPT_DIR/application.properties"
+elif [[ -f "./application.properties" ]]; then
+  prop_file="./application.properties"
 fi
 
-if [ ! -z $1 ] && [ ! -z $2 ] && [ $1 == "-p" ]; then
-    export clsPwd=$2
+get_prop() {
+  local key="$1"
+  if [[ -n "${prop_file}" ]]; then
+    awk -F'=' -v k="$key" '
+      $1 ~ ("^"k"[ \t]*$") || $1 ~ ("^"k"[ \t]*") {
+        val=$0; sub(/^[^=]*=/,"",val); gsub(/[ \t\r]/,"",val); print val; exit
+      }' "${prop_file}"
+  fi
+}
+
+command=""
+arg=""
+user=""
+password=""
+
+for a in "$@"; do
+  if [[ "$a" == "-p" || "$a" == "--password" ]]; then
+    echo "Error: -p/--password is not allowed. Use -u and enter password interactively." >&2
+    exit 1
+  fi
+done
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -u)
+      [[ $# -ge 2 ]] || { echo "Error: -u requires a username." >&2; exit 1; }
+      user="$2"; shift 2
+      ;;
+    -version|-status|-pause|-resume|-mailPause|-mailResume)
+      command="${1#-}"; arg=""; shift
+      ;;
+    -watchMode)
+      [[ $# -ge 2 ]] || { echo "Error: -watchMode requires A or M." >&2; exit 1; }
+      command="strategy"; arg="$2"; shift 2
+      ;;
+    -switchOver)
+      [[ $# -ge 2 ]] || { echo "Error: -switchOver requires <ip:port>." >&2; exit 1; }
+      command="switchOver"; arg="$2"; shift 2
+      ;;
+    -reinit)
+      [[ $# -ge 2 ]] || { echo "Error: -reinit requires <ip:port>." >&2; exit 1; }
+      command="reinit"; arg="$2"; shift 2
+      ;;
+    -encrypt)
+      [[ $# -ge 2 ]] || { echo "Error: -encrypt requires <clearString>." >&2; exit 1; }
+      command="encrypt"; arg="$2"; shift 2
+      ;;
+    -sync)
+      [[ $# -ge 2 ]] || { echo "Error: -sync requires <appName>." >&2; exit 1; }
+      command="sync"; arg="$2"; shift 2
+      ;;
+    -async)
+      [[ $# -ge 2 ]] || { echo "Error: -async requires <appName>." >&2; exit 1; }
+      command="async"; arg="$2"; shift 2
+      ;;
+    -h|--help)
+      usage; exit 0
+      ;;
+    *)
+      echo "Error: unknown argument: $1" >&2
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+if [[ "$command" == "version" ]]; then
+  echo -e "${VERSION}"
+  exit 0
 fi
 
-if [ ! -z $1 ] && [ $1 == "-status" ]; then
-    export clsCommand="status"
+if [[ -z "${user}" ]]; then
+  echo "user is NOT set. Use -u <username>."
+  exit 1
+fi
+read -s -p "Enter password: " password
+echo
+
+if [[ -z "${password}" ]]; then
+  echo "password is NOT set."
+  exit 1
 fi
 
-if [ ! -z $1 ] && [ $1 == "-pause" ]; then
-    export clsCommand="pause"
-fi
+bfmPair="$(get_prop 'watcher.cluster-pair')"
+bfmSSL="$(get_prop 'bfm.use-tls')"
+bfmPort="$(get_prop 'watcher.cluster-port')"
 
-if [ ! -z $1 ] && [ $1 == "-resume" ]; then
-    export clsCommand="resume"
-fi
+bfmPair="${bfmPair:-127.0.0.1:9994}"
+bfmSSL="${bfmSSL:-false}"
+bfmPort="${bfmPort:-9994}"
 
-if [ ! -z $1 ] && [ $1 == "-mailPause" ]; then
-    export clsCommand="mail-pause"
-fi
-
-if [ ! -z $1 ] && [ $1 == "-mailResume" ]; then
-    export clsCommand="mail-resume"
-fi
-
-if [ ! -z $1 ]  && [ ! -z $2 ] && [ $1 == "-switchOver" ]; then
-    export clsCommand="switchOver"
-    export targetSlave=$2
-fi
-
-if [ ! -z $1 ]  && [ ! -z $2 ] && [ $1 == "-watchMode" ]; then
-    export clsCommand="strategy"
-    export clsStrategy=$2
-fi
-
-if [ ! -z $1 ]  && [ ! -z $2 ] && [ $1 == "-encrypt" ]; then
-    export clsCommand="encrypt"
-    export clearStr=$2
-fi
-
-if [ ! -z $2 ] && [ ! -z $3 ] && [ $2 == "-u" ]; then
-    export clsUser=$3
-fi
-
-if [ ! -z $2 ] && [ ! -z $3 ] && [ $2 == "-p" ]; then
-    export clsPwd=$3
-fi
-
-if [ ! -z $2 ] && [ $2 == "-status" ]; then
-    export clsCommand="status"
-fi
-
-if [ ! -z $2 ] && [ $2 == "-pause" ]; then
-    export clsCommand="pause"
-fi
-
-if [ ! -z $2 ] && [ $2 == "-resume" ]; then
-    export clsCommand="resume"
-fi
-
-if [ ! -z $2 ] && [ $2 == "-mailPause" ]; then
-    export clsCommand="mail-pause"
-fi
-
-if [ ! -z $2 ] && [ $2 == "-mailResume" ]; then
-    export clsCommand="mail-resume"
-fi
-
-if [ ! -z $2 ]  && [ ! -z $3 ] && [ $2 == "-switchOver" ]; then
-    export clsCommand="switchOver"
-    export targetSlave=$3
-fi
-
-if [ ! -z $2 ]  && [ ! -z $3 ] && [ $2 == "-watchMode" ]; then
-    export clsCommand="strategy"
-    export clsStrategy=$3
-fi
-
-if [ ! -z $2 ]  && [ ! -z $3 ] && [ $2 == "-encrypt" ]; then
-    export clsCommand="encrypt"
-    export clearStr=$3
-fi
-
-if [ ! -z $3 ] && [ ! -z $4 ] &&[ $3 == "-u" ]; then
-    export clsUser=$4
-fi
-
-if [ ! -z $3 ] && [ ! -z $4 ] && [ $3 == "-p" ]; then
-    export clsPwd=$4
-fi
-
-if [ ! -z $3 ] && [ $3 == "-status" ]; then
-    export clsCommand="status"
-fi
-
-if [ ! -z $3 ] && [ $3 == "-pause" ]; then
-    export clsCommand="pause"
-fi
-
-if [ ! -z $3 ] && [ $3 == "-resume" ]; then
-    export clsCommand="resume"
-fi
-
-if [ ! -z $3 ] && [ $3 == "-mailPause" ]; then
-    export clsCommand="mail-pause"
-fi
-
-if [ ! -z $3 ] && [ $3 == "-mailResume" ]; then
-    export clsCommand="mail-resume"
-fi
-
-if [ ! -z $3 ]  && [ ! -z $4 ] && [ $3 == "-switchOver" ]; then
-    export clsCommand="switchOver"
-    export targetSlave=$4
-fi
-
-if [ ! -z $3 ]  && [ ! -z $4 ] && [ $3 == "-reinit" ]; then
-    export clsCommand="reinit"
-    export targetSlave=$4
-fi
-
-if [ ! -z $3 ]  && [ ! -z $4 ] && [ $3 == "-watchMode" ]; then
-    export clsCommand="strategy"
-    export clsStrategy=$4
-fi
-
-if [ ! -z $3 ]  && [ ! -z $4 ] && [ $3 == "-encrypt" ]; then
-    export clsCommand="encrypt"
-    export clearStr=$4
-fi
-
-if [ ! -z $4 ] && [ $4 == "-status" ]; then
-    export clsCommand="status"
-fi
-
-if [ ! -z $4 ] && [ $4 == "-pause" ]; then
-    export clsCommand="pause"
-fi
-
-if [ ! -z $4 ] && [ $4 == "-resume" ]; then
-    export clsCommand="resume"
-fi
-
-if [ ! -z $4 ] && [ $4 == "-mailPause" ]; then
-    export clsCommand="mail-pause"
-fi
-
-if [ ! -z $4 ] && [ $4 == "-mailResume" ]; then
-    export clsCommand="mail-resume"
-fi
-
-if [ ! -z $4 ]  && [ ! -z $5 ] && [ $4 == "-switchOver" ]; then
-    export clsCommand="switchOver"
-    export targetSlave=$5
-fi
-
-if [ ! -z $4 ]  && [ ! -z $5 ] && [ $4 == "-reinit" ]; then
-    export clsCommand="reinit"
-    export targetSlave=$5
-fi
-
-if [ ! -z $4 ]  && [ ! -z $5 ] && [ $4 == "-watchMode" ]; then
-    export clsCommand="strategy"
-    export clsStrategy=$5
-fi
-
-if [ ! -z $4 ]  && [ ! -z $5 ] && [ $4 == "-encrypt" ]; then
-    export clsCommand="encrypt"
-    export clearStr=$5
-fi
-
-if [ ! -z $5 ] && [ $5 == "-status" ]; then
-    export clsCommand="status"
-fi
-
-if [ ! -z $5 ] && [ $5 == "-pause" ]; then
-    export clsCommand="pause"
-fi
-
-if [ ! -z $5 ] && [ $5 == "-resume" ]; then
-    export clsCommand="resume"
-fi
-
-if [ ! -z $5 ] && [ $5 == "-mailPause" ]; then
-    export clsCommand="mail-pause"
-fi
-
-if [ ! -z $5 ] && [ $5 == "-mailResume" ]; then
-    export clsCommand="mail-resume"
-fi
-
-if [ ! -z $5 ]  && [ ! -z $6 ] && [ $5 == "-switchOver" ]; then
-    export clsCommand="switchOver"
-    export targetSlave=$6
-fi
-
-if [ ! -z $5 ]  && [ ! -z $6 ] && [ $5 == "-reinit" ]; then
-    export clsCommand="reinit"
-    export targetSlave=$6
-fi
-
-if [ ! -z $5 ]  && [ ! -z $6 ] && [ $5 == "-watchMode" ]; then
-    export clsCommand="strategy"
-    export clsStrategy=$6
-fi
-
-if [ ! -z $5 ]  && [ ! -z $6 ] && [ $5 == "-encrypt" ]; then
-    export clsCommand="encrypt"
-    export clearStr=$6
-fi
-
-if [ -z $clsUser ] || [ -z $clsPwd ]; then
-    echo "user or password NOT set. "
+if [[ "${bfmSSL}" == "true" ]]; then
+  proto="https"
 else
-    if [ -f /etc/bfm/bfmwatcher/application.properties ]; then
-        export bfmPair=$(cat /etc/bfm/bfmwatcher/application.properties |grep watcher.cluster-pair |cut -d "=" -f 2 |tr -d " ")
-        export bfmSSL=$(cat /etc/bfm/bfmwatcher/application.properties |grep bfm.use-tls |cut -d "=" -f 2 |tr -d " ")
-        export bfmPort=$(cat /etc/bfm/bfmwatcher/application.properties |grep watcher.cluster-port |cut -d "=" -f 2 |tr -d " ")
-    elif [ -f ./application.properties ]; then
-        export bfmPair=$(cat ./application.properties |grep watcher.cluster-pair |cut -d "=" -f 2 |tr -d " ")
-        export bfmSSL=$(cat ./application.properties |grep bfm.use-tls |cut -d "=" -f 2 |tr -d " ")
-        export bfmPort=$(cat ./application.properties |grep watcher.cluster-port |cut -d "=" -f 2 |tr -d " ")
-    else
-        export bfmPair='127.0.0.1:9994'
-        export bfmSSL='false'
-        export bfmPort='9994'
-    fi
-
-    if [ ! -z $bfmSSL ] && [ $bfmSSL == "true" ]; then
-        export bfmProtocol='https'
-    else
-        export bfmProtocol='http'
-    fi
-
-    export pair_active=$(curl -k -s $bfmProtocol://$bfmPair/bfm/get-active-bfm -u $clsUser:$clsPwd)
-    #echo $pair_active
-
-    if [ ! -z $pair_active ] && [ $pair_active == "T" ]; then
-        export active_bfm=$bfmPair
-    else
-        export active_bfm="127.0.0.1:"$bfmPort
-    fi
-
-    echo -e "\nActive BFM :"$active_bfm
-    if [ ! -z $clsCommand ] && [ $clsCommand == "status" ]; then
-        curl -k -X GET $bfmProtocol://$active_bfm/bfm/cluster-status -u $clsUser:$clsPwd        
-    elif [ ! -z $clsCommand ] && [ $clsCommand == "pause" ]; then
-        curl -k -X GET $bfmProtocol://$active_bfm/bfm/check-pause -u $clsUser:$clsPwd
-    elif [ ! -z $clsCommand ] && [ $clsCommand == "resume" ]; then
-        curl -k -X GET $bfmProtocol://$active_bfm/bfm/check-resume -u $clsUser:$clsPwd
-    elif [ ! -z $clsCommand ] && [ $clsCommand == "mail-pause" ]; then
-        curl -k -X GET $bfmProtocol://$active_bfm/bfm/mail-pause -u $clsUser:$clsPwd
-    elif [ ! -z $clsCommand ] && [ $clsCommand == "mail-resume" ]; then
-        curl -k -X GET $bfmProtocol://$active_bfm/bfm/mail-resume -u $clsUser:$clsPwd        
-    elif [ ! -z $clsCommand ] && [ $clsCommand == "strategy" ]; then
-        curl -k -X POST  $bfmProtocol://$active_bfm/bfm/watch-strategy/$clsStrategy -u $clsUser:$clsPwd
-    elif [ ! -z $clsCommand ] && [ $clsCommand == "switchOver" ]; then
-        curl -k -X POST  $bfmProtocol://$active_bfm/bfm/switchover/$targetSlave -u $clsUser:$clsPwd
-    elif [ ! -z $clsCommand ] && [ $clsCommand == "reinit" ]; then
-        curl -k -X POST  $bfmProtocol://$active_bfm/bfm/reinit/$targetSlave -u $clsUser:$clsPwd     
-    elif [ ! -z $clsCommand ] && [ $clsCommand == "encrypt" ]; then
-        curl -k -X POST  $bfmProtocol://$active_bfm/bfm/encrypt/$clearStr -u $clsUser:$clsPwd
-    else
-        echo "command not found..."$clsCommand
-    fi
+  proto="http"
 fi
+
+pair_active="$(curl -k -fsS "${proto}://${bfmPair}/bfm/get-active-bfm" --user "${user}:${password}" || true)"
+if [[ "${pair_active:-}" == "T" ]]; then
+  active_bfm="${bfmPair}"
+else
+  active_bfm="127.0.0.1:${bfmPort}"
+fi
+
+echo -e "\nActive BFM : ${active_bfm}"
+
+case "${command}" in
+  status)     curl -k -X GET  "${proto}://${active_bfm}/bfm/cluster-status"      --user "${user}:${password}" ;;
+  pause)      curl -k -X GET  "${proto}://${active_bfm}/bfm/check-pause"         --user "${user}:${password}" ;;
+  resume)     curl -k -X GET  "${proto}://${active_bfm}/bfm/check-resume"        --user "${user}:${password}" ;;
+  mailPause)  curl -k -X GET  "${proto}://${active_bfm}/bfm/mail-pause"          --user "${user}:${password}" ;;
+  mailResume) curl -k -X GET  "${proto}://${active_bfm}/bfm/mail-resume"         --user "${user}:${password}" ;;
+  strategy)   curl -k -X POST "${proto}://${active_bfm}/bfm/watch-strategy/${arg}" --user "${user}:${password}" ;;
+  switchOver) curl -k -X POST "${proto}://${active_bfm}/bfm/switchover/${arg}"     --user "${user}:${password}" ;;
+  reinit)     curl -k -X POST "${proto}://${active_bfm}/bfm/reinit/${arg}"         --user "${user}:${password}" ;;
+  encrypt)    curl -k -X POST "${proto}://${active_bfm}/bfm/encrypt/${arg}"        --user "${user}:${password}" ;;
+  sync)       curl -k -X POST "${proto}://${active_bfm}/bfm/setsync/${arg}"        --user "${user}:${password}" ;;
+  async)      curl -k -X POST "${proto}://${active_bfm}/bfm/setasync/${arg}"       --user "${user}:${password}" ;;
+  "")         echo "command not found..."; usage; exit 1 ;;
+  *)          echo "Unknown command '${command}'"; usage; exit 1 ;;
+esac
+

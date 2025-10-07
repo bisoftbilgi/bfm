@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/css/bootstrap.min.css">
     <link rel="stylesheet" href="/fa/css/font-awesome.min.css">
 
-    <title>BFM Cluster Overview</title>
+    <title>{{ CLUSTER_NAME }} Overview</title>
     <link rel="icon" type="image/x-icon"
         href="/images/icon_BFM.ico">
     <link rel="stylesheet" href="/css/style.css">
@@ -26,11 +26,11 @@
         </div>
         {{ CUSTOM_LOGO }}
         <h3>Welcome!</h3>        
-        <h1>Cluster Overview</h1>
+        <h1>{{ CLUSTER_NAME }} Overview</h1>
         <div class="state-div">
             <i class="fa fa-circle" style="color: #7CB039;"></i>
             <label id="lbl_state" style="font-size: 15pt;">
-                Active
+                Active Pair
             </label>            
         </div>
         <div class="refresh-wrap">
@@ -486,12 +486,27 @@
             
         }
 
-        function ask_switch_confirm(){
+        async function ask_switch_confirm(){
 
             document.getElementById('cb_refresh').checked = false;
             
             let targetPg = document.getElementById("slave_options").value;
+            var bfmUrl = '/bfm/getMiniPGStatus/'+targetPg; 
+            let targetMinipgStatus= "";
+            const response = await $.ajax({
+                                                url: bfmUrl,
+                                                type: "POST",
+                                                headers: {
+                                                    'Access-Control-Allow-Origin': '*'
+                                                },
+                                                crossDomain: true,                
+                                                beforeSend: function (xhr) {
+                                                    xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                                                },
+                                            });
+            targetMinipgStatus = response;
             let table = document.getElementById("tbl_pglist");
+            let masterPG = "";
             let master_replay_lag;
             let master_timeline_id;
             let target_replay_lag;
@@ -508,10 +523,26 @@
                 }
 
                 if (row.cells[1].innerText == "MASTER"){
+                    masterPG = row.cells[0].innerText;
                     master_replay_lag = row.cells[4].innerText;
                     master_timeline_id = row.cells[5].innerText;
                 }
             }
+
+            let masterMinipgStatus= "";
+            var bfmUrl = '/bfm/getMiniPGStatus/'+masterPG;
+            const response_master = await $.ajax({
+                                                url: bfmUrl,
+                                                type: "POST",
+                                                headers: {
+                                                    'Access-Control-Allow-Origin': '*'
+                                                },
+                                                crossDomain: true,                
+                                                beforeSend: function (xhr) {
+                                                    xhr.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(document.getElementById("axbu").innerText + ':' + document.getElementById("axbp").innerText))))
+                                                },
+                                            });
+            masterMinipgStatus = response_master;
  
             if (target_sync_state == "async"){
                 $.growl.error({ message: "Switch Over Cancelled. <br> Selected Slave is async !" });
@@ -530,6 +561,16 @@
 
             if (target_replay_lag != "0"){
                 $.growl.error({ message: "Switch Over Cancelled.<br> Target replay lag is not zero(0)!" });
+                return;
+            }
+
+            if (targetMinipgStatus == ''){
+                $.growl.error({ message: "Switch Over Cancelled.<br> MiniPG not running on target!" });
+                return;
+            }
+
+            if (masterMinipgStatus == ''){
+                $.growl.error({ message: "Switch Over Cancelled.<br> MiniPG not running on master!" });
                 return;
             }
 
@@ -674,6 +715,7 @@
                             strTable += '<th>Last Check Timestamp</th>'
                             strTable += '<th>Application Name</th>'
                             strTable += '<th colspan="2">Sync State</th>'
+                            strTable += '<th>MiniPG Status</th>'
                             strTable += '</thead>'
                             strTable += '<tbody>'               
                             strTable += data
@@ -695,12 +737,12 @@
         })();
     </script>
     <script>
-        function setSyncAsync(slave_appname){
+        function setSyncAsync(server_address,slave_appname){
             //document.getElementById('cb_refresh').removeAttribute('checked');
             document.getElementById('cb_refresh').checked = false;
             document.getElementById("overlay").style.display = 'block';
             let bfmUrl = ""
-            if (document.getElementById('cb_sync_'+slave_appname).checked == true){
+            if (document.getElementById('cb_sync_'+server_address).checked == true){
                 bfmUrl = '/bfm/setsync/' + slave_appname;
             } else {
                 bfmUrl = '/bfm/setasync/' + slave_appname;

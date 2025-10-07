@@ -75,6 +75,9 @@ public class BfmController {
     @Value("${app.custom-logo-path:no-file}")
     public String custom_logo_path;
 
+    @Value("${app.bfm-hc-clustername:BFM Cluster}")
+    public String cluster_name;    
+
     // @RequestMapping(path = "/login",method = RequestMethod.GET)
     // public @ResponseBody
     // String login(){
@@ -195,7 +198,11 @@ public class BfmController {
                                 "\t" + 
                                 String.format("%-10s", "Timeline :") +
                                 "\t" + 
-                                String.format("%-20s", "Last Check Time :");
+                                String.format("%-20s", "Last Check Time :")+
+                                "\t" + 
+                                String.format("%-20s", "Application Name :")+
+                                "\t" + 
+                                String.format("%-20s", "Sync State :");
             retval = retval + "\n"+ 
                                 "_".repeat(25) + 
                                 "\t" + 
@@ -206,6 +213,10 @@ public class BfmController {
                                 "_".repeat(12) +
                                 "\t" + 
                                 "_".repeat(10) +
+                                "\t" + 
+                                "_".repeat(20) +
+                                "\t" + 
+                                "_".repeat(20) +
                                 "\t" + 
                                 "_".repeat(20);
             for(PostgresqlServer pg : this.bfmContext.getPgList()){
@@ -228,7 +239,11 @@ public class BfmController {
                                 "\t" + 
                                 String.format("%10s", timeLineStr)+
                                 "\t" + 
-                                String.format("%-20s", formattedDate);
+                                String.format("%-20s", formattedDate)+
+                                "\t" + 
+                                String.format("%20s", (pg.getApplication_name()==null ? "" : pg.getApplication_name()))+
+                                "\t" + 
+                                String.format("%20s", pg.getSyncState());
             }
             retval = retval+ "\n\nLast Check Log: \n"+ this.bfmContext.getLastCheckLog() +"\n";
         } else {
@@ -610,6 +625,7 @@ public class BfmController {
     
             retval = retval.replace("{{ USERNAME }}", username);
             retval = retval.replace("{{ PASSWORD }}", password);
+            retval = retval.replace("{{ CLUSTER_NAME }}", cluster_name);
 
             if (custom_logo_path.equals("no-file") || custom_logo_path.trim().equals("")){
                 retval = retval.replace("{{ CUSTOM_LOGO }}", " ");
@@ -744,15 +760,38 @@ public class BfmController {
                 server_rows = server_rows +  "<td>"+formattedDate+"</td>";
                 server_rows = server_rows +  "<td>"+(pg.getApplication_name() == null ? "" : pg.getApplication_name()) +"</td>";
                 server_rows = server_rows +  "<td>"+(pg.getSyncState() == null ? "" : pg.getSyncState())+"</td>";
-                if (pg.getStatus() == DatabaseStatus.SLAVE){
-                    server_rows = server_rows +  "<td>";
-                    server_rows = server_rows +  "<label class=\"switch-sm\">";
-                    server_rows = server_rows +  "<input id=\"cb_sync_"+(pg.getApplication_name() == null ? "" : pg.getApplication_name()) +"\" type=\"checkbox\" "+ (pg.getSyncState() == null ? "async" : (pg.getSyncState()).equals("sync") ? "checked" : ((pg.getSyncState()).equals("potential") ? "checked" : "")) + " onchange=\"setSyncAsync('"+ (pg.getApplication_name() == null ? "" : pg.getApplication_name()) +"');\">";
-                    server_rows = server_rows +  "<span class=\"slider-sm round\"></span>";
-                    server_rows = server_rows +  "</label>";                                           
-                    server_rows = server_rows +  "</td>";
-                }
                 
+
+                if (pg.getStatus() == DatabaseStatus.SLAVE ){
+                    try {
+                        String miniPGStatus = minipgAccessUtil.minipgStatus(pg);
+                        if ((miniPGStatus == null ? " " : miniPGStatus).equals("OK")){
+                            server_rows = server_rows +  "<td>";
+                            server_rows = server_rows +  "<label class=\"switch-sm\">";
+                            server_rows = server_rows +  "<input id=\"cb_sync_"+pg.getServerAddress().split(":")[0]+"\" type=\"checkbox\" "+ (pg.getSyncState() == null ? "async" : (pg.getSyncState()).equals("sync") ? "checked" : ((pg.getSyncState()).equals("potential") ? "checked" : "")) + " onchange=\"setSyncAsync('"+ pg.getServerAddress().split(":")[0] +"','" + (pg.getApplication_name() == null ? "" : pg.getApplication_name()) +"');\">";
+                            server_rows = server_rows +  "<span class=\"slider-sm round\"></span>";
+                            server_rows = server_rows +  "</label>";                                           
+                            server_rows = server_rows +  "</td>";
+                        } else {
+                            server_rows = server_rows +  "<td></td>";
+                        } 
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    
+                } else {
+                    server_rows = server_rows +  "<td></td>";
+                }
+
+                String minipgStatus ="";
+                try {
+                    minipgStatus = minipgAccessUtil.minipgStatus(pg);
+                    minipgStatus = (minipgStatus == null ?" ":minipgStatus);
+                    minipgStatus = (minipgStatus.trim().equals("OK") ? "<i class=\"fa fa-circle\" style=\"color: #7CB039;\"></i>" : "<i class=\"fa fa-circle\" style=\"color: #f10808ff;\"");
+                } catch (Exception e) {
+                    log.info("minipg status get error");
+                }
+                server_rows = server_rows +  "<td style=\"text-align: center;\">"+minipgStatus+"</td>";
                 server_rows = server_rows + "</tr>";
             }
             return server_rows;
@@ -767,8 +806,15 @@ public class BfmController {
         if (this.bfmContext.isMasterBfm() == Boolean.TRUE){            
             String slave_rows = "<option value=\"\" selected>Select Slave</option>";
             for(PostgresqlServer pg : this.bfmContext.getPgList()){
-                if (pg.getStatus() == DatabaseStatus.SLAVE){                    
-                    slave_rows += "<option value=\""+pg.getServerAddress()+"\">"+pg.getServerAddress()+"</option>";
+                if (pg.getStatus() == DatabaseStatus.SLAVE || pg.getStatus() == DatabaseStatus.SLAVE_WITH_SLAVE){    
+                    try {
+                        String miniPGStatus = minipgAccessUtil.minipgStatus(pg);
+                        if ((miniPGStatus == null ? " " : miniPGStatus).equals("OK")){                
+                            slave_rows += "<option value=\""+pg.getServerAddress()+"\">"+pg.getServerAddress()+"</option>";
+                            } 
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 } 
             }
             return slave_rows;
@@ -777,6 +823,20 @@ public class BfmController {
             return "Requesting";
         }
     }
+
+    @RequestMapping(path = "/getMiniPGStatus/{target}",method = RequestMethod.POST)
+    public @ResponseBody String getMiniPGStatus(@PathVariable(value = "target") String targetSrv){
+        String retval ="";       
+        if (this.bfmContext.isMasterBfm() == Boolean.TRUE){                   
+            try {
+                PostgresqlServer pg = this.bfmContext.getPgList().stream().filter(server -> server.getServerAddress().equals(targetSrv)).findFirst().get();
+                return minipgAccessUtil.minipgStatus(pg);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } 
+        return retval;
+    }    
 
     @RequestMapping(path = "/setsync/{target}",method = RequestMethod.POST)
     public @ResponseBody String setSync(@PathVariable(value = "target") String targetAppName){
