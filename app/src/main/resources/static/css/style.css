@@ -64,7 +64,8 @@ h3 {
 h1 {
     color: rgba(54, 80, 101, 0.85) !important;
     position: relative;
-    margin: 0 0 0 40%;
+    align-content: center;
+    text-align: center;
     font-family: Onest;
     font-weight: 800;
 }
