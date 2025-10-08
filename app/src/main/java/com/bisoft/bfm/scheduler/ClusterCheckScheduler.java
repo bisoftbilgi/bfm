@@ -546,6 +546,7 @@ public class ClusterCheckScheduler {
                 checkSlaves();
             }
             checkReplayLag();
+            checkTimelines();
         } 
     }
 
@@ -688,7 +689,6 @@ public class ClusterCheckScheduler {
         isWarningMailSended = Boolean.FALSE;
         bfmContext.setClusterStatus(ClusterStatus.HEALTHY);
         bfmContext.setSplitBrainMaster(null);
-        checkTimelines();
         cleanOldBackupsFromSlaves();
     }
 
@@ -1022,12 +1022,13 @@ public class ClusterCheckScheduler {
         if (this.bfmContext.getMasterServer() != null){
             try {
                 this.bfmContext.getPgList().stream()
-                .filter(s -> (!s.getServerAddress().equals(this.bfmContext.getMasterServer().getServerAddress()) && 
-                                !s.getStatus().equals(DatabaseStatus.INACCESSIBLE)))
+                .filter(s -> (!s.getStatus().equals(DatabaseStatus.INACCESSIBLE)))
                 .forEach(pg -> {
                     try {
                         pg.checkTimeLineId();
-                        if (pg.getTimeLineId() != this.bfmContext.getMasterServer().getTimeLineId()){
+                        // log.info("TimeLine Checked : "+pg.getServerAddress() + " TLid:"+pg.getTimeLineId());
+                        if (pg.getTimeLineId() != this.bfmContext.getMasterServer().getTimeLineId() &&
+                        (!pg.getServerAddress().equals(this.bfmContext.getMasterServer().getServerAddress())) ){
                             timelineWaitCount--;
                             if (timelineWaitCount == 0 ){
                                 String checkpoint_result = minipgAccessUtil.checkpoint(this.bfmContext.getMasterServer());
