@@ -764,7 +764,7 @@ public class MinipgAccessUtil {
 
     public String minipgStatus(PostgresqlServer postgresqlServer) throws Exception{
         //log.info("username : "+username+", password : "+password);
-        log.info("MiniPg status request sent to "+postgresqlServer.getServerAddress());
+        // log.info("MiniPg status request sent to "+postgresqlServer.getServerAddress());
         final String serverAddress = postgresqlServer.getServerAddress().split(":")[0];
         String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
         final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
