@@ -237,6 +237,7 @@ public class PostgresqlServer {
 
         return retval;
     }
+
     public DatabaseStatus getDatabaseStatus(){
         this.setLastCheckDateTime(LocalDateTime.now());
         DatabaseStatus lastState = this.databaseStatus;
@@ -345,6 +346,25 @@ public class PostgresqlServer {
             this.databaseStatus = DatabaseStatus.INACCESSIBLE;
         }
         return "";
+    }
+
+    public List<String> getTableSpaceList(){
+        List<String> retval = new ArrayList<String>();
+        try {
+            Connection con  = this.getServerConnection();
+            PreparedStatement ps = con.prepareStatement("select pg_tablespace_location(oid) AS location from pg_tablespace where spcname != 'pg_default' and spcname !='pg_global';");
+            ps.executeQuery();
+            ResultSet rs = ps.getResultSet();
+            while(rs.next()){
+                retval.add(rs.getString(1));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            // log.warn("Connection Failed to server:"+this.getServerAddress());
+            this.databaseStatus = DatabaseStatus.INACCESSIBLE;
+        }
+
+        return retval;
     }
 
 }

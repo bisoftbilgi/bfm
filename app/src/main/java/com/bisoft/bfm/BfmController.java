@@ -378,7 +378,8 @@ public class BfmController {
                                                                     .forEach(pg -> {
                                                                         try {
                                                                             pg.setRewindStarted(Boolean.TRUE);
-                                                                            String rewind_result = minipgAccessUtil.rewind(pg, switchOverToPG);
+                                                                            List<String> tablespaceList = switchOverToPG.getTableSpaceList();
+                                                                            String rewind_result = minipgAccessUtil.rewind(pg, switchOverToPG, tablespaceList);
                                                                             if (rewind_result.equals("OK")){
                                                                                 pg.executeStatement("alter system set synchronous_standby_names to '';");
                                                                                 pg.executeStatement("select pg_reload_conf();");
@@ -386,7 +387,8 @@ public class BfmController {
                                                                             } else {
                                                                                 log.info("on SwitchOver pg_rewind was FAILED. Response is : "+rewind_result+" Slave Target:" + pg.getServerAddress());
                                                                                 if (basebackup_slave_join == Boolean.TRUE){
-                                                                                    String rejoin_result = minipgAccessUtil.rebaseUp(pg, switchOverToPG);
+                                                                                    
+                                                                                    String rejoin_result = minipgAccessUtil.rebaseUp(pg, switchOverToPG, tablespaceList);
                                                                                     log.info("pg_basebackup join cluster result is:"+rejoin_result);
                                                                                 } else {
                                                                                     log.warn("basebackup rejoin disabled. Please check server manually:"+ pg.getServerAddress());
@@ -466,11 +468,13 @@ public class BfmController {
                                 .filter(server -> server.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE || server.getStatus() == DatabaseStatus.MASTER ).findFirst().get();                    
 
                                 target_server.setRewindStarted(Boolean.TRUE);
-                                String rewind_result = minipgAccessUtil.rewind(target_server, master_server);
+                                List<String> tablespaceList = master_server.getTableSpaceList();
+                                String rewind_result = minipgAccessUtil.rewind(target_server, master_server, tablespaceList);
                                 if (! rewind_result.equals("OK")){
                                     log.info("pg_rewind was FAILED. starting rejoin with pg_basebackup. Target:",target_server);
-                                        String rejoin_result = minipgAccessUtil.rebaseUp(target_server, master_server);
-                                        log.info("pg_basebackup join cluster result is:"+rejoin_result);
+                                    
+                                    String rejoin_result = minipgAccessUtil.rebaseUp(target_server, master_server, tablespaceList);
+                                    log.info("pg_basebackup join cluster result is:"+rejoin_result);
                                 }
                                 target_server.setRewindStarted(Boolean.FALSE);
 
@@ -765,7 +769,10 @@ public class BfmController {
                 if (pg.getStatus() == DatabaseStatus.SLAVE ){
                     try {
                         String miniPGStatus = minipgAccessUtil.minipgStatus(pg);
-                        if ((miniPGStatus == null ? " " : miniPGStatus).equals("OK")){
+                        if ((miniPGStatus == null ? " " : miniPGStatus).equals("OK")
+                            && (!(pg.getApplication_name() == null ? "" : pg.getApplication_name()).equals("walreceiver"))
+                            && (!(pg.getApplication_name() == null ? "" : pg.getApplication_name()).equals("main"))
+                            && (!(pg.getApplication_name() == null ? "" : pg.getApplication_name()).equals(""))){
                             server_rows = server_rows +  "<td>";
                             server_rows = server_rows +  "<label class=\"switch-sm\">";
                             server_rows = server_rows +  "<input id=\"cb_sync_"+pg.getServerAddress().split(":")[0]+"\" type=\"checkbox\" "+ (pg.getSyncState() == null ? "async" : (pg.getSyncState()).equals("sync") ? "checked" : ((pg.getSyncState()).equals("potential") ? "checked" : "")) + " onchange=\"setSyncAsync('"+ pg.getServerAddress().split(":")[0] +"','" + (pg.getApplication_name() == null ? "" : pg.getApplication_name()) +"');\">";
