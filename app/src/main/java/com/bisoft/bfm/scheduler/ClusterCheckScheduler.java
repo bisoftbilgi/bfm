@@ -179,8 +179,8 @@ public class ClusterCheckScheduler {
                                                                     }
 
                                                                     try {
-                                                                        String start_result = minipgAccessUtil.startPg(server);
-                                                                        if (!start_result.equals("OK")) {
+                                                                        // String start_result = minipgAccessUtil.startPg(server);
+                                                                        // if (!start_result.equals("OK")) {
                                                                             // server.setRewindStarted(Boolean.TRUE);
                                                                             
                                                                             server.setRewindStarted(Boolean.TRUE);
@@ -202,7 +202,7 @@ public class ClusterCheckScheduler {
                                                                             server.setRewindStarted(Boolean.FALSE);
                                                                             // log.info("Server rewind state changed to : " + server.getRewindStarted());
                                                                             unavailableFailCount = remainingFailCount;
-                                                                        }
+                                                                        //}
                                                                     } catch (Exception e) {
                                                                         log.error("MiniPG error on CheckUnAvailable!", e);
                                                                     }                                                                            
@@ -290,8 +290,12 @@ public class ClusterCheckScheduler {
 
     public void checkServer(PostgresqlServer postgresqlServer) throws Exception {
         DatabaseStatus status = postgresqlServer.getDatabaseStatus();
+        long exMasterCount = this.bfmContext.getPgList().stream().filter(sg -> sg.getIsExMaster() == Boolean.TRUE).count();
         if (status.equals(DatabaseStatus.MASTER)){
             postgresqlServer.setSyncState("");
+            if (exMasterCount == 0){
+                postgresqlServer.setIsExMaster(Boolean.TRUE);
+            }            
             this.bfmContext.setMasterServer(postgresqlServer);
             
             String strSyncReplicas = postgresqlServer.getSyncReplicas();
@@ -369,6 +373,7 @@ public class ClusterCheckScheduler {
 
         if (clusterCount > 1 && masterCount ==  1L && inaccessibleMemberCount > 0){
             this.bfmContext.setClusterStatus(ClusterStatus.WARNING);
+            checkLastWalPositions();  
         }
         else if (masterCount ==  1L && masterWithNoslaveCount == 0){            
             // log.info("Cluster has a master node");

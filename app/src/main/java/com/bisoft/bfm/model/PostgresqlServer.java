@@ -45,6 +45,8 @@ public class PostgresqlServer {
     private Boolean rejoinStarted = Boolean.FALSE;
     @Builder.Default
     private Boolean rewindStarted = Boolean.FALSE;
+    @Builder.Default
+    private Boolean isExMaster = Boolean.FALSE;
 
     public DatabaseStatus getStatus(){
         return databaseStatus;
