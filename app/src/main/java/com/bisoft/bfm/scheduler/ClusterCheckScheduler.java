@@ -187,11 +187,12 @@ public class ClusterCheckScheduler {
 
                                                                             // log.info("Server rewind state changed to : " + server.getRewindStarted());
                                                                             log.info("Rewind starting for server :"+server.getServerAddress());
-                                                                            String rewind_result = minipgAccessUtil.rewind(server, master);
+                                                                            List<String> tablespaceList = master.getTableSpaceList();
+                                                                            String rewind_result = minipgAccessUtil.rewind(server, master, tablespaceList);
                                                                             if (!rewind_result.equals("OK")) {
                                                                                 log.info("MiniPG rewind was FAILED. Slave Target: " + server.getServerAddress());
-                                                                                if (basebackup_slave_join == true) {
-                                                                                    String rejoin_result = minipgAccessUtil.rebaseUp(server, master);
+                                                                                if (basebackup_slave_join == true) {                                                                                       
+                                                                                    String rejoin_result = minipgAccessUtil.rebaseUp(server, master, tablespaceList);
                                                                                     if (!rejoin_result.equals("OK")) {
                                                                                         log.info("Rejoin FAILED." + rejoin_result);
                                                                                     }
@@ -391,11 +392,12 @@ public class ClusterCheckScheduler {
                                             if (this.bfmContext.getWatch_strategy().equals("availability")){
                                                     if (pg.getRewindStarted() == Boolean.FALSE){
                                                         pg.setRewindStarted(Boolean.TRUE);
-                                                        String rewind_result = minipgAccessUtil.rewind(pg, leaderMaster);
+                                                        List<String> tablespaceList = leaderMaster.getTableSpaceList();
+                                                        String rewind_result = minipgAccessUtil.rewind(pg, leaderMaster, tablespaceList);
                                                         if (! rewind_result.equals("OK")){
                                                             log.info("pg_rewind was FAILED. Slave Target:" + pg.getServerAddress());
-                                                            if (basebackup_slave_join == true){
-                                                                String rejoin_result = minipgAccessUtil.rebaseUp(pg,leaderMaster);
+                                                            if (basebackup_slave_join == true){                                                                
+                                                                String rejoin_result = minipgAccessUtil.rebaseUp(pg,leaderMaster, tablespaceList);
                                                                 log.info("pg_basebackup join cluster result is:"+rejoin_result);
                                                             } else {
                                                                 log.info("pg_basebackup join is set to FALSE. passing for slave server:",pg.getServerAddress());
@@ -428,11 +430,14 @@ public class ClusterCheckScheduler {
                                                     if (server.getRewindStarted() == Boolean.FALSE){
                                                         server.setRewindStarted(Boolean.TRUE);
                                                         try {
-                                                            String rewind_result = minipgAccessUtil.rewind(server, this.bfmContext.getMasterServer());
+                                                            PostgresqlServer ms = this.bfmContext.getMasterServer();
+                                                            List<String> tablespaceList = ms.getTableSpaceList();
+                                                            String rewind_result = minipgAccessUtil.rewind(server, ms, tablespaceList);
                                                             if (! rewind_result.equals("OK")){
                                                                 log.info("On ClusterCheck pg_rewind was FAILED. Slave Target:" + server.getServerAddress());
                                                                 if (basebackup_slave_join == true){
-                                                                    String rejoin_result = minipgAccessUtil.rebaseUp(server, this.bfmContext.getMasterServer());
+                                                                    
+                                                                    String rejoin_result = minipgAccessUtil.rebaseUp(server, ms, tablespaceList);
                                                                     log.info("pg_basebackup join cluster result is:"+rejoin_result);
                                                                 }
                                                             }
@@ -473,16 +478,18 @@ public class ClusterCheckScheduler {
                         } else if (ex_master_behavior.equals("rejoin")){
                             log.info("Ex Master Rejoining to Cluster as Slave..");
                             String rewind_result = "??";
+                            List<String> tablespaceList = leaderPg.getTableSpaceList(); 
                             try {
-                                rewind_result = minipgAccessUtil.rewind(pg, leaderPg);
+                                rewind_result = minipgAccessUtil.rewind(pg, leaderPg, tablespaceList);
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
                             if (! rewind_result.equals("OK")){
                                 log.info("MiniPG rewind was FAILED. rewind_result:" + rewind_result);
                                 if (basebackup_slave_join == true){
-                                    log.info("Rejoin to cluster Wtih pg_basebackup started..");            
-                                    String rejoin_result = minipgAccessUtil.rebaseUp(pg, leaderPg);
+                                    log.info("Rejoin to cluster Wtih pg_basebackup started.."); 
+                                            
+                                    String rejoin_result = minipgAccessUtil.rebaseUp(pg, leaderPg, tablespaceList);
                                     log.info("rejoin server "+ pg.getServerAddress()+ " result :"+rejoin_result);
                                     if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE){
                                         mailService.sendMail("Slave Server "+pg.getServerAddress()+" Out Of CLuster",
@@ -854,12 +861,13 @@ public class ClusterCheckScheduler {
                                         try {
                                             if (pg.getRewindStarted().equals(Boolean.FALSE)){
                                                 pg.setRewindStarted(Boolean.TRUE);
-                                                String rewind_result = minipgAccessUtil.rewind(pg, newMaster);
+                                                List<String> tablespaceList = newMaster.getTableSpaceList();
+                                                String rewind_result = minipgAccessUtil.rewind(pg, newMaster, tablespaceList);
                                                 if (! rewind_result.equals("OK")){
                                                     log.info("MiniPG rewind was FAILED.");
                                                     if (basebackup_slave_join == true){
-                                                        log.info("Server "+ pg.getServerAddress()+" Rejoin to cluster with pg_basebackup started..");            
-                                                        String rejoin_result = minipgAccessUtil.rebaseUp(pg, newMaster);
+                                                        log.info("Server "+ pg.getServerAddress()+" Rejoin to cluster with pg_basebackup started..");  
+                                                        String rejoin_result = minipgAccessUtil.rebaseUp(pg, newMaster, tablespaceList);
                                                         log.info("Server "+ pg.getServerAddress()+ " rejoin result :"+rejoin_result);
                                                     }
                                                 }
@@ -940,12 +948,13 @@ public class ClusterCheckScheduler {
                                     .filter(s -> s.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE || s.getStatus() == DatabaseStatus.MASTER ).findFirst().get();
 
                                     try {
-                                        String rewind_result = minipgAccessUtil.rewind(server, master);
+                                        List<String> tablespaceList = master.getTableSpaceList();
+                                        String rewind_result = minipgAccessUtil.rewind(server, master, tablespaceList);
                                         if (! rewind_result.equals("OK")){
                                             log.info("slave pg_rewind FAILED. rewind_result:"+rewind_result);
                                             if (basebackup_slave_join == true){
-                                                log.info("Rejoin to cluster Wtih pg_basebackup started..");            
-                                                String rejoin_result = minipgAccessUtil.rebaseUp(server, master);
+                                                log.info("Rejoin to cluster Wtih pg_basebackup started..");                                                                 
+                                                String rejoin_result = minipgAccessUtil.rebaseUp(server, master, tablespaceList);
                                                 log.info("Rejoin to result is : "+rejoin_result);            
                                             }
                                         }                            
@@ -978,12 +987,14 @@ public class ClusterCheckScheduler {
                                     .filter(s -> s.getStatus() == DatabaseStatus.MASTER_WITH_NO_SLAVE || s.getStatus() == DatabaseStatus.MASTER ).findFirst().get();
 
                                     try {
-                                        String rewind_result = minipgAccessUtil.rewind(server, master);
+                                        List<String> tablespaceList = master.getTableSpaceList();
+                                        String rewind_result = minipgAccessUtil.rewind(server, master, tablespaceList);
                                         if (! rewind_result.equals("OK")){
                                             log.info("slave pg_rewind FAILED. rewind_result:"+rewind_result);
                                             if (basebackup_slave_join == true){
-                                                log.info("Rejoin to cluster Wtih pg_basebackup started..");            
-                                                String rejoin_result = minipgAccessUtil.rebaseUp(server, master);
+                                                log.info("Rejoin to cluster Wtih pg_basebackup started..");   
+                                                          
+                                                String rejoin_result = minipgAccessUtil.rebaseUp(server, master, tablespaceList);
                                                 log.info("Rejoin to result is : "+rejoin_result);            
                                             }
                                         }                            
