@@ -12,6 +12,7 @@ import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
@@ -354,7 +355,7 @@ public class MinipgAccessUtil {
 
     }
 
-    public String rewind(PostgresqlServer postgresqlServer,PostgresqlServer newMaster) throws Exception {
+    public String rewind(PostgresqlServer postgresqlServer,PostgresqlServer newMaster, List<String> tablespaceList) throws Exception {
 
         final String serverAddress = postgresqlServer.getServerAddress().split(":")[0];
         final String serverPort = postgresqlServer.getServerAddress().split(":")[1];
@@ -368,7 +369,13 @@ public class MinipgAccessUtil {
                 .setSSLSocketFactory(scsf)
                 .build();
 
-        RewindDTO rewindDTO = RewindDTO.builder().masterIp(newMaster.getServerAddress().split(":")[0]).port(newMaster.getServerAddress().split(":")[1]).user(postgresqlServer.getUsername()).password(postgresqlServer.getPassword()).build();
+        RewindDTO rewindDTO = RewindDTO.builder()
+                                        .masterIp(newMaster.getServerAddress().split(":")[0])
+                                        .port(newMaster.getServerAddress().split(":")[1])
+                                        .user(postgresqlServer.getUsername())
+                                        .password(postgresqlServer.getPassword())
+                                        .tablespaceList(tablespaceList)
+                                        .build();
 
         ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
         String json = ow.writeValueAsString(rewindDTO);
@@ -410,7 +417,7 @@ public class MinipgAccessUtil {
 
     }
 
-    public String rebaseUp(PostgresqlServer slaveCandidateServer,PostgresqlServer masterServer) throws Exception {
+    public String rebaseUp(PostgresqlServer slaveCandidateServer,PostgresqlServer masterServer, List<String> tablespaceList) throws Exception {
         // log.info("Trying to Rejoin Slave server "+slaveCandidateServer.getServerAddress()+" to cluster with master "+masterServer.getServerAddress()+" with pg_basebackup.");
         final String serverAddress = slaveCandidateServer.getServerAddress().split(":")[0];
         final String serverPort = slaveCandidateServer.getServerAddress().split(":")[1];
@@ -424,7 +431,12 @@ public class MinipgAccessUtil {
                 .setSSLSocketFactory(scsf)
                 .build();
 
-        ReBaseUpDTO rebaseDTO = ReBaseUpDTO.builder().masterIp(masterServer.getServerAddress().split(":")[0]).masterPort(masterServer.getServerAddress().split(":")[1]).repUser(masterServer.getUsername()).repPassword(masterServer.getPassword()).build();
+        ReBaseUpDTO rebaseDTO = ReBaseUpDTO.builder().masterIp(masterServer.getServerAddress().split(":")[0])
+                                                    .masterPort(masterServer.getServerAddress().split(":")[1])
+                                                    .repUser(masterServer.getUsername())
+                                                    .repPassword(masterServer.getPassword())
+                                                    .tablespaceList(tablespaceList)
+                                                    .build();
         ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
         String json = ow.writeValueAsString(rebaseDTO);
 
@@ -764,7 +776,7 @@ public class MinipgAccessUtil {
 
     public String minipgStatus(PostgresqlServer postgresqlServer) throws Exception{
         //log.info("username : "+username+", password : "+password);
-        log.info("MiniPg status request sent to "+postgresqlServer.getServerAddress());
+        // log.info("MiniPg status request sent to "+postgresqlServer.getServerAddress());
         final String serverAddress = postgresqlServer.getServerAddress().split(":")[0];
         String minipgUrl = serverUrl.replace("{HOST}",serverAddress);
         final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
