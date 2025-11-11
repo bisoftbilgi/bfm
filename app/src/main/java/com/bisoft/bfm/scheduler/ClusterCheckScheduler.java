@@ -366,13 +366,24 @@ public class ClusterCheckScheduler {
             return;
         }
 
+        long serverCount  = this.bfmContext.getPgList().stream().count();
         long masterCount = this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.MASTER)).count();
         long masterWithNoslaveCount = this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.MASTER_WITH_NO_SLAVE)).count();
         long inaccessibleMemberCount = this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.INACCESSIBLE)).count();
         long slave_with_slave_count = this.bfmContext.getPgList().stream().filter(server -> server.getStatus().equals(DatabaseStatus.SLAVE_WITH_SLAVE)).count();
 
 
-        if (clusterCount > 1 && masterCount ==  1L && inaccessibleMemberCount > 0){
+        if(clusterCount > 1 &&  inaccessibleMemberCount==serverCount){
+            log.error("Cluster is DOWN ...");
+            warning();
+            if (this.bfmContext.isMail_notification_enabled() == Boolean.TRUE && this.isWarningMailSended == Boolean.FALSE){
+                mailService.sendMail(String.format("%s is DOWN",clusterName), 
+                    "This is an automatic mail notification."+"\n"+ clusterName+" Status is: DOWN"
+                    + "\n There is no running server. Please manually start master server.");
+                this.isWarningMailSended = Boolean.TRUE;
+            }        
+        }
+        else if (clusterCount > 1 && masterCount ==  1L && inaccessibleMemberCount > 0){
             this.bfmContext.setClusterStatus(ClusterStatus.WARNING);
             checkLastWalPositions();  
         }
